@@ -237,9 +237,9 @@ class QubViewToolbar(qt.QDockArea):
     def __changeGroup(self):
         """
         method call when user presses on a "group" toggle button in 
-        contextmenu to switch the display of a "group from "contextmenu" to
+        contextmenu to switch the display of a "group" from "contextmenu" to
         "toolbar" or vice versa
-        """    
+        """
         for groupName in self.__groupList.keys():
             groupObject = self.__groupList[groupName]
             status=self.__contextMenu.isItemChecked(groupObject["menubar"])
