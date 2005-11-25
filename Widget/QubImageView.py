@@ -66,7 +66,7 @@ class QubImageView(QubView):
                       
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
-################################################################################       
+################################################################################
 from QubImageAction import QubRectangleSelection,QubLineSelection
 
 class QubMain(qt.QMainWindow):
