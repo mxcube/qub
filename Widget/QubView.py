@@ -156,6 +156,12 @@ class QubView(qt.QWidget):
                     self.setStatusbar(widget)
                 self.__statusbar.addAction(action)
 
+            """
+            connect new action to QubView view
+            """
+            if self.view():
+                action.viewConnect(self.view())
+            
     def delAction(self, actions):
         """
         Remove actions in the "actions" list from the QubView widget.
@@ -163,14 +169,6 @@ class QubView(qt.QWidget):
         TO DO    TO DO    TO DO
         """
         pass
-            
-    def getPPP(self):
-        """
-        Should return the printable pixmap of the QubView object.
-        This method must be reimplemented.
-        """
-        return qt.QPixmap()
-
 
 
 ################################################################################
@@ -320,7 +318,8 @@ class QubViewToolbar(qt.QDockArea):
         This is the only reason this method is not a private method
         """
         if widget is not None:
-            widget.setContextMenu(self.__contextMenu)
+            if hasattr(widget, "setContextMenu"):
+                widget.setContextMenu(self.__contextMenu)
 
     def addAction(self, action):
         """
@@ -391,7 +390,13 @@ class QubViewStatusbar(qt.QWidget):
         """
         qt.QWidget.__init__(self, parent)
         
-        self.__hlayout = qt.QHBoxLayout(self)
+        self.__firstHlayout = qt.QHBoxLayout(self)
+        
+        self.__container = qt.QWidget(self)
+        self.__hlayout = qt.QHBoxLayout(self.__container)
+        
+        self.__firstHlayout.addWidget(self.__container)
+        self.__firstHlayout.addStretch(1)
         
         self.__actionList = []
         
@@ -402,10 +407,10 @@ class QubViewStatusbar(qt.QWidget):
         """
         Add action widget in the "statusbar" of the QubView Widget
         """
-        widget = action.addStatusWidget(self)
+        widget = action.addStatusWidget(self.__container)
             
         self.__hlayout.insertWidget(action.index(), widget)
-            
+        self.__hlayout.insertStretch(-1)
         self.__actionList.append(action)
             
     def delAction(self, action):

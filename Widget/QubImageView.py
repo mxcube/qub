@@ -26,9 +26,6 @@ class QubImageView(QubView):
         
         if actions is not None:
             self.addAction(actions)
-            for action in actions:
-                action.viewConnect(widget)
-
             
     def setPixmap(self, pixmap):
         """
@@ -79,9 +76,9 @@ class QubMain(qt.QMainWindow):
         pixmap = qt.QPixmap(file)
         
         actions = []
-        action = QubRectangleSelection(show=1, group="selection")
+        action = QubRectangleSelection(place="toolbar", show=1, group="selection")
         actions.append(action)
-        action = QubLineSelection(show=1,group="selection")
+        action = QubLineSelection(place="statusbar",show=1,group="selection")
         actions.append(action)
         
         container = qt.QWidget(self)

@@ -342,7 +342,7 @@ class QubImage(qtcanvas.QCanvasView):
         """
         if onoff and not self.__useThread:
             if self.__pixmapUpdater is None:
-                self.__pixmapUpdater = Pixmap2Canvas(self, "display")
+                self.__pixmapUpdater = QubPixmap2Canvas(self, "display")
             self.__pixmapUpdater.start()
 
         if not onoff and self.__useThread:
@@ -352,7 +352,7 @@ class QubImage(qtcanvas.QCanvasView):
                 self.__pixmapUpdater.stop()
                 
         self.__useThread = onoff
-        
+   
     def setScrollbarMode(self, mode):
         """
         Change the scroll bar policy

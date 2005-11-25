@@ -21,7 +21,7 @@ class QubAction(qt.QObject):
     ACTION_LIST, indexing by the name of the action and containing the class
     name.
     """
-    def __init__(self, name="action", place="", show=1, group="", index=-1):
+    def __init__(self, name="action", place="toolbar", show=1, group="", index=-1):
         """
         Constructor method
         name ... :  string name of the action
@@ -146,6 +146,7 @@ class QubAction(qt.QObject):
         This method should be reimplemented.
         Creates action widget to put in "statusbar"
         Return this widget
+        By default creates a QLabel with the name of the action
         """
         if self._widget is None:
             self._widget = qt.QLabel(self._name, parent)
@@ -169,84 +170,12 @@ class QubAction(qt.QObject):
         the desired action.
         """
         pass
-
-        
-###############################################################################
-####################          QubPrintPreviewAction        ####################
-###############################################################################
-class QubPrintPreviewAction(QubAction):
-    """
-    This action send the pixmap of its associated view to a PrinPreview Widget.
-    It creates a pushbutton in the toolbar/contextmenu.
-    It uses the "getPPP" method of the "view" to get the pixmap.
-    """
-    def __init__(self, *args, **keys):
-        """
-        Constructor method
-        name ... :  string name of the action
-        palce .. :  where to put in the view widget, the selection widget
-                    of the action ("toolbar", "statusbar", None)
-        show ... :  If in view toolbar, tells to put it in the toolbar
-                    itself or in the context menu
-        group .. :  actions may grouped. Tells the name of the group the
-                    action belongs to. If not present, a "misc." group is
-                    automatically created and the action is added to it
-        index .. :  Position of the selection widget of the action in its
-                    group
-        Initialyse print preview widget parameter
-        """
-        QubAction.__init__(self, *args, **keys)
-
-        self._preview = None
-        
-        self._item = None
-        
-    def addToolWidget(self, parent):
-        """
-        create print preview pushbutton in the toolbar of the view
-        """
-        if self._widget is None:
-            self._widget = qt.QToolButton(parent, "addtoppbutton")
-            self._widget.setAutoRaise(True)
-            self._widget.setIconSet(qt.QIconSet(loadIcon("addpreview.png")))
-            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
-                                 self.addPixmapToPP)
-            qt.QToolTip.add(self._widget, "add this window to print preview")
-        
-    def addMenuWidget(self, menu):
-        """
-        Create context menu item pushbutton
-        """
-        iconSet = qt.QIconSet(loadIcon("addpreview.png"))
-        self._item = menu.insertItem(iconSet, qt.QString("Print preview"),
-                                      self.addPixmapToPP)
-        
-    def addPixmapToPP(self):
-        """
-        if the print preview widget parameter is set, show the print preview
-        widget and send it the pixmap of the associated view
-        """ 
-        if self._preview is not None:
-            if self._view is not None:
-                if hasattr(self._view, "getPPP"):
-                    self._preview.show()
-                    self._preview.addPixmap(self._view.getPPP())
-
-    def viewConnect(self, view):
-        """
-        register the view.
-        This action will call the "getPPP" method of the view and send it
-        to the print preview widget
-        """
-        self._view = view
-
-    def previewConnect(self, preview):
-        self._preview = preview
               
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
 from Qub.Widget.QubImageView import QubImageView
+from Qub.Print.QubPrintPreviewAction import QubPrintPreviewAction
         
 class QubMain(qt.QMainWindow):
     def __init__(self, parent=None, file=None):

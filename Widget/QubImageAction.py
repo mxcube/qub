@@ -185,6 +185,23 @@ class QubToggleImageAction(QubImageAction):
             iconSet = qt.QIconSet(loadIcon("%s.png"%self._name))
             self._item = menu.insertItem(iconSet, qt.QString(self._name),
                                           self.menuChecked)
+
+    def addStatusWidget(self, parent):
+        """
+        Creates action widget to put in  the "statusbar"
+        Return this widget.
+        Use name of the action to find icon file
+        """
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent, "%s"%self._name)
+            self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png"%self._name)))
+            self._widget.setAutoRaise(True)
+            self._widget.setToggleButton(True)
+            self.connect(self._widget, qt.SIGNAL("toggled(bool)"),
+                         self.setState)
+            qt.QToolTip.add(self._widget, "%s"%self._name)
+        
+        return self._widget
        
     def menuChecked(self):
         """
