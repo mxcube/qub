@@ -56,7 +56,7 @@ class QubColorToolButton(qt.QToolButton):
         
         self.selectedColor = qt.QColor(qt.Qt.black)
         
-        self._setIconColor(self.selectedColor)
+        self.setIconColor(self.selectedColor)
         
         self.popupMenu = qt.QPopupMenu(self)
 
@@ -95,7 +95,7 @@ class QubColorToolButton(qt.QToolButton):
         
         """
         self.selectedColor = qt.QColor(self.simpleColor[ind])
-        self._setIconColor(self.selectedColor)
+        self.setIconColor(self.selectedColor)
         self.emit(qt.PYSIGNAL("colorSelected"), (self.selectedColor,))
         self.popupMenu.hide()
         
@@ -107,14 +107,14 @@ class QubColorToolButton(qt.QToolButton):
         
         if color is not None:
             self.selectedColor = color
-            self._setIconColor(self.selectedColor)
+            self.setIconColor(self.selectedColor)
             self.emit(qt.PYSIGNAL("colorSelected"), (self.selectedColor,))      
         
         self.popupMenu.hide()
     
-    def _setIconColor(self, color):
+    def setIconColor(self, color):
         """
-        internal method to chnage the color of the icon
+        internal method to change the color of the icon
         """
         r = color.red()
         g = color.green()
@@ -139,7 +139,7 @@ class ColorToolMenu(qt.QPopupMenu):
         self.simpleName = ["black", "white", "red", "green", "blue", "yellow"]
         self.selectedColor = qt.QColor(qt.Qt.black)
         
-        self._setIconColor(self.selectedColor)
+        self.setIconColor(self.selectedColor)
 
         self.itemId = {}
         for i  in range(len(self.simpleColor)):
@@ -155,7 +155,7 @@ class ColorToolMenu(qt.QPopupMenu):
         """
         if self.itemId.has_key(item):
             self.selectedColor = qt.QColor(self.itemId[item])
-            self._setIconColor(self.selectedColor)
+            self.setIconColor(self.selectedColor)
             self.emit(qt.PYSIGNAL("colorSelected"), (self.selectedColor,))
             self.hide()
         
@@ -166,12 +166,12 @@ class ColorToolMenu(qt.QPopupMenu):
         
         if color is not None:
             self.selectedColor = color
-            self._setIconColor(self.selectedColor)
+            self.setIconColor(self.selectedColor)
             self.emit(qt.PYSIGNAL("colorSelected"), (self.selectedColor,))      
         
         self.hide()
     
-    def _setIconColor(self, color):
+    def setIconColor(self, color):
         """
         """
         r = color.red()
