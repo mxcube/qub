@@ -98,6 +98,7 @@ class QubTitleEditor(qt.QDialog):
 
     def __topFont(self):
         """
+        set the Font of the top label
         """
         font = qt.QFontDialog.getFont(self.topFont)
         if font[1]:
@@ -105,16 +106,19 @@ class QubTitleEditor(qt.QDialog):
 
     def __setTopColor(self):
         """
+        set the Color of the top label
         """
         self.topColor = self.topColorButton.selectedColor
 
     def __setBotColor(self):
         """
+        set the Color of the bottom label
         """
         self.botColor = self.botColorButton.selectedColor
 
     def __botFont(self):
         """
+        set the Font of the bottom label
         """
         font = qt.QFontDialog.getFont(self.botFont)
         if font[1]:
@@ -122,6 +126,7 @@ class QubTitleEditor(qt.QDialog):
 
     def getTopText(self):
         """
+        return the text of the Top Label
         """
         text = str(self.topText.text())
         if len(text):
@@ -130,6 +135,7 @@ class QubTitleEditor(qt.QDialog):
 
     def getBottomText(self):
         """
+        return the text of the bottom Label
         """
         text = str(self.botText.text())
         if len(text):
