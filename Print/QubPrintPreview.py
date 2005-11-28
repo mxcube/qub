@@ -6,31 +6,22 @@ from Qub.Print.QubPrintEditors import QubTitleEditor
 
 __revision__="$Revision$"
 
-# bugs:
-# - resizing by top-left angle moves an item
-# - 'remove-all' command
-
-# TODO:
-# - drag n drop
-# - enhance the design of the buttonBar 
-
-# DONE:
-# - create a default QPrinter
-# - some artefacts when moving an item  (WA : 1 pixel width border)
-# - reduce size of the buttons
-# - move file or printer name in a statusBar
-# - move button bar to the top
-
 ################################################################################
 ####################             BoundingRect               ####################
 ################################################################################
 class BoundingRect(qt.QRect):
+    """
+    """
     def __init__(self, x, y, w, h, topRect =None, bottomRect =None):
+        """
+        """
         qt.QRect.__init__(self, x, y, w, h)
         self.topRect = topRect
         self.bottomRect = bottomRect
 
     def __getInRect(self, rect):
+        """
+        """
         if self.topRect is not None:
             rect.setTop(rect.top()+self.topRect.height())
         if self.bottomRect is not None:
@@ -38,9 +29,13 @@ class BoundingRect(qt.QRect):
         return rect
 
     def setMinWidth(self):
+        """
+        """
         self.setWidth(1)
 
     def setMinHeight(self):
+        """
+        """
         self.setHeight(1)
 
     def moveByIn(self, dx, dy, rect):
@@ -89,6 +84,8 @@ class BoundingRect(qt.QRect):
         return 1
 
     def resizeIn(self, rect):
+        """
+        """
         rect = self.__getInRect(rect)
         left = min(  max( self.left(), rect.left() ),  rect.right()   )
         top  = min(  max( self.top(), rect.top( )  ),  rect.bottom()  )
@@ -99,24 +96,32 @@ class BoundingRect(qt.QRect):
         if self.bottom() > rect.bottom(): self.setBottom(rect.bottom())
 
     def _sizeToLeft(self, point, rect):
+        """
+        """
         if point.x()>self.right():
             self.setMinWidth()
         else:
             self.setLeft(max(point.x(), rect.left()))
 
     def _sizeToRight(self, point, rect):
+        """
+        """
         if point.x()<self.left():
             self.setMinWidth()
         else:
             self.setRight(min(point.x(), rect.right()))
 
     def _sizeToTop(self, point, rect):
+        """
+        """
         if point.y()>self.bottom():
             self.setMinHeight()
         else:
             self.setTop(max(point.y(), rect.top()))
 
     def _sizeToBottom(self, point, rect):
+        """
+        """
         if point.y()<self.top():
             self.setMinHeight()
         else:
@@ -134,6 +139,8 @@ class BoundingRect(qt.QRect):
 
 
 class BoundingFixedScaleRect(BoundingRect):
+    """
+    """
     def __init__(self, x, y, w, h, scale, topRect =None, bottomRect =None):
         """ scale is w/h
         """
@@ -141,42 +148,60 @@ class BoundingFixedScaleRect(BoundingRect):
         self.scale = scale
 
     def setMinWidth(self):
+        """
+        """
         if self.width()<self.height():
             self.setWidth(1)
         else:
             self.setWidth(int(self.scale))
 
     def setMinHeight(self):
+        """
+        """
         if self.height()<self.width():
             self.setHeight(1)
         else:
             self.setHeight(int(1/self.scale))
 
     def setWidth(self, w):
+        """
+        """
         BoundingRect.setWidth(self, w)
         BoundingRect.setHeight(self, int(w/self.scale))
 
     def setHeight(self, h):
+        """
+        """
         BoundingRect.setHeight(self, h)
         BoundingRect.setWidth(self, int(h*self.scale))
 
     def setLeft(self, l):
+        """
+        """
         BoundingRect.setLeft(self, l)
         BoundingRect.setHeight(self, int(self.width()/self.scale))
 
     def setRight(self, r):
+        """
+        """
         BoundingRect.setRight(self, r)
         BoundingRect.setHeight(self, int(self.width()/self.scale))
 
     def setTop(self, t):
+        """
+        """
         BoundingRect.setTop(self, t)
         BoundingRect.setWidth(self, int(self.height()*self.scale))
 
     def setBottom(self, b):
+        """
+        """
         BoundingRect.setBottom(self, b)
         BoundingRect.setWidth(self, int(self.height()*self.scale))
 
     def _sizeToLeft(self, point, rect):
+        """
+        """
         if point.x()>self.right(): self.setMinWidth()
         else:
             self.setLeft(max(point.x(), rect.left()))
@@ -184,6 +209,8 @@ class BoundingFixedScaleRect(BoundingRect):
                 self.setBottom(rect.bottom())
         
     def _sizeToRight(self, point, rect):
+        """
+        """
         if point.x()<self.left():
             self.setMinWidth()
         else: 
@@ -192,6 +219,8 @@ class BoundingFixedScaleRect(BoundingRect):
                 self.setBottom(rect.bottom())
 
     def _sizeToTop(self, point, rect):
+        """
+        """
         if point.y()>self.bottom():
             self.setMinHeight()
         else: 
@@ -200,6 +229,8 @@ class BoundingFixedScaleRect(BoundingRect):
                 self.setRight(rect.right())
 
     def _sizeToBottom(self, point, rect):
+        """
+        """
         if point.y()<self.top():
             self.setMinHeight()
         else: 
@@ -209,8 +240,11 @@ class BoundingFixedScaleRect(BoundingRect):
 
 PC_RTTI_Title = 3500
 class PrintCanvasTitle(qtcanvas.QCanvasText):
+    """
+    """
     def __init__(self, text, master_item, position = "top"):
-
+        """
+        """
         self.masterItem = master_item
         self.position   = position
 
@@ -222,18 +256,26 @@ class PrintCanvasTitle(qtcanvas.QCanvasText):
             self.setTextFlags(qt.Qt.AlignHCenter | qt.Qt.AlignTop)
             
     def getMasterItem(self):
+        """
+        """
         return self.masterItem
 
     def updatePosition(self, rect):
+        """
+        """
         if self.position == "top":
             self.move(rect.center().x(), rect.top() )
         else:
             self.move(rect.center().x(), rect.bottom() )
 
     def getParameters(self):
+        """
+        """
         return (self.text(), self.font(), self.color())
 
     def setParameters(self, text = None, font = None, color = None):
+        """
+        """
         if text is not None:
             self.setText(text)
         if font is not None:
@@ -242,14 +284,22 @@ class PrintCanvasTitle(qtcanvas.QCanvasText):
             self.setColor(color)
 
     def printTo(self, painter):
+        """
+        """
         self.draw(painter)
 
     def rtti(self):
+        """
+        """
         return PC_RTTI_Title
 
 PC_RTTI_Colormap = 3502
 class PrintCanvasImageColormap(qtcanvas.QCanvasRectangle):
+    """
+    """
     def __init__(self, x, y, img, canvas, min, max):
+        """
+        """
         qtcanvas.QCanvasRectangle.__init__(self, x, y, img.width(), img.height(), canvas)
 
         self.setPen(qt.QPen(qt.Qt.black, 1))
@@ -268,22 +318,32 @@ class PrintCanvasImageColormap(qtcanvas.QCanvasRectangle):
         self.scale.setScale(self.autoScale.scaleDiv())
 
     def setActive(self):
+        """
+        """
         self.__pen = self.pen()
         self.setPen(qt.QPen(qt.QColor(qt.Qt.red), 1))
 
     def setNormal(self):
+        """
+        """
         self.setPen(self.__pen)
         self.__pen = None
 
     def getBoundingRect(self):
+        """
+        """
         rect = self.rect()
         return BoundingRect(rect.x(), rect.y(), rect.width(), rect.height())
 
     def setBoundingRect(self, rect):
+        """
+        """
         self.move(rect.x(), rect.y())
         self.setSize(rect.width(), rect.height())
         
     def draw(self, p):
+        """
+        """
         if self.fullRedrawFlag:
             scaleWidth = float(self.width())/float(self.image.width())
             scaleHeight = float(self.height())/float(self.image.height())
@@ -307,20 +367,30 @@ class PrintCanvasImageColormap(qtcanvas.QCanvasRectangle):
             qtcanvas.QCanvasRectangle.draw(self, p)
 
     def fullRedraw(self):
+        """
+        """
         self.fullRedrawFlag = 1
         self.update()
         return 1
 
     def printTo(self, painter):
+        """
+        """
         print "printTo: not implemented"
 
     def rtti(self):
+        """
+        """
         return PC_RTTI_Colormap
 
 
 PC_RTTI_Rect = 3501
 class PrintCanvasRectangle(qtcanvas.QCanvasRectangle):
+    """
+    """
     def __init__(self, x, y, w, h, canvas, keepscale =0):
+        """
+        """
 
         qtcanvas.QCanvasRectangle.__init__(self, x, y, w, h, canvas)
 
@@ -336,6 +406,8 @@ class PrintCanvasRectangle(qtcanvas.QCanvasRectangle):
         self.bottomItem = None
 
     def setTopTitle(self, text = None, font = None, color = None):
+        """
+        """
         if text is None:
             if self.topItem is not None:
                 self.topItem.hide()
@@ -349,6 +421,8 @@ class PrintCanvasRectangle(qtcanvas.QCanvasRectangle):
             self.topItem.update()
 
     def setBottomTitle(self, text = None, font = None, color = None):
+        """
+        """
         if text is None:
             if self.bottomItem is not None:
                 self.bottomItem.hide()
@@ -363,13 +437,19 @@ class PrintCanvasRectangle(qtcanvas.QCanvasRectangle):
             self.bottomItem.update()
 
     def setActive(self):
+        """
+        """
         self.__pen = self.pen()
         self.setPen(qt.QPen(qt.QColor(qt.Qt.red), 1))
 
     def setNormal(self):
+        """
+        """
         self.setPen(self.__pen)
 
     def getBoundingRect(self):
+        """
+        """
         rect = self.rect()
 
         if self.topItem is not None:
@@ -392,6 +472,8 @@ class PrintCanvasRectangle(qtcanvas.QCanvasRectangle):
                                 topRect, bottomRect)
 
     def setBoundingRect(self, rect):
+        """
+        """
         self.move(rect.x(), rect.y())
         if self.scale: 
             self.setSize(rect.width(), int(rect.width()/self.scale))
@@ -402,15 +484,23 @@ class PrintCanvasRectangle(qtcanvas.QCanvasRectangle):
             self.bottomItem.updatePosition(rect)
 
     def rtti(self):
+        """
+        """
         return PC_RTTI_Rect
 
     def fullRedraw(self):
+        """
+        """
         return 0
 
     def printTo(self, painter):
+        """
+        """
         painter.drawRect(self.rect())
 
     def editTitle(self, master):
+        """
+        """
         if self.topItem is not None:
             topText = self.topItem.getParameters()
         else:
@@ -431,6 +521,8 @@ class PrintCanvasRectangle(qtcanvas.QCanvasRectangle):
             self.update()
 
     def remove(self):
+        """
+        """
         if self.topItem is not None:
             self.topItem.setCanvas(None)
             self.topItem = None
@@ -441,7 +533,11 @@ class PrintCanvasRectangle(qtcanvas.QCanvasRectangle):
 
 
 class PrintCanvasImage(PrintCanvasRectangle):
+    """
+    """
     def __init__(self, x, y, img, canvas):
+        """
+        """
         PrintCanvasRectangle.__init__(self, x, y,         \
                                       img.width(), img.height(), canvas, 1)
         self.image = img
@@ -451,6 +547,8 @@ class PrintCanvasImage(PrintCanvasRectangle):
         self.fullRedrawFlag = 1
 
     def draw(self, p):
+        """
+        """
         if self.fullRedrawFlag:
             scale = float(self.width())/self.imageWidth
             wm = p.worldMatrix()
@@ -464,20 +562,28 @@ class PrintCanvasImage(PrintCanvasRectangle):
         PrintCanvasRectangle.draw(self, p)
 
     def setBoundingRect(self, rect):
+        """
+        """
         self.fullRedrawFlag = 0
         PrintCanvasRectangle.setBoundingRect(self, rect)
 
     def fullRedraw(self):
+        """
+        """
         self.fullRedrawFlag = 1
         self.update()
         return 1
 
     def printTo(self, painter):
+        """
+        """
         img = self.image.scaleWidth(self.width())
         painter.drawImage(self.x(), self.y(), img)
 
 
 class PrintCanvasPixmap(PrintCanvasImage):
+    """
+    """
     def printTo(self, painter):
         img = self.image.convertToImage()
         img = img.scaleWidth(self.width())
@@ -485,7 +591,11 @@ class PrintCanvasPixmap(PrintCanvasImage):
 
 
 class PrintCanvasView(qtcanvas.QCanvasView):
+    """
+    """
     def __init__(self, canvas, parent =None, name ="PrintCanvas", fl =0):
+        """
+        """
         qtcanvas.QCanvasView.__init__(self, canvas, parent, name, fl)
 
         self.setAcceptDrops(1)
@@ -564,10 +674,14 @@ class PrintCanvasView(qtcanvas.QCanvasView):
             self.setWorldMatrix(matrix)
 
     def resizeAllItems(self):
+        """
+        """
         for item in self.canvas().allItems():
             self.resizeItem(item)
 
     def resizeItem(self, item):
+        """
+        """
         if item.rtti() in [PC_RTTI_Rect, PC_RTTI_Colormap]:
             rect = item.getBoundingRect()
             rect.resizeIn(self.marginItem.rect())
@@ -575,6 +689,8 @@ class PrintCanvasView(qtcanvas.QCanvasView):
             item.fullRedraw()
 
     def getPrintItems(self):
+        """
+        """
         items = [ item for item in self.canvas().allItems() \
                 if item.rtti() in [PC_RTTI_Rect, PC_RTTI_Title] ]
         def itemZsort(item1, item2):
@@ -583,6 +699,8 @@ class PrintCanvasView(qtcanvas.QCanvasView):
         return items
 
     def removeActiveItem(self):
+        """
+        """
         if self.__active_item is not None:
             # print self.canvas().allItems()
             self.__active_item.remove()
@@ -591,6 +709,8 @@ class PrintCanvasView(qtcanvas.QCanvasView):
             self.canvas().update()
             
     def contentsMouseDoubleClickEvent(self, e):
+        """
+        """
         point = self.inverseWorldMatrix().map(e.pos())
         ilist = self.canvas().collisions(point)
 
@@ -604,6 +724,8 @@ class PrintCanvasView(qtcanvas.QCanvasView):
                 self.canvas().update()
 
     def contentsMousePressEvent(self, e):
+        """
+        """
         point = self.inverseWorldMatrix().map(e.pos())
         ilist = self.canvas().collisions(point)
 
@@ -640,6 +762,8 @@ class PrintCanvasView(qtcanvas.QCanvasView):
             self.setCursor(qt.QCursor(qt.Qt.SizeVerCursor))
 
     def __isMovingScale(self, rect, point):
+        """
+        """
         scaling = 0
 
         size = max(rect.width(), rect.height())
@@ -661,6 +785,8 @@ class PrintCanvasView(qtcanvas.QCanvasView):
         return scaling
 
     def contentsMouseMoveEvent(self, e):
+        """
+        """
         if self.__moving_start is None: return
         point = self.inverseWorldMatrix().map(e.pos())
         rect = self.__active_item.getBoundingRect()
@@ -679,6 +805,8 @@ class PrintCanvasView(qtcanvas.QCanvasView):
         self.__moving_start = point
 
     def contentsMouseReleaseEvent(self, e):
+        """
+        """
         if self.__active_item is not None:
             if self.__active_item.fullRedraw(): self.canvas().update()
         self.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
@@ -686,12 +814,16 @@ class PrintCanvasView(qtcanvas.QCanvasView):
         self.__moving_scale = 0
 
     def dragEnterEvent(self, de):
+        """
+        """
         source = de.source()
         if source and hasattr(source, "GetImage"):
             de.accept(1)
         else:    de.accept(0)
 
     def dropEvent(self, de):
+        """
+        """
         source = de.source()
         try:
             image = source.GetImage()
@@ -820,12 +952,14 @@ class QubPrintPreview(qt.QDialog):
 
     def setPrinter(self, printer):
         """
+        define a printer 
         """
         self.printer = printer
         self.__updatePrinter()
 
     def setOutputFileName(self, name):
         """
+        define the name of the output file (default is ???)
         """
         if self.printer != None:
             self.printer.setOutputFileName(name)
@@ -834,6 +968,7 @@ class QubPrintPreview(qt.QDialog):
 
     def setOutputToFile(self, value):
         """
+        define if the output is in a file (default True)
         """
         if self.printer != None:
             self.printer.setOutputToFile(value)
@@ -892,12 +1027,14 @@ class QubPrintPreview(qt.QDialog):
 
     def addImage(self, image):
         """
+        add an image item to the print preview canvas
         """
         (x,y) = self.canvasView.getMargin()
         self.__addItem(PrintCanvasImage(x+1, y+1, image, self.canvas))
 
     def addPixmap(self, pixmap):
         """
+        add a pixamap to the print preview canvas
         """
         (x,y) = self.canvasView.getMargin()
         self.__addItem(PrintCanvasPixmap(x+1, y+1, pixmap, self.canvas))
@@ -932,6 +1069,7 @@ class QubPrintPreview(qt.QDialog):
 
     def __print(self):
         """
+        send all items of the canvas to the printer (file or device)
         """
         prt = qt.QPainter()
         prt.begin(self.printer)
