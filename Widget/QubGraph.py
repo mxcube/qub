@@ -404,10 +404,11 @@ class QubGraph(qwt.QwtPlot):
         <LEGEND> To be called on curve creation to catch
         mouse event for legend menu
         """
-        item = self.legend().findItem(key)
-        item.setFocusPolicy(qt.QWidget.ClickFocus)
-        if self.__useLegendMenu:
-            item.installEventFilter(self)
+        if self.legendEnabled(key):
+            item = self.legend().findItem(key)
+            item.setFocusPolicy(qt.QWidget.ClickFocus)
+            if self.__useLegendMenu:
+                item.installEventFilter(self)
 
     def __legendSetActive(self):
         """
