@@ -22,7 +22,7 @@ class QubImageAction(QubAction):
         qubImage :  action will act on a QubImage object. It can be set in
                     the constructor method or using the "viewConnect" method
                     of the class 
-        palce .. :  where to put in the view widget, the selection widget
+        place .. :  where to put in the view widget, the selection widget
                     of the action ("toolbar", "statusbar", None)
         show ... :  If in view toolbar, tells to put it in the toolbar
                     itself or in the context menu
@@ -146,7 +146,7 @@ class QubToggleImageAction(QubImageAction):
         qubImage :  action will act on a QubImage object. It can be set in
                     the constructor method or using the "viewConnect" method
                     of the class 
-        palce .. :  where to put in the view widget, the selection widget
+        place .. :  where to put in the view widget, the selection widget
                     of the action ("toolbar", "statusbar", None)
         show ... :  If in view toolbar, tells to put it in the toolbar
                     itself or in the context menu
@@ -255,7 +255,7 @@ class QubRectangleSelection(QubToggleImageAction):
         qubImage :  action will act on a QubImage object. It can be set in
                     the constructor method or using the "viewConnect" method
                     of the class 
-        palce .. :  where to put in the view widget, the selection widget
+        place .. :  where to put in the view widget, the selection widget
                     of the action ("toolbar", "statusbar", None)
         show ... :  If in view toolbar, tells to put it in the toolbar
                     itself or in the context menu
@@ -374,7 +374,7 @@ class QubLineSelection(QubToggleImageAction):
         qubImage :  action will act on a QubImage object. It can be set in
                     the constructor method or using the "viewConnect" method
                     of the class 
-        palce .. :  where to put in the view widget, the selection widget
+        place .. :  where to put in the view widget, the selection widget
                     of the action ("toolbar", "statusbar", None)
         show ... :  If in view toolbar, tells to put it in the toolbar
                     itself or in the context menu
