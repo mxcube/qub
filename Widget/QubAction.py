@@ -162,7 +162,7 @@ class QubAction(qt.QObject):
             del self._widget
             self._widget = None        
                 
-    def viewConnect(self):
+    def viewConnect(self, parent):
         """
         Slot to connect to "ViewConnect" signal of the Qub Display widgets.
         Its main usage is to store the Qub display widget reference and to
