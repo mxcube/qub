@@ -46,10 +46,10 @@ class QubColormapDialog(qt.QDialog):
         """
         default values
         """
-        self.dataMin   = -10
-        self.dataMax   = 10
-        self.minValue  = 0
-        self.maxValue  = 1
+        self.dataMin   = 0
+        self.dataMax   = 199
+        self.minValue  = 50
+        self.maxValue  = 150
 
         self.autoscale   = False
         self.autoscale90 = False
@@ -154,8 +154,32 @@ class QubColormapDialog(qt.QDialog):
         """
         graph
         """
-        self.colormapGraph  = QubGraph()
-        self.colormapGraph.setText("GRAPH")
+        self.colormapGraph  = QubGraph(self)
+        
+        """
+        remove Y axis label
+        set X axis label
+        remove curves legends
+        """
+        self.colormapGraph.enableYLeftAxis(0)
+        self.colormapGraph.setXLabel("Data Values")
+        self.colormapGraph.useLegend(False)
+
+        """
+        set the curve _/-
+        """
+        self.colormapGraph.setMarkedCurve( "ConstrainedCurve",
+                               [0, 10, 20, 30],
+                               [-10, -10, 10, 10 ]
+                             )
+
+        self.colormapGraph.setMinimumSize(qt.QSize(250,200))
+
+        self.connect (self.colormapGraph , qt.PYSIGNAL("PointMoved"),
+                      self._graphMove)
+        self.connect (self.colormapGraph , qt.PYSIGNAL("PointReleased"),
+                      self._graphRelease)
+
         hlayout4.addWidget(self.colormapGraph)
         
         """
@@ -187,11 +211,16 @@ class QubColormapDialog(qt.QDialog):
         """
         full scale
         """
-        self.fullscaleButton = qt.QPushButton("90%", self)
+        self.fullscaleButton = qt.QPushButton("Full", self)
         self.connect(self.fullscaleButton, qt.SIGNAL("clicked()"),
                      self.fullscaleChanged)
         hlayout5.addWidget(self.fullscaleButton)
 
+        """
+        update dialog with default values
+        """
+        self._update()
+        
         """
         colormap window can not be resized
         """
@@ -206,8 +235,15 @@ class QubColormapDialog(qt.QDialog):
             - update the colormap dialog
             - send the "ColormapChanged" signal
         """
+        self._setColormap(colormap)
+        self._update()
+        self._sendColormap()
+
+    def _setColormap(self, colormap):
+        """
+        set colormap parameter
+        """
         self.colormap = colormap
-        self._updateColormap()
 
     def _updateColormap(self):
         """
@@ -224,15 +260,6 @@ class QubColormapDialog(qt.QDialog):
         update the selection in the combo
         """
         self.colormapCombo.setCurrentItem(self.colormap)
-
-    def setColormap(self, colormap):
-        """
-        set new colormap
-            - update the colormap dialog
-            - send the "ColormapChanged" signal
-        """
-        self.colormap = colormap
-        self._updateColormap()
 
     def _colormapPixmap(self):
         """
@@ -261,49 +288,245 @@ class QubColormapDialog(qt.QDialog):
             - update the colormap dialog
             - send the "ColormapChanged" signal
         """
-        print "minTextChanged"
+        val = float(str(self.minText.text()))
         
+        self._setText(val, self.maxValue)
+        self._update()
+        self._sendColormap()
+
     def maxTextChanged(self):
         """
         max value changed
             - update the colormap dialog
             - send the "ColormaChanged" signal
         """
-        print "maxTextChanged"
+        val = float(str(self.maxText.text()))
         
+        self._setText(self.minValue, val)
+        self._update()
+        self._sendColormap()
+
+    def _setText(self, colorMin, colorMax):
+        """
+        check and set min/max color parameters
+        """
+        val = colorMin
+        if val > self.dataMax:
+            val = self.dataMax
+        if val < self.dataMin:
+            val = self.dataMin
+        
+        self.minValue = val
+        
+        val = colorMax
+        if val > self.dataMax:
+            val = self.dataMax
+        if val < self.dataMin:
+            val = self.dataMin
+        
+        self.maxValue = val
+        
+    
+    def _updateText(self):
+        """
+        update text widget for min and max values using self.minValue
+        and self.maxValue
+        """
+        self.minText.setText("%g"%self.minValue)
+        self.maxText.setText("%g"%self.maxValue)
 
     #############################################
     ### SCALES
     #############################################
-    def autoscaleChanged(self):
+    def autoscaleChanged(self, val):
         """
         autoscale value changed
             - update the colormap dialog
             - send the "ColormaChanged" signal
         """
-        print "autoscaleChanged"
-        
+        self._setAutoscale(val) 
+        self._update()
+        self._sendColormap()
+    
+    def _setAutoscale(self, autoscale):
+        self.autoscale = autoscale
+        if self.autoscale:
+            self.minValue = self.dataMin
+            self.maxValue = self.dataMax
+            
     def _updateAutoscale(self):
         """
         update colormap dialog according to self.autoscale value
         """
-        pass
+        if self.autoscale:
+            self.maxText.setEnabled(0)
+            self.minText.setEnabled(0)
+            self.colormapGraph.setEnabled(0)
+            self.scale90Button.setEnabled(0)
+            self.fullscaleButton.setEnabled(0)
+        else:
+            self.maxText.setEnabled(1)
+            self.minText.setEnabled(1)
+            self.colormapGraph.setEnabled(1)
+            self.scale90Button.setEnabled(1)
+            self.fullscaleButton.setEnabled(1)
         
     def scale90Changed(self):
         """
         set min value to be the min value of the data and max value to be
         the value corresponding to 90% of the different value of the data
         """
-        print "scale90Changed"
+        self.minValue = self.dataMin
+        self.maxValue = 0.9 * self.dataMax       
         
+        self._update()
+
+        self._sendColormap()
+
     def fullscaleChanged(self):
         """
         set min/max value of the colormap to the min/max value of the data
         """
-        print "fullscaleChanged"
+        self.minValue = self.dataMin
+        self.maxValue = self.dataMax
         
+        self._update()
+             
+        self._sendColormap()
         
+
+    #############################################
+    ### GRAPH
+    #############################################
+    def _graphMove(self, *args):
+        """
+        user is moving a point given by args[0] to the position given
+        by(args[1],args[2])
+        """
+        (diam , x ,y) = (args[0], args[1], args[2])
+
+        if diam == 2:
+            self.minValue = x
+        if diam == 3:
+            self.maxValue = x
+            
+        self._update()
+
+    
+    def _graphRelease(self, *args):
+        """
+        user is release mouse on point given by (args[1],args[2]) for
+        the point given by args[0]
+        This will be the new min or max value for the colormap.
+        Send the signal "ColormapChanged"
+        """
+        (diam , x ,y) = (args[0], args[1], args[2])
+
+        if diam == 2:
+            self.minValue = x
+        if diam == 3:
+            self.maxValue = x
+            
+        self._update()
+
+        self._sendColormap()
         
+    def _updateGraph(self):
+        """
+        update graph with object values
+        """
+        
+        """
+        calculate visible part of the graph outside data values (margin)
+        """
+        marge = (abs(self.dataMax) + abs(self.dataMin)) / 6.0
+        minmd = self.dataMin - marge
+        maxpd = self.dataMax + marge
+        self.colormapGraph.setZoom(minmd-marge/2, maxpd, -11.5, 11.5)
+
+        """
+        tells where points can move:
+            first and last : do not move
+            second and third: cannot move in Y dir.,can move
+                              in X dir. between datamin and datamax
+        """ 
+        self.colormapGraph.markedCurves["ConstrainedCurve"].defConstraints(
+            [(minmd, minmd,   -10, -10 ),
+             (self.dataMin, self.dataMax, -10, -10 ),
+             (self.dataMin, self.dataMax,  10,  10 ),
+             (maxpd, maxpd,    10,  10 )])
+             
+        """
+        move points to their values
+        """
+        self.colormapGraph.markedCurves["ConstrainedCurve"].deplace(
+                                                        0, minmd, -10)
+        self.colormapGraph.markedCurves["ConstrainedCurve"].deplace(
+                                                        1, self.minValue, -10)
+        self.colormapGraph.markedCurves["ConstrainedCurve"].deplace(
+                                                        2, self.maxValue, 10)
+        self.colormapGraph.markedCurves["ConstrainedCurve"].deplace(
+                                                        3, maxpd, 10)
+     
+
+    #############################################
+    ### GENERAL
+    #############################################
+    def setParam(colormap=None, colorMin=None, colorMax=None,
+                dataMin=None, dataMax=None, autoscale=None):
+        """
+        set parameters which are not none
+        update the colormap dialog
+        send "COlormapChanged" signal
+        """
+        update = 0
+        
+        if colormap is not None and colormap in range(len(self.colormapList)):
+            self._setColormap(colormap)
+            update = 1
+            
+        if colorMin is not None:
+            self._setText(colorMin, self.maxValue)
+            update = 1
+            
+        if colorMax is not None:
+            self._setText(self.minValue, colorMax)
+            update = 1
+            
+        if dataMin is not None:
+            self.dataMin = dataMin
+            update = 1
+            
+        if dataMax is not None:
+            self.dataMax = dataMax
+            update = 1
+            
+        if autoscale is not None:
+            self._setAutoscale(autoscale)
+            update = 1
+            
+        if update:
+            self._update()
+            
+    def _update(self):
+        """
+        update all colormap dialog widget with default values
+        """
+        self._updateColormap()
+        self._updateText()
+        self._updateAutoscale()
+        self._updateGraph()
+        
+    def _sendColormap(self):
+        try:
+            if self.parent is not None:                
+                self.parent.emit(qt.PYSIGNAL("ColormapChanged"),
+                        (self.colormap, self.autoscale,
+                         self.minValue, self.maxValue))
+        except:
+            sys.excepthook(sys.exc_info()[0],
+                           sys.exc_info()[1],
+                           sys.exc_info()[2])
         
         
         
