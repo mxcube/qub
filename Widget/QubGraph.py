@@ -1024,12 +1024,16 @@ def test():
     # move point 2 to position 5,5
     wid.markedCurves["ConstrainedCurve"].deplace( 2, 5, 4)
 
+    # do you want a legend for your curve ?
+    wid.useLegend(False)
+
+    # define the view
     wid.setZoom(-0.5, 10.5, -0.5, 4.5)
+
     wid.show()
 
     app.setMainWidget(wid)
     app.exec_loop()
-
 
 
 if __name__=="__main__":
