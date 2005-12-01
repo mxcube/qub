@@ -378,9 +378,10 @@ class QubImage(qtcanvas.QCanvasView):
             if mode == "Fit2Screen" or mode == "FullScreen":
                 self.setHScrollBarMode(self.AlwaysOff)
                 self.setVScrollBarMode(self.AlwaysOff)
-                (zoomx, zoomy) = self.__calcZoom(self.viewport().width(),
-                                                 self.viewport().height())
-                self.setZoom(zoomx, zoomy)
+                if self.dataPixmap is not None:
+                    (zoomx, zoomy) = self.__calcZoom(self.viewport().width(),
+                                                     self.viewport().height())
+                    self.setZoom(zoomx, zoomy)
                 
 
 #########################################################################
