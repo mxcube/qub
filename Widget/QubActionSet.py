@@ -55,7 +55,7 @@ class QubPrintPreviewAction(QubAction):
             self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
                                  self.addPixmapToPP)
             qt.QToolTip.add(self._widget, "add this window to print preview")
-        
+            
         return self._widget
         
     def addMenuWidget(self, menu):
@@ -63,6 +63,7 @@ class QubPrintPreviewAction(QubAction):
         Create context menu item pushbutton
         """
         iconSet = qt.QIconSet(loadIcon("addpreview.png"))
+        self._menu = menu
         self._item = menu.insertItem(iconSet, qt.QString("Print preview"),
                                       self.addPixmapToPP)
         
@@ -179,6 +180,7 @@ class QubColormapAction(QubAction):
         """
         Create context menu item pushbutton
         """
+        self._menu = menu
         iconSet = qt.QIconSet(loadIcon("colormap.png"))
         self._item = menu.insertItem(iconSet, qt.QString("Colormap"),
                                       self.showColormapDialog)
