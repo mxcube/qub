@@ -119,6 +119,7 @@ class QubAction(qt.QObject):
         Deletes action widget put in "group" dockarea of the "toolbar"
         """
         if self._widget is not None:
+            self._widget.close(1)
             del self._widget
             self._widget = None
         
@@ -159,6 +160,7 @@ class QubAction(qt.QObject):
         Deletes action widget put in "statusbar"
         """
         if self._widget is not None:
+            self._widget.close(1)
             del self._widget
             self._widget = None        
                 
