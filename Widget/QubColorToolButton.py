@@ -185,8 +185,6 @@ class ColorToolMenu(qt.QPopupMenu):
 ################################################################################
 ###################    TEST -- QubColorToolButton -- TEST   ####################
 ################################################################################
-import sys
-
 class QubMain(qt.QMainWindow):
     """
     Test class
@@ -206,6 +204,8 @@ class QubMain(qt.QMainWindow):
         
 ##  MAIN   
 if  __name__ == '__main__':
+    import sys
+    
     app = qt.QApplication(sys.argv)
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
