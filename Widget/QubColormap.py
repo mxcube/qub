@@ -3,10 +3,11 @@ import sys
 import os
 import Numeric
 
+import spslut
+
 from Qub.Icons.QubIcons import loadIcon
 from Qub.Widget.QubImage import QubImage
 from Qub.Widget.QubGraph import QubGraph
-from Qub.Widget.QubAction import QubAction
 
         
 ################################################################################
@@ -101,8 +102,7 @@ class QubColormapDialog(qt.QDialog):
         """
         min value label
         """
-        self.minLabel  = qt.QLabel(self)
-        self.minLabel.setText("Minimum")
+        self.minLabel  = qt.QLabel("Minimum", self)
         hlayout2.addWidget(self.minLabel)
         
         """
@@ -128,8 +128,7 @@ class QubColormapDialog(qt.QDialog):
         """
         max value label
         """
-        self.maxLabel  = qt.QLabel(self)
-        self.maxLabel.setText("Maximum")
+        self.maxLabel  = qt.QLabel("Maximum", self)
         hlayout3.addWidget(self.maxLabel)
         
         """
@@ -358,6 +357,7 @@ class QubColormapDialog(qt.QDialog):
         """
         update colormap dialog according to self.autoscale value
         """
+        self.autoscaleToggle.setOn(self.autoscale)
         if self.autoscale:
             self.maxText.setEnabled(0)
             self.minText.setEnabled(0)
@@ -472,8 +472,8 @@ class QubColormapDialog(qt.QDialog):
     #############################################
     ### GENERAL
     #############################################
-    def setParam(colormap=None, colorMin=None, colorMax=None,
-                dataMin=None, dataMax=None, autoscale=None):
+    def setParam(self, colormap=None, colorMin=None, colorMax=None,
+                 dataMin=None, dataMax=None, autoscale=None):
         """
         set parameters which are not none
         update the colormap dialog
@@ -527,306 +527,11 @@ class QubColormapDialog(qt.QDialog):
             sys.excepthook(sys.exc_info()[0],
                            sys.exc_info()[1],
                            sys.exc_info()[2])
-        
-        
-        
-#    def _update(self):
-#        """
-#        When any values change in the colormap Dialog, this method
-#        update the its visual representation.
-#        Should not be used only for values concerning the color graph
-#        """
-#        self.marge = (abs(self.dataMax) + abs(self.dataMin)) / 6.0
-#        self.minmd = self.dataMin - self.marge
-#        self.maxpd = self.dataMax + self.marge
-#        self.c.setZoom(self.minmd, self.maxpd, -11.5, 11.5)
-#
-#        self.c.markedCurves["ConstrainedCurve"].defConstraints(
-#            [(self.minmd,    self.minmd,   -10, -10 ),
-#             (self.dataMin,  self.dataMax, -10, -10 ),
-#             (self.dataMin,  self.dataMax,  10,  10 ),
-#             (self.maxpd,    self.maxpd,    10,  10 )])
-#
-#        self.c.markedCurves["ConstrainedCurve"].deplace(0, self.minmd, -10)
-#        self.c.markedCurves["ConstrainedCurve"].deplace(3, self.maxpd,  10)
-#
-#    def chval(self, *args):
-#        (diam , x ,y) = (args[0], args[1], args[2])
-#
-#        if diam == 2:
-#            self.setDisplayedMinValue(x)
-#        if diam == 3:
-#            self.setDisplayedMaxValue(x)
-#
-#    def chmap(self, *args):
-#        (diam , x ,y) = (args[0], args[1], args[2])
-#
-#        if diam == 2:
-#            self.setMinValue(x)
-#        if diam == 3:
-#            self.setMaxValue(x)
-#        
-#    """
-#    Colormap
-#    """
-#    def setColormap(self, colormap):
-#        self.colormap = colormap
-#        self.combo.setCurrentItem(colormap)
-#    
-#    def colormapChange(self, colormap):
-#        self.colormap = colormap
-#        self.sendColormap()
-#
-#    """
-#    Autoscale
-#    """
-#    def autoscaleChange(self, val):
-#        self.autoscale = val
-#        self.setAutoscale(val)        
-#        self.sendColormap()
-#
-#    def setAutoscale(self, val):
-#        if val:
-#            self.autoScale90Button.setOn(False)
-#            self.setMinValue(self.dataMin)
-#            self.setMaxValue(self.dataMax)
-#
-#            self.maxText.setEnabled(0)
-#            self.minText.setEnabled(0)
-#            self.c.setEnabled(0)
-#        else:
-#            self.minText.setEnabled(1)
-#            self.maxText.setEnabled(1)
-#            self.c.setEnabled(1)
-#    """
-#    set rangeValues to dataMin ; dataMax-10%
-#    """
-#    def autoscale90Change(self, val):
-#        self.autoscale90 = val
-#        self.setAutoscale90(val)
-#        self.sendColormap()
-#
-#    def setAutoscale90(self, val):
-#        if val:
-#            self.autoScaleButton.setOn(False)
-#            self.setMinValue(self.dataMin)
-#            self.setMaxValue(self.dataMax - abs(self.dataMax/10))
-#
-#            self.minText.setEnabled(0)
-#            self.maxText.setEnabled(0)
-#            self.c.setEnabled(0)
-#        else:
-#            self.minText.setEnabled(1)
-#            self.maxText.setEnabled(1)
-#            self.c.setEnabled(1)
-#
-#
-#
-#    # MINIMUM
-#    """
-#    change min value and update colormap
-#    """
-#    def setMinValue(self, val):
-#        v = float(str(val))
-#        self.minValue = v
-#        self.minText.setText("%g"%v)
-#        self.c.markedCurves["ConstrainedCurve"].deplace(1, v, -10)
-#        self.sendColormap()
-#
-#    """
-#    min value changed by text
-#    """
-#    def minTextChanged(self):
-#        val = float(str(self.minText.text()))
-#        self.setMinValue(val)
-#        
-#    """
-#    change only the displayed min value
-#    """
-#    def setDisplayedMinValue(self, val):
-#        self.minValue = val
-#        self.minText.setText("%g"%val)
-#
-#    # MAXIMUM
-#    """
-#    change max value and update colormap
-#    """
-#    def setMaxValue(self, val):
-#        v = float(str(val))
-#        self.maxValue = v
-#        self.maxText.setText("%g"%v)
-#        self.c.markedCurves["ConstrainedCurve"].deplace(2, v, 10)
-#        self.sendColormap()
-#
-#    """
-#    max value changed by text
-#    """
-#    def maxTextChanged(self):
-#        val = float(str(self.maxText.text()))
-#        self.setMaxValue(val)
-#            
-#    """
-#    change only the displayed max value
-#    """
-#    def setDisplayedMaxValue(self, val):
-#        self.maxValue = val
-#        self.maxText.setText("%g"%val)
-#
-#    # DATA values
-#    """
-#    set min/max value of data source
-#    """
-#    def setDataMinMax(self, minVal, maxVal):
-#        if minVal is not None:
-#            vmin = float(str(minVal))
-#            self.dataMin = vmin
-#        if maxVal is not None:
-#            vmax = float(str(maxVal))
-#            self.dataMax = vmax
-#
-#        # are current values in the good range ?
-#        self._update()
-#
-#    """
-#    send 'ColormapChanged' signal
-#    """
-#    def sendColormap(self):
-#        try:
-#            if self.parent is not None:                
-#                self.parent.emit(qt.PYSIGNAL("ColormapChanged"),
-#                        (self.colormap, self.autoscale,
-#                         self.minValue, self.maxValue))
-#        except:
-#            sys.excepthook(sys.exc_info()[0],
-#                           sys.exc_info()[1],
-#                           sys.exc_info()[2])
 
-
-
-###############################################################################
-####################            QubColormapAction          ####################
-###############################################################################
-class QubColormapAction(QubAction):
-    """
-    This action will allow in a display widget to open the QubColormap dialog
-    """
-    def __init__(self, *args, **keys):
-        """
-        Constructor method
-        name ... :  string name of the action.
-        place .. :  where to put in the view widget, the selection widget
-                    of the action ("toolbar", "statusbar", None).
-        show ... :  If in view toolbar, tells to put it in the toolbar
-                    itself or in the context menu.
-        group .. :  actions may grouped. Tells the name of the group the
-                    action belongs to. If not present, a "misc." group is
-                    automatically created and the action is added to it.
-        index .. :  Position of the selection widget of the action in its
-                    group.
-        """
-        QubAction.__init__(self, *args, **keys)
-        
-        self._item = None
-        self._colormapDialog = None
-        
-    def addToolWidget(self, parent):
-        """
-        create colormap pushbutton in the toolbar of the view
-        create the colormap dialog if not already done
-        """
-        
-        """
-        create colormap dialog
-        """
-        if self._colormapDialog is None:
-            self._colormapDialog = QubColormapDialog(parent)
-        
-        """
-        create widget for the view toolbar
-        """   
-        if self._widget is None:
-            self._widget = qt.QToolButton(parent, "colormap")
-            self._widget.setAutoRaise(True)
-            self._widget.setIconSet(qt.QIconSet(loadIcon("colormap.png")))
-            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
-                            self.showColormapDialog)
-            qt.QToolTip.add(self._widget, "Open colormap selector")
-
-        return self._widget
-        
-    def addMenuWidget(self, menu):
-        """
-        Create context menu item pushbutton
-        """
-        iconSet = qt.QIconSet(loadIcon("colormap.png"))
-        self._item = menu.insertItem(iconSet, qt.QString("Colormap"),
-                                      self.showColormapDialog)
-        
-    def addStatusWidget(self, parent):
-        """
-        create print preview pushbutton in the toolbar of the view
-        """
-        if self._widget is None:
-            self._widget = qt.QToolButton(parent, "colormap")
-            self._widget.setAutoRaise(True)
-            self._widget.setIconSet(qt.QIconSet(loadIcon("colormap.png")))
-            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
-                                 self.showColormapDialog)
-            qt.QToolTip.add(self._widget, "Open colormap selector")
-
-        return self._widget
-        
-    def showColormapDialog(self):
-        self._colormapDialog.show()
-         
-    def setParam(self, param):
-        """
-        param[0] = colormap  0 = Greyscale
-                             1 = Reverse Grey
-                             2 = Temperature
-                             3 = Red
-                             4 = Green
-                             5 = Blue
-        param[1] = autoscale
-        param[2] = min data value
-        param[3] = max data value
-        param[4] = min colormap value
-        param[5] = max colormap value
-        """
-        parlen = len(param)
-                
-        if parlen >= 1 and param[0] is not None:
-            self.colormapDialog.setColormap(param[0])
-        
-        if parlen >= 2 and param[1] is not None:
-            self.colormapDialog.setAutoscale(param[1])
-            
-        if parlen >= 3:
-            minVal = param[2]
-        else:
-            minVal = None            
-        if parlen >= 4:
-            maxVal = param[3]
-        else:
-            maxVal = None
-        self.colormapDialog.setDataMinMax(minVal, maxVal)
-            
-        if parlen >= 5 and param[4] is not None:
-            self.colormapDialog.setMinValue(param[4])
-            
-        if parlen >= 6 and param[5] is not None:
-            self.colormapDialog.setMaxValue(param[5])
-
-        self.colormapDialog._update()
-        
                       
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
-from Qub.Widget.QubImageView import QubImageView
-import EdfFile
-import spslut
-
 def Edf2Pixmap(file):
     edf = EdfFile.EdfFile(file)
     data = edf.GetData(0)
@@ -848,33 +553,137 @@ def Edf2Pixmap(file):
 class QubMain(qt.QMainWindow):
     def __init__(self, parent=None, file=None):
         qt.QMainWindow.__init__(self, parent)
-        
-        #pixmap = qt.QPixmap(file)
-        pixmap = Edf2Pixmap(file)
-        
-        actions = []
-        action = QubColormapAction(show=1, group="admin")
-        actions.append(action)
-        
+                
         container = qt.QWidget(self)
         
-        hlayout = qt.QVBoxLayout(container)
+        hlayout = qt.QHBoxLayout(container)
     
-        qubImage = QubImageView(container, "Test QubImageAction's",
-                                       pixmap, actions)
-                                       
-        hlayout.addWidget(qubImage)
-    
+        """
+        LABEL
+        """
+        vlayout1 = qt.QVBoxLayout(hlayout)
+
+        colormapLabel = qt.QLabel("Colormap", container)
+        vlayout1.addWidget(colormapLabel)
+
+        colorminLabel = qt.QLabel("Color Min.", container)
+        vlayout1.addWidget(colorminLabel)
+
+        colormaxLabel = qt.QLabel("Color Max.", container)
+        vlayout1.addWidget(colormaxLabel)
+
+        dataminLabel = qt.QLabel("Data Min.", container)
+        vlayout1.addWidget(dataminLabel)
+
+        datamaxLabel = qt.QLabel("Data Max.", container)
+        vlayout1.addWidget(datamaxLabel)
+
+        autoscaleLabel = qt.QLabel("Autoscale", container)
+        vlayout1.addWidget(autoscaleLabel)
+        
+        """
+        TEXT
+        """
+        vlayout2 = qt.QVBoxLayout(hlayout)
+        
+        self.colormapText  = qt.QLineEdit(container)
+        self.connect(self.colormapText, qt.SIGNAL("returnPressed()"),
+                     self.colormapChanged)
+        vlayout2.addWidget(self.colormapText)
+        
+        self.colorminText  = qt.QLineEdit(container)
+        self.connect(self.colorminText, qt.SIGNAL("returnPressed()"),
+                     self.colorminChanged)
+        vlayout2.addWidget(self.colorminText)
+        
+        self.colormaxText  = qt.QLineEdit(container)
+        self.connect(self.colormaxText, qt.SIGNAL("returnPressed()"),
+                     self.colormaxChanged)
+        vlayout2.addWidget(self.colormaxText)
+        
+        self.dataminText  = qt.QLineEdit(container)
+        self.connect(self.dataminText, qt.SIGNAL("returnPressed()"),
+                     self.dataminChanged)
+        vlayout2.addWidget(self.dataminText)
+        
+        self.datamaxText  = qt.QLineEdit(container)
+        self.connect(self.datamaxText, qt.SIGNAL("returnPressed()"),
+                     self.datamaxChanged)
+        vlayout2.addWidget(self.datamaxText)
+        
+        self.autoscaleText  = qt.QLineEdit(container)
+        self.connect(self.autoscaleText, qt.SIGNAL("returnPressed()"),
+                     self.autoscaleChanged)
+        vlayout2.addWidget(self.autoscaleText)
+        
+        """
+        BUTTON
+        """
+        hlayout.addSpacing(10)                
+        vlayout3 = qt.QVBoxLayout(hlayout)
+        
+        button = qt.QPushButton("Set all parameters", container)
+        self.connect(button, qt.SIGNAL("clicked()"), self.allChanged)
+        vlayout3.addWidget(button)
+        
+        """
+        create an show Colormap Dialog
+        """
+        
+        self.colormapDialog = QubColormapDialog(container)
+        self.colormapDialog.show()
         self.setCentralWidget(container)
-               
+
+    def colormapChanged(self):              
+        val = int(str(self.colormapText.text()))
+        print val       
+        self.colormapDialog.setParam(colormap=val)
+        
+    def colorminChanged(self):
+        val = float(str(self.colorminText.text()))        
+        self.colormapDialog.setParam(colorMin=val)
+        
+    def colormaxChanged(self):
+        val = float(str(self.colormaxText.text()))        
+        self.colormapDialog.setParam(colorMax=val)
+        
+    def dataminChanged(self):
+        val = float(str(self.dataminText.text()))        
+        self.colormapDialog.setParam(dataMin=val)
+        
+    def datamaxChanged(self):
+        val = float(str(self.datamaxText.text()))        
+        self.colormapDialog.setParam(dataMax=val)
+        
+    def autoscaleChanged(self):
+        val = float(str(self.autoscaleText.text()))        
+        self.colormapDialog.setParam(autoscale=val)
+        
+    def allChanged(self):
+        _colormap  = int(str(self.colormapText.text()))        
+        _colorMin  = float(str(self.colorminText.text()))        
+        _colorMax  = float(str(self.colormaxText.text()))        
+        _dataMin   = float(str(self.dataminText.text()))        
+        _dataMax   = float(str(self.datamaxText.text()))        
+        _autoscale = float(str(self.autoscaleText.text()))        
+        self.colormapDialog.setParam(colormap=_colormap,
+                                     colorMin=_colorMin,
+                                     colorMax=_colorMax,
+                                     dataMin=_dataMin,
+                                     dataMax=_dataMax,
+                                     autoscale=_autoscale)
+
 ##  MAIN   
 if  __name__ == '__main__':
+    import EdfFile
+    from Qub.Widget.QubImageView import QubImageView
+    
     app = qt.QApplication(sys.argv)
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
                     app, qt.SLOT("quit()"))
 
-    window = QubMain(file=sys.argv[1])
+    window = QubMain()
     
     window.resize(500,300)
     app.setMainWidget(window)
