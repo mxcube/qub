@@ -1,7 +1,6 @@
 import qt
 import sys
 
-
 ################################################################################
 ####################                 QubView                ####################
 ################################################################################
@@ -425,8 +424,6 @@ class QubViewStatusbar(qt.QWidget):
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
-from Qub.Widget.QubImage import QubImage
-
 class QubTestView(QubView):
     def __init__(self, parent, name, actions, file):
         QubView.__init__(self, parent, name)
@@ -452,6 +449,7 @@ class QubMain(qt.QMainWindow):
                
 ##  MAIN   
 if  __name__ == '__main__':
+    from Qub.Widget.QubImage import QubImage
     app = qt.QApplication(sys.argv)
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),

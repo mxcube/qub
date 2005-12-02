@@ -67,8 +67,6 @@ class QubImageView(QubView):
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
-from QubImageAction import QubRectangleSelection,QubLineSelection
-
 class QubMain(qt.QMainWindow):
     def __init__(self, parent=None, file=None):
         qt.QMainWindow.__init__(self, parent)
@@ -94,6 +92,7 @@ class QubMain(qt.QMainWindow):
                
 ##  MAIN   
 if  __name__ == '__main__':
+    from QubActionSet import QubRectangleSelection,QubLineSelection
     app = qt.QApplication(sys.argv)
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
