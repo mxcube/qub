@@ -18,7 +18,7 @@ class QubImageView(QubView):
     def __init__(self,
                 parent=None, name=None, pixmap=None, actions=None,
                 scrollMode=None, useThread=0, flags=qt.Qt.WDestructiveClose):
-        QubView.__init__(self, parent, name)
+        QubView.__init__(self, parent, name, flags)
         
         widget = QubImage(self, "QubImage", pixmap, 0)
         
@@ -98,7 +98,11 @@ if  __name__ == '__main__':
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
                     app, qt.SLOT("quit()"))
 
-    window = QubMain(file=sys.argv[1])
+    if len(sys.argv) < 2:
+        print "Give an image file name as argument"
+        sys.exit(1)
+    else:
+        window = QubMain(file = sys.argv[1])
     
     window.resize(500,300)
     app.setMainWidget(window)
