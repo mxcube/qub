@@ -324,7 +324,6 @@ class QubColormapDialog(qt.QDialog):
             val = self.dataMin
         
         self.maxValue = val
-        
     
     def _updateText(self):
         """
@@ -519,8 +518,7 @@ class QubColormapDialog(qt.QDialog):
         
     def _sendColormap(self):
         try:
-            if self.parent is not None:                
-                self.parent.emit(qt.PYSIGNAL("ColormapChanged"),
+            self.emit(qt.PYSIGNAL("ColormapChanged"),
                         (self.colormap, self.autoscale,
                          self.minValue, self.maxValue))
         except:
@@ -528,7 +526,6 @@ class QubColormapDialog(qt.QDialog):
                            sys.exc_info()[1],
                            sys.exc_info()[2])
 
-                      
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
