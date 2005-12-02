@@ -79,6 +79,7 @@ class QubView(qt.QWidget):
         """
         self.__toolbar = widget
         self.__vlayout.insertWidget(0, widget)
+        self.__toolbar.show()
 
     def toolbar(self):
         """
@@ -101,7 +102,7 @@ class QubView(qt.QWidget):
                 self.__vlayout.insertWidget(1, widget)
             else:
                 self.__vlayout.insertWidget(2, widget)
-            
+        self.__statusbar.show()
 
     def statusbar(self):
         """
@@ -138,7 +139,7 @@ class QubView(qt.QWidget):
             this is now a real new action, add it
             """
             self.__actionList[action.name()] = action
-        
+            
             """
             according of what action belong (statusbar or toolbar/contextmenu,
             create it if necessary
@@ -165,9 +166,16 @@ class QubView(qt.QWidget):
         """
         Remove actions in the "actions" list from the QubView widget.
         Related widgets are destroyed.
-        TO DO    TO DO    TO DO
         """
-        pass
+        for action in actions:
+            if action.name() in self.__actionList.keys():
+                if action.place() == "toolbar":
+                    self.__toolbar.delAction(action)                
+                
+                if action.place() == "statusbar":
+                    self.__statusbar.delAction(action)
+                
+                del(self.__actionList[action.name()])
 
 
 ################################################################################
@@ -347,8 +355,8 @@ class QubViewToolbar(qt.QDockArea):
         """
         widget = action.addToolWidget(self.__groupList[actionGroup]["toolbar"])
         self.__groupList[actionGroup]["toolbar"].boxLayout().addWidget(widget)
+        widget.show()
 
-        
         """
         Show group as specified (toolbar or contextmenu) by the action
         """
@@ -359,13 +367,13 @@ class QubViewToolbar(qt.QDockArea):
         Remove "action" from the class
         """
         groupName = action.group()
-        if groupName in self__groupList.keys():
+        if groupName in self.__groupList.keys():
             groupObject = self.__groupList[groupName]
             
             if action in groupObject["action"]:    
                 action.delToolWidget()
                 if not groupObject["visible"]:
-                    action.delMenuWidget(self.__contextMenu)
+                    action.delMenuWidget()
             
                 groupObject["action"].remove(action)
                     
@@ -407,10 +415,12 @@ class QubViewStatusbar(qt.QWidget):
         Add action widget in the "statusbar" of the QubView Widget
         """
         widget = action.addStatusWidget(self.__container)
-            
+        
         self.__hlayout.insertWidget(action.index(), widget)
         self.__hlayout.insertStretch(-1)
         self.__actionList.append(action)
+        
+        widget.show()
             
     def delAction(self, action):
         """
@@ -431,25 +441,52 @@ class QubTestView(QubView):
         widget = QubImage(self, "QubImage", qt.QPixmap(file), 0)
         self.setView(widget)
         
-        self.addAction(actions)
+        if actions != []:
+            self.addAction(actions)
         
 class QubMain(qt.QMainWindow):
     def __init__(self, parent=None, file=None):
         qt.QMainWindow.__init__(self, parent)
         
+        self.action = QubPrintPreviewAction(name="print", place="toolbar",
+                                            show=1, group="toto")
+        
+        self.action1 = QubColormapAction(name="colormap", place="toolbar",
+                                            show=1, group="toto")
+        
         container = qt.QWidget(self)
         
-        hlayout = qt.QVBoxLayout(container)
+        vlayout = qt.QVBoxLayout(container)
     
         self.qubImage = QubTestView(container, "QubTestView",
-                                    [], file)
-        hlayout.addWidget(self.qubImage)
-    
+                                    [self.action1], file)
+        vlayout.addWidget(self.qubImage)
+        
+        hlayout = qt.QHBoxLayout(vlayout)
+        
+        addButton = qt.QPushButton("Add Action", container)
+        self.connect(addButton, qt.SIGNAL("clicked()"), self.addAction)
+        hlayout.addWidget(addButton)
+        
+        hlayout.addStretch(1)
+        
+        remButton = qt.QPushButton("Rem Action", container)
+        self.connect(remButton, qt.SIGNAL("clicked()"), self.remAction)
+        hlayout.addWidget(remButton)
+        
         self.setCentralWidget(container)
+        
+    def addAction(self):
+        self.qubImage.addAction([self.action])
+        
+    def remAction(self):
+        self.qubImage.delAction([self.action])
                
 ##  MAIN   
 if  __name__ == '__main__':
     from Qub.Widget.QubImage import QubImage
+    from Qub.Widget.QubActionSet import QubPrintPreviewAction,QubColormapAction
+    
     app = qt.QApplication(sys.argv)
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
