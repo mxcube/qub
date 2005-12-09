@@ -484,20 +484,20 @@ class QubColormapDialog(qt.QDialog):
             self._setColormap(colormap)
             update = 1
             
-        if colorMin is not None:
-            self._setText(colorMin, self.maxValue)
-            update = 1
-            
-        if colorMax is not None:
-            self._setText(self.minValue, colorMax)
-            update = 1
-            
         if dataMin is not None:
             self.dataMin = dataMin
             update = 1
             
         if dataMax is not None:
             self.dataMax = dataMax
+            update = 1
+            
+        if colorMin is not None:
+            self._setText(colorMin, self.maxValue)
+            update = 1
+            
+        if colorMax is not None:
+            self._setText(self.minValue, colorMax)
             update = 1
             
         if autoscale is not None:
