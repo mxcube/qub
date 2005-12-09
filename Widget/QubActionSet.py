@@ -9,6 +9,84 @@ from Qub.Icons.QubIcons import loadIcon
 ###############################################################################
 ###############################################################################
 ####################                                       ####################
+####################         Miscallenous Actions          ####################
+####################                                       ####################
+###############################################################################
+###############################################################################
+
+
+###############################################################################
+####################             QubButtonAction           ####################
+###############################################################################
+class QubButtonAction(QubAction):
+    """
+    This action send a signal "ButtonPressed" when user hit the button
+    It creates a pushbutton in the toolbar/contextmenu or statusbar
+    """
+    def __init__(self, label="", *args, **keys):
+        """
+        Constructor method
+        name ... :  string name of the action.
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None).
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu.
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it.
+        index .. :  Position of the selection widget of the action in its
+                    group.
+        
+        Store in self._label the pushbutton label
+        """
+        QubAction.__init__(self, *args, **keys)
+        
+        self._item = None
+        self._label = label
+        
+    def addToolWidget(self, parent):
+        """
+        create print preview pushbutton in the toolbar of the view
+        """
+        if self._widget is None:
+            self._widget = qt.QPushButton(self._label, parent, "addtoppbutton")
+            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
+                                 self.sendSignal)
+            qt.QToolTip.add(self._widget, self._label)
+            
+        return self._widget
+        
+    def addMenuWidget(self, menu):
+        """
+        Create context menu item pushbutton
+        """
+        self._menu = menu
+        self._item = menu.insertItem(qt.QString(self._label),
+                                      self.sendSignal)
+        
+    def addStatusWidget(self, parent):
+        """
+        create pushbutton in the statusbar of the view
+        """
+        if self._widget is None:
+            self._widget = qt.QPushButton(self._label, parent, "addtoppbutton")
+            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
+                                 self.sendSignal)
+            qt.QToolTip.add(self._widget, self._label)
+            
+        return self._widget
+         
+    def sendSignal(self):
+        """
+        User have hit toolbar/contextmenu or statusbar pushbutton
+        send "ButtonPressed" signal
+        """ 
+        self.emit(qt.PYSIGNAL("ButtonPressed"), ())
+
+  
+###############################################################################
+###############################################################################
+####################                                       ####################
 ####################            Print Actions              ####################
 ####################                                       ####################
 ###############################################################################
@@ -254,7 +332,7 @@ class QubRectangleSelection(QubToggleImageAction):
         Use name of the action to find icon file
         Initialyse rectangle position variables
         """
-        QubToggleImageAction.__init__(self, name="rectangle", *args, **keys)
+        QubToggleImageAction.__init__(self, *args, **keys)
 
         self.__rectCoord = qt.QRect(0, 0, 1, 1)
     
@@ -373,7 +451,7 @@ class QubLineSelection(QubToggleImageAction):
         Use name of the action to find icon file
         Initialyse line start and end points variables
         """
-        QubToggleImageAction.__init__(self, name="line", *args, **keys)
+        QubToggleImageAction.__init__(self, *args, **keys)
 
         self.__startPt = qt.QPoint(0,0)
         self.__endPt   = qt.QPoint(1,1)
