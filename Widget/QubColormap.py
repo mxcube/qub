@@ -7,7 +7,7 @@ import spslut
 
 from Qub.Icons.QubIcons import loadIcon
 from Qub.Widget.QubImage import QubImage
-from Qub.Widget.QubGraph import QubGraph
+from Qub.Widget.QubGraph import QubGraph, QubGraphCurve
 
         
 ################################################################################
@@ -167,16 +167,27 @@ class QubColormapDialog(qt.QDialog):
         """
         set the curve _/-
         """
-        self.colormapGraph.setMarkedCurve( "ConstrainedCurve",
-                               [0, 10, 20, 30],
-                               [-10, -10, 10, 10 ]
-                             )
+        self.colormapCurve = QubGraphCurve (self.colormapGraph,
+                                            "ColormapCurve",
+                                            [0, 10, 20, 30],
+                                            [-10, -10, 10, 10 ]
+                                            )
+        
+        self.colormapCurve.defConstraints(1, 10, 20, -10, -10)
+        self.colormapCurve.defConstraints(2, 10, 20,  10,  10)
+        self.colormapCurve.setPointControlled(1)
+        self.colormapCurve.setPointControlled(2)
+
+        self.colormapCurve.setPointMarked(0)
+        self.colormapCurve.setPointMarked(3)
+
+        self.colormapGraph.setCurve(self.colormapCurve)
 
         self.colormapGraph.setMinimumSize(qt.QSize(250,200))
 
-        self.connect (self.colormapGraph , qt.PYSIGNAL("PointMoved"),
+        self.connect (self.colormapGraph, qt.PYSIGNAL("PointMoved"),
                       self._graphMove)
-        self.connect (self.colormapGraph , qt.PYSIGNAL("PointReleased"),
+        self.connect (self.colormapGraph, qt.PYSIGNAL("PointReleased"),
                       self._graphRelease)
 
         hlayout4.addWidget(self.colormapGraph)
@@ -402,11 +413,11 @@ class QubColormapDialog(qt.QDialog):
         user is moving a point given by args[0] to the position given
         by(args[1],args[2])
         """
-        (diam , x ,y) = (args[0], args[1], args[2])
+        (curve, point , x ,y) = (args[0], args[1], args[2], args[3])
 
-        if diam == 2:
+        if point == 1:
             self.minValue = x
-        if diam == 3:
+        if point == 2:
             self.maxValue = x
             
         self._update()
@@ -419,11 +430,11 @@ class QubColormapDialog(qt.QDialog):
         This will be the new min or max value for the colormap.
         Send the signal "ColormapChanged"
         """
-        (diam , x ,y) = (args[0], args[1], args[2])
+        (curve, point , x ,y) = (args[0], args[1], args[2], args[3])
 
-        if diam == 2:
+        if point == 1:
             self.minValue = x
-        if diam == 3:
+        if point == 2:
             self.maxValue = x
             
         self._update()
@@ -449,24 +460,19 @@ class QubColormapDialog(qt.QDialog):
             second and third: cannot move in Y dir.,can move
                               in X dir. between datamin and datamax
         """ 
-        self.colormapGraph.markedCurves["ConstrainedCurve"].defConstraints(
-            [(minmd, minmd,   -10, -10 ),
-             (self.dataMin, self.dataMax, -10, -10 ),
-             (self.dataMin, self.dataMax,  10,  10 ),
-             (maxpd, maxpd,    10,  10 )])
-             
+        self.colormapCurve.defConstraints(1, self.dataMin, self.dataMax, -10, -10)
+        self.colormapCurve.defConstraints(2, self.dataMin, self.dataMax,  10,  10)
+
         """
         move points to their values
         """
-        self.colormapGraph.markedCurves["ConstrainedCurve"].deplace(
-                                                        0, minmd, -10)
-        self.colormapGraph.markedCurves["ConstrainedCurve"].deplace(
-                                                        1, self.minValue, -10)
-        self.colormapGraph.markedCurves["ConstrainedCurve"].deplace(
-                                                        2, self.maxValue, 10)
-        self.colormapGraph.markedCurves["ConstrainedCurve"].deplace(
-                                                        3, maxpd, 10)
-     
+
+        self.colormapGraph.deplace(self.colormapCurve, 0, minmd, -10)
+        self.colormapGraph.deplace(self.colormapCurve, 1, self.minValue, -10)
+        self.colormapGraph.deplace(self.colormapCurve, 2, self.maxValue, 10)
+        self.colormapGraph.deplace(self.colormapCurve, 3, maxpd, 10)
+
+        self.colormapGraph.replot()
 
     #############################################
     ### GENERAL
@@ -476,7 +482,7 @@ class QubColormapDialog(qt.QDialog):
         """
         set parameters which are not none
         update the colormap dialog
-        send "COlormapChanged" signal
+        send "ColormapChanged" signal
         """
         update = 0
         
@@ -633,7 +639,7 @@ class QubMain(qt.QMainWindow):
 
     def colormapChanged(self):              
         val = int(str(self.colormapText.text()))
-        print val       
+        # print val       
         self.colormapDialog.setParam(colormap=val)
         
     def colorminChanged(self):
