@@ -102,6 +102,8 @@ class QubImage(qtcanvas.QCanvasView):
         self.viewport().setPaletteBackgroundColor(qt.QColor(qt.Qt.gray))
         self.viewport().setMouseTracking(True)
 
+        self.setSizePolicy(qt.QSizePolicy.Ignored,
+                           qt.QSizePolicy.Ignored)
         """
         the QubImage is ready to display, tells actions for connexion
         """
@@ -288,7 +290,8 @@ class QubImage(qtcanvas.QCanvasView):
     def setZoom(self, zoomx, zoomy):
         try:
             """
-            change zoom factor, redisplay image and send update signal for actions
+            change zoom factor, redisplay image and
+            send update signal for actions
             """
             if self.time == -1:
                 self.time = time.time()
