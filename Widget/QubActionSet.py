@@ -2,7 +2,7 @@ import qt
 import qtcanvas
 import sys
 
-from Qub.Widget.QubAction import QubAction, QubToggleImageAction
+from Qub.Widget.QubAction import QubAction,QubImageAction,QubToggleImageAction
 from Qub.Icons.QubIcons import loadIcon
 
   
@@ -555,6 +555,123 @@ class QubLineSelection(QubToggleImageAction):
                        sys.exc_info()[1],
                        sys.exc_info()[2])
 
+
+        
+###############################################################################
+####################            QubZoomListAction          ####################
+###############################################################################
+class QubZoomListAction(QubAction):
+    """
+    This class add a zoom facility for QubImageView as a list of zoom factor:
+        10, 25, 50, 75, 100, 200, 300, 400, 500%
+    """
+    def __init__(self, *args, **keys):
+        """
+        Constructor method
+        Initialyse variables
+        """
+        QubAction.__init__(self, *args, **keys)
+        
+        self._zoomStrList = ["10%", "25%", "50%", "75%", "100%", "200%",
+                             "300%", "400%", "500%"] 
+        self._zoomValList = [0.1, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5]
+        
+        self._item = None
+        
+        self._qubImage = None
+
+    def viewConnect(self, qubImage):
+        """
+        connect action with the QubImage object on which it will be applied
+        """
+        self._qubImage = qubImage
+              
+    def addToolWidget(self, parent):
+        """
+        Creates widgets to be added in the toolbar
+        """
+
+        """
+        menu to select zoom value
+        """
+        self._listPopupMenu = qt.QPopupMenu(parent)
+        for i in range(len(self._zoomStrList)):
+            self._listPopupMenu.insertItem(self._zoomStrList[i], i)
+        self.connect(self._listPopupMenu, qt.SIGNAL("activated(int )"),
+                        self._applyZoomFromList)
+                                                          
+        """
+        tool button to use selected zoom value
+        """
+        self._widget = qt.QToolButton(parent)
+        self._widget.setAutoRaise(True)
+        self._widget.setPopup(self._listPopupMenu)
+        self._widget.setPopupDelay(0)
+        self._widget.setIconSet(qt.QIconSet(loadIcon("addpreview.png")))
+        #self._widget.setText(qt.QString(self._zoomStrList[4]))
+
+        qt.QToolTip.add(self._widget, "Zoom List")
+                                     
+        return self._widget
+        
+    def addMenuWidget(self, menu):
+        self._menu = menu
+        
+        if self._item is None:
+            qstr = qt.QString("%d%%"%(int(self.zoomVal*100)))
+            self._item = menu.insertItem(qstr, self._ListPopupMenu)
+            menu.connectItem(self._item, self._listPopupMenu.exec_loop)
+
+    def _applyZoomFromList(self, index):
+        if self._qubImage is not None:
+            """
+            set wait cursor as changing zoom factor could take some times
+            """
+            self._qubImage.setCursor(qt.QCursor(qt.Qt.WaitCursor))
+
+            """
+            Calculate zoom value from array
+            """        
+            zoomVal = self._zoomValList[index]
+
+            """
+            check zoom value
+            """
+            zoomVal = self._checkZoomVal(zoomVal)
+
+            """
+            update zoom value as percentage in toolbar and menu widget
+            """        
+            qstr = qt.QString("%d%%"%(int(zoomVal*100)))
+            self._widget.setText(qstr)
+            if self._item is not None:
+                self.menu.changeItem(self._item, qstr)
+
+            """
+            calculate and display new pixmap not centered
+            """
+            self._qubImage.setZoom(zoomVal, zoomVal)
+
+            """
+            restore cursor
+            """
+            self._qubImage.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
+        
+    def _checkZoomVal(self, zoom):
+        maxVal = 3000
+        
+        newzoom = zoom
+        
+        w = self._qubImage.dataPixmap.width() * zoom
+        h = self._qubImage.dataPixmap.height() * zoom
+        
+        if w > maxVal or h > maxVal:
+            if w > h:
+                newzoom = float(maxVal) / float(self.drawable.dataPixmap.width())
+            else:
+                newzoom = float(maxVal) / float(self.drawable.dataPixmap.height())
+                
+        return newzoom
        
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
