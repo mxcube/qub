@@ -639,7 +639,6 @@ class QubMain(qt.QMainWindow):
 
     def colormapChanged(self):              
         val = int(str(self.colormapText.text()))
-        # print val       
         self.colormapDialog.setParam(colormap=val)
         
     def colorminChanged(self):
