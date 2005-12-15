@@ -1,5 +1,6 @@
 import qt
 import sys
+import types
 
 from Qub.Icons.QubIcons import loadIcon
 
@@ -107,6 +108,8 @@ class QubAction(qt.QObject):
         This method should be reimplemented.
         Creates action widget to put in "group" dockarea of the "toolbar"
         Return this widget
+        This method should return the widget to add stored self._widget
+        which is deleted in delToolWidget method.
         """
         if self._widget is None:
             self._widget = qt.QLabel(self._name, parent)
@@ -117,6 +120,7 @@ class QubAction(qt.QObject):
         """
         This method should be reimplemented.
         Deletes action widget put in "group" dockarea of the "toolbar"
+        Self._widget is deleted
         """
         if self._widget is not None:
             self._widget.close(1)
@@ -127,6 +131,8 @@ class QubAction(qt.QObject):
         """
         This method should be reimplemented.
         Creates item in contextmenu "menu" for the action
+        items are stored in self._item which can be a list in case
+        of multiple items
         """
         if self._item is None:
             self._menu = menu
@@ -136,9 +142,13 @@ class QubAction(qt.QObject):
         """
         This method should be reimplemented.
         Deletes action item from the popupmenu
+        self._item is remove even if it is a list
         """
         if self._item is not None:
-            self._menu.removeItem(self._item)
+            if type(self._item) is types.ListType:
+                map(self.removeItem, self._item)
+            else:
+                self._menu.removeItem(self._item)
             self._item = None
         
         
