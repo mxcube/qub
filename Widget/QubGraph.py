@@ -51,7 +51,7 @@ class QubGraph(qwt.QwtPlot):
     modeList = [None, "selectdiamond", "movediamond", "diamond",
                 "zoom", "zooming"]
    
-    def __init__(self, parent = None, name = " QubGraph "):
+    def __init__(self, parent = None, name = "QubGraph"):
         """
         Constructor
         """
@@ -618,7 +618,6 @@ class QubGraph(qwt.QwtPlot):
         remove the marker markerRef from the graph and in the good curve.
         """
         pass
-
 
     def _selectPoint(self, marker):
         """
@@ -1492,18 +1491,19 @@ class QubGraphCurve(qwt.QwtPlotCurve):
 
 ##########################################################################
         
-class QubGraphTest(qt.QMainWindow):
-    def __init__(self, parent=None, file=None):
-        qt.QMainWindow.__init__(self, parent)
+class QubGraphTest(qt.QWidget):
+    def __init__(self, parent=None, name="QubGraphTestWindow"):
 
+        qt.QWidget.__init__(self, parent, name)
+        
         vlay = qt.QVBoxLayout (self, 2 ,3 , "Main V Layout")
-
+        
         self.qubGW = QubGraph(self)
-
+        
         # define control bar
         bbar = qt.QWidget(self)
         blay = qt.QHBoxLayout(bbar, 2 ,3 , "button bar layout")
-
+        
         vlay.addWidget(self.qubGW)
         vlay.addWidget(bbar)
         
@@ -1515,12 +1515,12 @@ class QubGraphTest(qt.QMainWindow):
         
         hselButton = qt.QPushButton( "Hsel", bbar )
         hselButton.setPixmap(qt.QPixmap(hselection_xpm))
-
+        
         moveButton = qt.QPushButton( "move", bbar )
         moveButton.setPixmap(qt.QPixmap(move_point_xpm))
-
+        
         noneButton = qt.QPushButton( "none", bbar )
-
+        
         blay.addWidget (zoomButton)
         blay.addWidget (hselButton)
         blay.addWidget (moveButton)
@@ -1557,7 +1557,6 @@ class QubGraphTest(qt.QMainWindow):
                                   [1,2,3,4,10], [0,0,4,4,2])
 
         
-        
         # sample of marked curve
         #    a = array([0.0, 1.0, 2.0, 4.0, 8.0, 10.0 ])
         #    self.qubGW.setMarkedCurve( "mysampleTrace", a )
@@ -1572,7 +1571,6 @@ class QubGraphTest(qt.QMainWindow):
         mySampleCurve2.setPointControlled(1)
         mySampleCurve2.setPointControlled(2)
 
-        
         mySampleCurve2.movePoint(0,  0, 0)
         mySampleCurve2.movePoint(3, 10, 4)
         mySampleCurve2.setPointMarked(0)
@@ -1582,20 +1580,13 @@ class QubGraphTest(qt.QMainWindow):
 
         self.qubGW.setCurve(mySampleCurve2)
 
-
-##         self.qubGW.setMarkedCurve( "CC2", [0, 1, 3,   3, 2, 1, 2, 4, 4 ],
-##                             [0, 1, 1.5, 3, 4, 3, 2, 3, 0 ] )
-
-        #
         # define the view
-        #        
         self.qubGW.setZoom(-0.5, 10.5, -0.5, 4.5)
         self.qubGW.show()
         
         # move point 2 of curve "ConstrainedCurve" to position (5, 4) 
         # self.qubGW.deplace("ConstrainedCurve", 2, 6.0, 4.0)
-        
-            
+                    
     def setModeZoom(self):
         self.qubGW.setMode("zoom")
 
@@ -1608,13 +1599,11 @@ class QubGraphTest(qt.QMainWindow):
     def setModeNone(self):
         self.qubGW.setMode(None)
 
-        
 if __name__=="__main__":
     app = qt.QApplication(sys.argv)
     
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
                        app, qt.SLOT("quit()"))
-
 
     window = QubGraphTest()
     
