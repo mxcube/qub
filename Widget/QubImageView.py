@@ -36,7 +36,7 @@ class QubImageView(QubView):
         if view is not None and pixmap:
             self.view().setPixmap(pixmap)
     
-    def setScrollBarMode(self, mode):
+    def setScrollbarMode(self, mode):
         """
         Change the scroll bar policy of the view (QubImage)
         accepted values:
@@ -50,7 +50,7 @@ class QubImageView(QubView):
         view = self.view()
         if view is not None and \
             mode in ["Auto","AlwaysOff","Fit2Screen","FullScreen"]:
-            view.setScrollBarMode(mode)
+            view.setScrollbarMode(mode)
             
     def setThread(self, useThread):
         """
