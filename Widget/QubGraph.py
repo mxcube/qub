@@ -33,7 +33,9 @@ from Qub.Widget.QubCursors import zoom_xpm, hselection_xpm, move_point_xpm
 # + do not highlight (onMousePress/Move) non movable points 
 # + reduce point do not porevent from highlight... and unhighlight is bogus
 
-
+#############################################################################
+##########                        QubGraph                         ##########
+############################################################################# 
 class QubGraph(qwt.QwtPlot):
     """
     QubGraph provides a 2d graph representation and related facilities:
@@ -624,18 +626,18 @@ class QubGraph(qwt.QwtPlot):
         given a marker number, this function returns the corresponding curve
         and point as a 2-uple (c, p).
         """
-
+        
         found = False
         for curve in self.curveList:
             # point = curve.markerIdx.index(marker)
-            point = Numeric.nonzero(curve.markerIdx  == marker )[-1]
-
+            point = Numeric.nonzero(curve.markerIdx == marker )[-1]
+            
             if point != None:
                 if found:
                     print " on l'a trouve' 2 fois, c louche"
                 else:
                     found = True
-                    #print "selected  point", point, "of curve", curve.name()
+                    # print "selected  point", point, "of curve", curve.name()
                     return (curve, point)
                 
 
@@ -717,14 +719,15 @@ class QubGraph(qwt.QwtPlot):
         ydata  = self.invTransform(qwt.QwtPlot.yLeft,   ypixel)
         
         if self.mode == "movepoint":
-            (cmarker, distance) = self.closestMarker(xpixel, ypixel)
-            (ccurve, cpoint)    = self._selectPoint(cmarker)
+            if self.curveList:
+                (cmarker, distance) = self.closestMarker(xpixel, ypixel)
+                (ccurve, cpoint)    = self._selectPoint(cmarker)
             
-            if distance < 7 and ccurve.isControlled[cpoint]:
-                self._isPointMoving = True
-                self._movingCurve   = ccurve
-                self._movingPoint   = cpoint
-                self._movingMarker  = cmarker
+                if distance < 7 and ccurve.isControlled[cpoint]:
+                    self._isPointMoving = True
+                    self._movingCurve   = ccurve
+                    self._movingPoint   = cpoint
+                    self._movingMarker  = cmarker
                 
         if self.mode == "zoom":
             if self._hsel != None:
@@ -771,18 +774,19 @@ class QubGraph(qwt.QwtPlot):
         # if distance < self.markerDist:
 
         if self.mode == "movepoint":
-            # get current marker / point / curve and distance to this marker
-            (cmarker, distance) = self.closestMarker(xpixel, ypixel)
-            (ccurve, cpoint)    = self._selectPoint(cmarker)
+            if self.curveList:
+                # get current marker / point / curve and distance to this marker
+                (cmarker, distance) = self.closestMarker(xpixel, ypixel)
+                (ccurve, cpoint)    = self._selectPoint(cmarker)
             
-            if distance < 7:
-                if ccurve.isControlled[cpoint] and not self._isPointMoving:
-                    self._highlightPointMarker (cmarker, True)
-                    self.oldOverMarker = cmarker
-            else:
-                if (self.oldOverMarker != None) and not self._isPointMoving:
-                    self._highlightPointMarker (self.oldOverMarker, False)
-                    self.oldOverMarker = None
+                if distance < 7:
+                    if ccurve.isControlled[cpoint] and not self._isPointMoving:
+                        self._highlightPointMarker (cmarker, True)
+                        self.oldOverMarker = cmarker
+                else:
+                    if (self.oldOverMarker != None) and not self._isPointMoving:
+                        self._highlightPointMarker (self.oldOverMarker, False)
+                        self.oldOverMarker = None
 
         if self._isZooming:
             pass
@@ -854,7 +858,8 @@ class QubGraph(qwt.QwtPlot):
 
                 # add curvename to the signal ?
                 self.emit(qt.PYSIGNAL("PointReleased"),
-                          (self._movingCurve.name(), self._movingPoint , xdata, ydata))
+                          (self._movingCurve.name(), self._movingPoint ,
+                           xdata, ydata))
 
                 self._movingCurve  = None
                 self._movingPoint  = None
