@@ -2,7 +2,7 @@ import qt
 import sys
 
 from Qub.Widget.QubView import QubView
-from Qub.Widget.QubGraph import QubGraph
+from Qub.Widget.QubGraph import QubGraph, QubGraphCurve
 
 ################################################################################
 ####################               QubGraphView             ####################
@@ -25,29 +25,16 @@ class QubGraphView(QubView):
         
         if actions is not None:
             self.addAction(actions)
-    
-    def setCurve(self, name, x, y):
-        view = self.view()
-        if view is not None:
-            self.view().setCurve(name, x, y)
-                
-    def setMarkedCurve(self, name, x, y):
-        view = self.view()
-        if view is not None:
-            self.view().setMarkedCurve(name, x, y)
-            
-                      
+                          
 ################################################################################
 ####################    TEST -- QubViewGraphTest -- TEST   #####################
 ################################################################################
-
 
 class QubMain(qt.QMainWindow):
     def __init__(self, parent=None, file=None):
         qt.QMainWindow.__init__(self, parent)
         
-        #      pixmap = qt.QPixmap(file)
-        
+        # a dummy action
         actions = []
         action = QubPrintPreviewAction(place="statusbar", show=1, group="marcel")
         actions.append(action)
@@ -55,10 +42,22 @@ class QubMain(qt.QMainWindow):
         container = qt.QWidget(self)
         
         hlayout = qt.QVBoxLayout(container)
-        
-        self.qubGraphView = QubGraphView(container, "Test QubgraphView", actions)
-                    
-        hlayout.addWidget(self.qubGraphView)
+
+        # 
+        qubGraphView = QubGraphView(container, "Test QubgraphView", actions)
+
+        # a curve for this graph
+        myCurve = QubGraphCurve(qubGraphView.view(), "ConstrainedCurve",
+                                [0,2,8,10],
+                                [0,0,4, 4] )
+
+        # add the curve to the graph
+        qubGraphView.view().setCurve( myCurve )
+
+        # zoom to fit curve
+        qubGraphView.view().setZoom(-0.5, 10.5, -0.5, 4.5)
+   
+        hlayout.addWidget(qubGraphView)
     
         self.setCentralWidget(container)
                
@@ -72,7 +71,6 @@ if  __name__ == '__main__':
                     app, qt.SLOT("quit()"))
 
     window = QubMain()
-    window.qubGraphView.setMarkedCurve( "ConstrainedCurve", [0,2,8,10], [0,0,4,4] )
 
     window.resize(500,300)
     app.setMainWidget(window)
