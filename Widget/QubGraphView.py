@@ -43,7 +43,6 @@ class QubMain(qt.QMainWindow):
         
         hlayout = qt.QVBoxLayout(container)
 
-        # 
         qubGraphView = QubGraphView(container, "Test QubgraphView", actions)
 
         # a curve for this graph
