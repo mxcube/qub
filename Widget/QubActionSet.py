@@ -590,7 +590,7 @@ class QubZoomListAction(QubAction):
         """
         Creates widgets to be added in the toolbar
         """
-
+        
         """
         menu to select zoom value
         """
@@ -607,9 +607,11 @@ class QubZoomListAction(QubAction):
         self._widget.setAutoRaise(True)
         self._widget.setPopup(self._listPopupMenu)
         self._widget.setPopupDelay(0)
-        self._widget.setIconSet(qt.QIconSet(loadIcon("addpreview.png")))
+        self._widget.setIconSet(qt.QIconSet(loadIcon("zoomrect.png")))
         #self._widget.setText(qt.QString(self._zoomStrList[4]))
 
+        self._widget.setFixedSize(75,27)
+        
         qt.QToolTip.add(self._widget, "Zoom List")
                                      
         return self._widget
