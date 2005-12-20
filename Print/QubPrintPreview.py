@@ -707,7 +707,19 @@ class PrintCanvasView(qtcanvas.QCanvasView):
             # print self.canvas().allItems()
             self.__active_item = None
             self.canvas().update()
-            
+
+    def removeAllItems(self):
+        """
+        Remove all printable items in canvas
+        """
+        itemToRemove = self.getPrintItems()
+        
+        for item in itemToRemove:
+            item.remove()
+            self.__active_item = None
+
+        self.canvas().update()
+                        
     def contentsMouseDoubleClickEvent(self, e):
         """
         """
@@ -1059,8 +1071,9 @@ class QubPrintPreview(qt.QDialog):
 
     def __clearAll(self):
         """
+        Clear the print preview window, remove all items
         """
-        print " to be implemented"
+        self.canvasView.removeAllItems()
         
     def __remove(self):
         """
