@@ -99,7 +99,6 @@ class QubCheckedText(qt.QWidget):
         hlayout.addWidget (self.label) 
         hlayout.addWidget (self.lineEdit)
 
-        # use this if not widget is not in a layout
         self.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.Fixed,
                                           qt.QSizePolicy.Fixed))
 
@@ -127,7 +126,7 @@ class QubCheckedText(qt.QWidget):
                            self._onCancelClicked)
         
         qt.QObject.connect(self.lineEdit,
-                           qt.SIGNAL("textChanged(const QString &)"),
+                           qt.SIGNAL("Modified(const QString &)"),
                            self._onTextChanged)
 
     def _onTextChanged(self, newText):
@@ -138,7 +137,7 @@ class QubCheckedText(qt.QWidget):
         print "on a clicke sur ok"
         self._refValue = self.lineEdit.text()
         self.lineEdit.setPaletteBackgroundColor(self.defaultColor)
-        self.emit ( qt.PYSIGNAL("textChanged(qt.QString &)"),
+        self.emit ( qt.PYSIGNAL("Modified(qt.QString &)"),
                     (qt.QString(self._refValue),)
                   )
         
