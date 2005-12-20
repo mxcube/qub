@@ -85,17 +85,23 @@ class QubCheckedText(qt.QWidget):
 
         self.label = qt.QLabel(text, self, "label1")
         
-        okButton = qt.QPushButton(self, "ok button")
+        okButton = qt.QToolButton(self, "ok button")
         okButton.setPixmap(qt.QPixmap(ok_xpm))
+        okButton.setAutoRaise(True)
         
-        cancelButton = qt.QPushButton(self, "cancel button")
+        cancelButton = qt.QToolButton(self, "cancel button")
         cancelButton.setPixmap(qt.QPixmap(cancel_xpm))
+        cancelButton.setAutoRaise(True)
         
         self.lineEdit = qt.QLineEdit(self)
         self.lineEdit.setText(self._refValue)
         
         hlayout.addWidget (self.label) 
         hlayout.addWidget (self.lineEdit)
+
+        # use this if not widget is not in a layout
+        self.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.Fixed,
+                                          qt.QSizePolicy.Fixed))
 
         if self._small:
             vvlayout = qt.QVBoxLayout(hlayout)
@@ -148,7 +154,7 @@ class QubCheckedText(qt.QWidget):
         return self._refValue
 
     def sizeHint(self):
-        return qt.QSize(300,30)
+        return qt.QSize(800,30)
     
 #########################################################################
 ###  QUBWIDGETSET TEST 
@@ -165,7 +171,8 @@ class QubWidgetTest(qt.QMainWindow):
         self.refText = qt.QLineEdit(container, "qleref")
         self.refText.setReadOnly(True)
         
-        tstQCT = QubCheckedText(container, "test QCT", "init String", "ma val:")
+        tstQCT = QubCheckedText(container, "test QCT",
+                                "init String", "ma val:", True)
 
         self.refText.setText(tstQCT.value())
         
