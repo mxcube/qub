@@ -1,6 +1,6 @@
 import sys
 import qt
-from Qub.Widget.QubColorToolButton import QubColorToolButton
+from Qub.Widget.QubWidgetSet import QubColorToolButton
 
 __revision__="$Revision$"
 
