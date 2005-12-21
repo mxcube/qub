@@ -11,6 +11,11 @@ __revision__="$Revision$"
 
 # TODO
 
+##############################################################################
+##############################################################################
+#######################       QubWidgetSet      ##############################
+##############################################################################
+##############################################################################
 
 ok_xpm = [
 "16 16 6 1",
@@ -37,8 +42,6 @@ ok_xpm = [
 "++++++++++++++++",
 "++++++++++++++++"]
 
-
-
 cancel_xpm = [
 "16 16 5 1",
 "  c #800000",
@@ -63,36 +66,46 @@ cancel_xpm = [
 "OOOO OOOOOOOOOOO",
 "OOOOOOOOOOOOOOOO"]
 
+
 class QubCheckedText(qt.QWidget):
     """
     QubCheckedText is a controled line edit widget. When the text is
     changed, background color change and a validation action is
-    needed. Is ok is clicked the velue is updated. if cancel is
-    clicked, the value remain unchanged.
+    needed. Is ok is clicked the value is updated and a signal emited. if
+    cancel is clicked, the value remain unchanged.
+            ________________________ ___    
+    Label: |                        |V|X|
+           |________________________|_|_|
+
+    - "textChanged(const QString &)" Signal is emited when the value of the
+    QubCheckedText lineEdit value change (ie on ok click).
     """
     
-    def __init__(self, parent=None, name=None, contents=None, text=None,
+    def __init__(self, parent=None, name=None, editText=None, labelText=None,
                  smallFlag=False ):
 
         qt.QWidget.__init__(self, parent, name)
 
-        self._refValue = contents
+        self._refValue = editText
         self.defaultColor = qt.QColor("white")
-        self.alteredColor = qt.QColor("red")
+        self.alteredColor = qt.QColor(204,102,102) # sort of salmon color
         self._small = smallFlag
 
-        hlayout = qt.QHBoxLayout(self, 0, 0 , "lay")
+        hlayout = qt.QHBoxLayout(self, 0, 0 , "QCTlayout")
 
-        self.label = qt.QLabel(text, self, "label1")
+        self.label = qt.QLabel(labelText, self, "QCTlabel")
         
+        # Ok button (with a green mark)
         okButton = qt.QToolButton(self, "ok button")
         okButton.setPixmap(qt.QPixmap(ok_xpm))
         okButton.setAutoRaise(True)
-        
+
+        # Cancel button (with a red cross)
         cancelButton = qt.QToolButton(self, "cancel button")
         cancelButton.setPixmap(qt.QPixmap(cancel_xpm))
         cancelButton.setAutoRaise(True)
-        
+
+        # controlled lineEdit
         self.lineEdit = qt.QLineEdit(self)
         self.lineEdit.setText(self._refValue)
         
@@ -102,6 +115,7 @@ class QubCheckedText(qt.QWidget):
         self.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.Fixed,
                                           qt.QSizePolicy.Fixed))
 
+        # position of buttons (side by side or up and down)
         if self._small:
             vvlayout = qt.QVBoxLayout(hlayout)
             t = self.lineEdit.size().height()/ 2
@@ -110,15 +124,15 @@ class QubCheckedText(qt.QWidget):
             hlayout.setResizeMode(qt.QLayout.Minimum)
 
             okButton.setFixedSize(t,t)
-            print "t=", t
             cancelButton.setFixedSize(t,t)
+
             vvlayout.addWidget (okButton)
             vvlayout.addWidget (cancelButton)
         else:
             hlayout.addWidget (okButton)
             hlayout.addWidget (cancelButton)
             
-        # we bind signals
+        # binding signals
         qt.QObject.connect(okButton, qt.SIGNAL("clicked()"),
                            self._onOkClicked)
         
@@ -126,23 +140,20 @@ class QubCheckedText(qt.QWidget):
                            self._onCancelClicked)
         
         qt.QObject.connect(self.lineEdit,
-                           qt.SIGNAL("Modified(const QString &)"),
+                           qt.SIGNAL("textChanged(const QString &)"),
                            self._onTextChanged)
 
     def _onTextChanged(self, newText):
-        print "on a change' la value", newText
         self.lineEdit.setPaletteBackgroundColor(self.alteredColor)
         
     def _onOkClicked(self):
-        print "on a clicke sur ok"
         self._refValue = self.lineEdit.text()
         self.lineEdit.setPaletteBackgroundColor(self.defaultColor)
-        self.emit ( qt.PYSIGNAL("Modified(qt.QString &)"),
+        self.emit ( qt.PYSIGNAL("textChanged(const QString &)"),
                     (qt.QString(self._refValue),)
                   )
         
     def _onCancelClicked(self):
-        print "on a clicke' sur cancel"
         self.lineEdit.setText(self._refValue)
         self.lineEdit.setPaletteBackgroundColor(self.defaultColor)
        
@@ -153,11 +164,18 @@ class QubCheckedText(qt.QWidget):
         return self._refValue
 
     def sizeHint(self):
+        """
+        Return prefered size.
+        """
         return qt.QSize(800,30)
+
+    def setLabelText(self, text):
+        self.label.setText(text)
+        
     
-#########################################################################
+###############################################################################
 ###  QUBWIDGETSET TEST 
-#########################################################################
+###############################################################################
 
 class QubWidgetTest(qt.QMainWindow):
     def __init__(self, parent=None, file=None):
@@ -167,6 +185,7 @@ class QubWidgetTest(qt.QMainWindow):
         
         vlayout = qt.QVBoxLayout(container)
 
+        ## test for QubCheckedText ############################################
         self.refText = qt.QLineEdit(container, "qleref")
         self.refText.setReadOnly(True)
         
@@ -178,9 +197,12 @@ class QubWidgetTest(qt.QMainWindow):
         vlayout.addWidget(self.refText)
         vlayout.addWidget(tstQCT)
 
+        ## ############################################
+        
+      
         self.setCentralWidget(container)
-
-        qt.QObject.connect(tstQCT, qt.PYSIGNAL("textChanged(qt.QString &)"),
+        
+        qt.QObject.connect(tstQCT, qt.PYSIGNAL("textChanged(const QString &)"),
                            self.chRV)
 
     def chRV(self, val):
