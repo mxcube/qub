@@ -428,7 +428,7 @@ class QubLineSelection(QubToggleImageAction):
     """
     Action acting on QubImage widget.
     Select a line and send the start and end point coordinates using
-    PYSIGNAL("RectangleSelected")
+    PYSIGNAL("LineSelected")
     """
     def __init__(self, *args, **keys):
         """
@@ -541,7 +541,7 @@ class QubLineSelection(QubToggleImageAction):
     def viewportUpdate(self):
         """
         Draw line either if qubImage pixmap has been updated or
-        rectangle coordinates have been changed by the user
+        line coordinates have been changed by the user
         """
         try:
             startPt = self._qubImage.matrix.map(self.__startPt)
@@ -677,7 +677,7 @@ class QubZoomListAction(QubAction):
        
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
-################################################################################        
+################################################################################
 class QubMain(qt.QMainWindow):
     def __init__(self, parent=None, file=None):
         qt.QMainWindow.__init__(self, parent)
@@ -713,7 +713,7 @@ class QubMain(qt.QMainWindow):
         
         hlayout = qt.QVBoxLayout(container)
     
-        self.qubImage = QubImageView(container, "actions", None, actions)                             
+        self.qubImage = QubImageView(container, "actions", None, actions)
         hlayout.addWidget(self.qubImage)
         self.updatePixmap()
     
@@ -734,7 +734,7 @@ class QubMain(qt.QMainWindow):
                                                "BGRX", 
                                                self.colormapSps[self.colormap],
                                                self.autoscale, 
-                                               (self.colorMin, self.colorMax))            
+                                               (self.colorMin, self.colorMax))
         image = qt.QImage(image_str,size[0],size[1],32,None,0,
                       qt.QImage.IgnoreEndian)
         pixmap = qt.QPixmap()
