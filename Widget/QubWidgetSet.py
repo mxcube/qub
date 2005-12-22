@@ -98,15 +98,15 @@ paintbrush_xpm = [
 " jjjjjjjjjjjjjj  ",
 " jjjjjjjjjjjjjj  "]
 
-################################################################################
-##################           QubColorToolButton                   ##############
-################################################################################
+###############################################################################
+##################           QubColorToolButton                   #############
+###############################################################################
 # berruyer@esrf.fr
 class QubColorToolButton(qt.QToolButton):
     """
-    The QubColorToolButton provides a pushButton usable as a color selector. Its
-    icon represents a paint tool with a color sample dynamicly updated according
-    to the selected color.
+    The QubColorToolButton provides a pushButton usable as a color selector.
+    Its icon represents a paint tool with a color sample dynamicly updated
+    according to the selected color.
     """
     def __init__(self, parent=None, name="CTB"):
         """
@@ -235,7 +235,7 @@ class ColorToolMenu(qt.QPopupMenu):
         if color is not None:
             self.selectedColor = color
             self.setIconColor(self.selectedColor)
-            self.emit(qt.PYSIGNAL("colorSelected"), (self.selectedColor,))      
+            self.emit(qt.PYSIGNAL("colorSelected"), (self.selectedColor,))
         
         self.hide()
     
@@ -395,9 +395,17 @@ class QubWidgetTest(qt.QMainWindow):
         qt.QObject.connect(tstQCT, qt.PYSIGNAL("textChanged(const QString &)"),
                            self.chRV)
 
+        qt.QObject.connect(self.qubColorToolButton,
+                           qt.PYSIGNAL("colorSelected"),
+                           self.chColor)
+
+
+
     def chRV(self, val):
         self.refText.setText(val)
 
+    def chColor(self, color):
+        self.refText.setPaletteBackgroundColor(color)
         
 if __name__=="__main__":
     app = qt.QApplication(sys.argv)
