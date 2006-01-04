@@ -11,7 +11,7 @@ from Qub.Icons.QubIcons import loadIcon
 class QubAction(qt.QObject):
     """
     Associated with a QubView widget, QubAction is the base Class to perform
-    interaction with Qub display widgets (QubImage, QubGraph).
+    interaction with Qub display widgets (QubImage, QubGraph, QubTable).
     QubAction take care of the creation of action widget and their
     placement in the QubView widget, either in the ToolBar/ContextMenu or in the
     StatusBar. This class is responsible for placement, creation/destruction
@@ -22,24 +22,25 @@ class QubAction(qt.QObject):
     ACTION_LIST, indexing by the name of the action and containing the class
     name.
     """
-    def __init__(self, name="action", place="toolbar", show=1, group="", index=-1):
+    def __init__(self, name="action", place="toolbar", show=1,
+                 group="", index=-1):
         """
         Constructor method
-        name ... :  string name of the action
-        palce .. :  where to put in the view widget, the selection widget
-                    of the action ("toolbar", "statusbar", None)
+        name ... :  string name of the action.
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None).
         show ... :  If in view toolbar, tells to put it in the toolbar
-                    itself or in the context menu
+                    itself or in the context menu.
         group .. :  actions may grouped. Tells the name of the group the
                     action belongs to. If not present, a "misc." group is
-                    automatically created and the action is added to it
+                    automatically created and the action is added to it.
         index .. :  Position of the selection widget of the action in its
-                    group
+                    group.
         """
         
         qt.QObject.__init__(self)
         
-        self._name      = name
+        self._name       = name
         self.__place     = place
         self.__show      = show
         self.__groupName = group
@@ -190,7 +191,7 @@ class QubImageAction(QubAction):
     """
     This inherits QubAction and add empty method for action acting on
     QubImage Object.
-    Main adds on are slots for drawings
+    Main adds on are slots for drawings.
     """
     def __init__(self, name=None, qubImage=None, place="toolbar",
                  show=1, group="", index=-1):
@@ -282,28 +283,28 @@ class QubImageAction(QubAction):
         
     def mouseMove(self, event):
         """
-        Slot connected to "MouseMoved" "qubImage" signal
+        Slot connected to "MouseMoved" "qubImage" signal.
         To be reimplemented.
         """
         pass
 
     def mousePress(self,  event):
         """
-        Slot connected to "MousePressed" "qubImage" signal
+        Slot connected to "MousePressed" "qubImage" signal.
         To be reimplemented.
         """
         pass
 
     def mouseRelease(self, event):
         """
-        Slot connected to "MouseReleased" "qubImage" signal
+        Slot connected to "MouseReleased" "qubImage" signal.
         To be reimplemented.
         """
         pass
     
     def viewportUpdate(self):
         """ 
-        Slot connected to "ViewportUpdate" "qubImage" signal
+        Slot connected to "ViewportUpdate" "qubImage" signal.
         To be reimplemented.
         """
         pass
@@ -319,20 +320,20 @@ class QubToggleImageAction(QubImageAction):
     """
     def __init__(self,*args, **keys):
         """
-        Constructor method
-        name ... :  string name of the action
+        Constructor method.
+        name ... :  string name of the action.
         qubImage :  action will act on a QubImage object. It can be set in
                     the constructor method or using the "viewConnect" method
-                    of the class 
+                    of the class.
         place .. :  where to put in the view widget, the selection widget
-                    of the action ("toolbar", "statusbar", None)
+                    of the action ("toolbar", "statusbar", None).
         show ... :  If in view toolbar, tells to put it in the toolbar
-                    itself or in the context menu
+                    itself or in the context menu.
         group .. :  actions may grouped. Tells the name of the group the
                     action belongs to. If not present, a "misc." group is
                     automatically created and the action is added to it
         index .. :  Position of the selection widget of the action in its
-                    group
+                    group.
         """
         QubImageAction.__init__(self, *args, **keys)
             
@@ -356,7 +357,7 @@ class QubToggleImageAction(QubImageAction):
     def addMenuWidget(self, menu):
         """
         This method should be reimplemented.
-        Creates item in contextmenu "menu" for the action
+        Creates item in contextmenu "menu" for the action.
         """
         if self._item is None:
             self._menu = menu
