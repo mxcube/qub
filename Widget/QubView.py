@@ -13,7 +13,7 @@ class QubView(qt.QWidget):
     QubView defines the 3 parts:
         toolbar/contextmenu
             "toolbar" is a dockarea on the top of the QubView widget.
-            The dockaArea is the parent of Container which holds group of action
+            The dockArea is the parent of Container which holds group of action
             widgets.
             Container (group) are defined by actions: as many containers as
             defined by QubView action list.
@@ -117,6 +117,7 @@ class QubView(qt.QWidget):
         If action in "actions" list already exists, modify it in the QubView.
         This method does not connect the action to its its view !!!
         """
+
         
         for action in actions:
             """
@@ -193,7 +194,7 @@ class QubViewToolbar(qt.QDockArea):
     def __init__(self, parent=None):
         """
         constructor method
-            Creates dockaArea
+            Creates dockArea
             Creates and connect contexmenu if possible
         """
         qt.QDockArea.__init__(self, qt.Qt.Horizontal,qt.QDockArea.Normal,parent)
@@ -333,6 +334,7 @@ class QubViewToolbar(qt.QDockArea):
         Get the "group" the action belongs to.
         If none, action belongs to the automatically created "Misc." group
         """
+
         actionGroup      = action.group()
         actionGroupIndex = action.index()
         if actionGroup == "":
@@ -414,6 +416,7 @@ class QubViewStatusbar(qt.QWidget):
         """
         Add action widget in the "statusbar" of the QubView Widget
         """
+        
         widget = action.addStatusWidget(self.__container)
         
         print "action index", action.index()
