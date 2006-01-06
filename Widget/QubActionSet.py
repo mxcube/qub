@@ -1,8 +1,9 @@
 import qt
 import qtcanvas
 import sys
+import math
 
-from Qub.Widget.QubAction import QubAction,QubImageAction,QubToggleImageAction
+from Qub.Widget.QubAction import QubAction, QubImageAction, QubToggleImageAction
 from Qub.Icons.QubIcons import loadIcon
 
   
@@ -41,12 +42,12 @@ class QubButtonAction(QubAction):
         """
         QubAction.__init__(self, *args, **keys)
         
-        self._item = None
+        self._item  = None
         self._label = label
         
     def addToolWidget(self, parent):
         """
-        create print preview pushbutton in the toolbar of the view
+        create default pushbutton (with a label) in the toolbar of the view.
         """
         if self._widget is None:
             self._widget = qt.QPushButton(self._label, parent, "addtoppbutton")
@@ -229,7 +230,7 @@ class QubColormapAction(QubAction):
         create colormap pushbutton in the toolbar of the view
         create the colormap dialog if not already done
         """
-        
+                
         """
         create colormap dialog
         """
@@ -300,8 +301,28 @@ class QubColormapAction(QubAction):
     def sendColormap(self, colormap, autoscale, colorMin, colorMax):
         self.emit(qt.PYSIGNAL("ColormapChanged"),
                   (colormap, autoscale, colorMin, colorMax))
-                         
-                         
+
+
+
+###############################################################################
+####################          QubSeparatorAction           ####################
+###############################################################################
+class QubSeparatorAction(QubAction):
+    """
+    """
+    def __init__(self,  *args, **keys):
+        QubAction.__init__(self, *args, **keys)
+        
+    def addToolWidget(self, parent):
+        """
+        create widget for the view toolbar
+        """
+                
+        if self._widget is None:
+            self._widget = qt.QLabel("", parent)
+            
+        return self._widget
+    
 ###############################################################################
 ####################          QubRectangleSelection        ####################
 ###############################################################################
@@ -335,6 +356,8 @@ class QubRectangleSelection(QubToggleImageAction):
         QubToggleImageAction.__init__(self, *args, **keys)
 
         self.__rectCoord = qt.QRect(0, 0, 1, 1)
+
+        self._name = "rectangle"
     
     def viewConnect(self, qubImage):
         """
@@ -343,8 +366,10 @@ class QubRectangleSelection(QubToggleImageAction):
         QubToggleImageAction.viewConnect(self, qubImage)
 
         self.__rectangle = qtcanvas.QCanvasRectangle(self.__rectCoord,
-                                               self._qubImage.canvas())
+                                                     self._qubImage.canvas()
+                                                     )
         self.setColor(self._qubImage.foregroundColor())
+
 
     def setColor(self, color):
         """   
@@ -420,7 +445,8 @@ class QubRectangleSelection(QubToggleImageAction):
 
         self.__rectangle.update()            
 
-        
+
+
 ###############################################################################
 ####################            QubLineSelection           ####################
 ###############################################################################
@@ -455,7 +481,9 @@ class QubLineSelection(QubToggleImageAction):
 
         self.__startPt = qt.QPoint(0,0)
         self.__endPt   = qt.QPoint(1,1)
-    
+
+        self._name = "line"
+        
     def viewConnect(self, qubImage):
         """
         Once the qubImage is connected, create QCanvas Item
@@ -556,7 +584,618 @@ class QubLineSelection(QubToggleImageAction):
                        sys.exc_info()[2])
 
 
+###############################################################################
+####################            QubVLineSelection           ###################
+###############################################################################
+
+class QubVLineSelection(QubToggleImageAction):
+    """
+    Action acting on QubImage widget.
+    Select a vertical line and send x position using PYSIGNAL("VLineSelected").
+    """
+    def __init__(self, *args, **keys):
+        """
+        Constructor method
+        name ... :  string name of the action
+        qubImage :  action will act on a QubImage object. It can be set in
+                    the constructor method or using the "viewConnect" method
+                    of the class 
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None)
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it
+        index .. :  Position of the selection widget of the action in its
+                    group
+        Creates action widget to put in "group" dockarea of the "toolbar"
+        Return this widget.
+        Use name of the action to find icon file.
+        Initialise line start and end points variables.
+        """
+        QubToggleImageAction.__init__(self, *args, **keys)
         
+        self.__cursorPos  = 0
+        self.__imageHeight = 50
+
+        if self._qubImage != None:
+            self.__imageHeight = self._qubImage.visibleHeight()
+        else:
+            self.__imageHeight = 50
+
+        self.__startPt = qt.QPoint(0, 0)
+        self.__endPt   = qt.QPoint(0, self.__imageHeight)
+
+        self._name = "vline"
+        
+    def viewConnect(self, qubImage):
+        """
+        Once the qubImage is connected, create QCanvas Item
+        """
+        QubToggleImageAction.viewConnect(self, qubImage)
+
+        self.__line = qtcanvas.QCanvasLine(self._qubImage.canvas())
+        self.__line.setPoints(self.__startPt.x(), self.__startPt.y(),
+                              self.__endPt.x(), self.__endPt.y())
+
+        self.__VLineCursor = qtcanvas.QCanvasLine(self._qubImage.canvas())
+        self.__VLineCursor.setPoints(self.__cursorPos, 0,
+                                     self.__cursorPos,
+                                     self._qubImage.visibleHeight())
+
+        self.setColor(self._qubImage.foregroundColor())
+
+    def setColor(self, color):
+        """
+        set foreground color
+        """
+        self.__line.setBrush(qt.QBrush(color, qt.Qt.DiagCrossPattern))
+        self.__line.setPen(qt.QPen(color))
+        self.__line.update()
+
+        self.__VLineCursor.setBrush(qt.QBrush(color, qt.Qt.DiagCrossPattern))
+        self.__VLineCursor.setPen(qt.QPen(color))
+        self.__VLineCursor.update()
+
+    def _setState(self, bool):
+        """
+        Draw or Hide line canvas item
+        """
+        self.__state = bool
+        if self.__line is not None:
+            if self.__state:
+                self._connect(self._qubImage)
+                self.__line.show()
+                self.__VLineCursor.show()
+            else:
+                self._disconnect(self._qubImage)
+                self.__line.hide()
+                self.__VLineCursor.hide()
+            
+            self.__line.update()
+            self.__VLineCursor.update()
+                
+    def mousePress(self, event):
+        """
+        Update start and end point of the line to be the same on the mouse
+        position
+        """ 
+        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        self.__startPt.setX(x)
+        self.__startPt.setY(0)
+        self.__endPt.setX(x)
+        self.__endPt.setY(self._qubImage.visibleHeight())
+
+        try:
+            self.emit(qt.PYSIGNAL("VLineSelected"), (x,))
+            self.viewportUpdate()
+        except:
+            sys.excepthook(sys.exc_info()[0],
+                           sys.exc_info()[1],
+                           sys.exc_info()[2])
+            
+    def mouseMove(self, event):
+        """
+        Move the VLine cursor.
+        """
+        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(),
+                                                       event.y())
+        self.__cursorPos = x
+
+        self.viewportUpdate()
+
+    def mouseRelease(self, event):
+        """
+        """
+        pass 
+
+    def viewportUpdate(self):
+        """
+        Draw line either if qubImage pixmap has been updated or
+        line coordinates have been changed by the user
+        """
+        try:
+            startPt = self._qubImage.matrix.map(self.__startPt)
+            endPt = self._qubImage.matrix.map(self.__endPt)
+
+            self.__line.setPoints(startPt.x(),startPt.y(), endPt.x(), endPt.y())
+            self.__VLineCursor.setPoints(self.__cursorPos, 0,
+                                         self.__cursorPos,
+                                         self._qubImage.visibleHeight())
+                
+            self.__line.update()
+            self.__VLineCursor.update()
+
+        except:
+            sys.excepthook(sys.exc_info()[0],
+                       sys.exc_info()[1],
+                       sys.exc_info()[2])
+
+
+
+
+
+###############################################################################
+####################            QubHLineSelection           ###################
+###############################################################################
+
+class QubHLineSelection(QubToggleImageAction):
+    """
+    Action acting on QubImage widget.
+    Select an horizontal line and send position using PYSIGNAL("HLineSelected").
+    """
+    def __init__(self, *args, **keys):
+        """
+        Constructor method
+        name ... :  string name of the action
+        qubImage :  action will act on a QubImage object. It can be set in
+                    the constructor method or using the "viewConnect" method
+                    of the class 
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None)
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it
+        index .. :  Position of the selection widget of the action in its
+                    group
+        Creates action widget to put in "group" dockarea of the "toolbar"
+        Return this widget.
+        Use name of the action to find icon file.
+        Initialise line start and end points variables.
+        """
+        QubToggleImageAction.__init__(self, *args, **keys)
+        
+        self.__cursorPos  = 0
+        self.__imageWidth = 50
+
+        if self._qubImage != None:
+            __imgWidth = self._qubImage.visibleWidth()
+        else:
+            __imgWidth = 50
+            
+        self.__startPt = qt.QPoint(0, 0)
+        self.__endPt   = qt.QPoint(0, __imgWidth)
+
+        self._name = "hline"
+        
+    def viewConnect(self, qubImage):
+        """
+        Once the qubImage is connected, create QCanvas Item
+        """
+        QubToggleImageAction.viewConnect(self, qubImage)
+
+        self.__line = qtcanvas.QCanvasLine(self._qubImage.canvas())
+        self.__line.setPoints(self.__startPt.x(), self.__startPt.y(),
+                              self.__endPt.x(), self.__endPt.y())
+
+        self.__HLineCursor = qtcanvas.QCanvasLine(self._qubImage.canvas())
+        self.__HLineCursor.setPoints(0, self.__cursorPos,
+                                     self._qubImage.visibleWidth(),
+                                     self.__cursorPos )
+
+        self.setColor(self._qubImage.foregroundColor())
+
+    def setColor(self, color):
+        """
+        set foreground color
+        """
+        self.__line.setBrush(qt.QBrush(color, qt.Qt.DiagCrossPattern))
+        self.__line.setPen(qt.QPen(color))
+        self.__line.update()
+
+        self.__HLineCursor.setBrush(qt.QBrush(color, qt.Qt.DiagCrossPattern))
+        self.__HLineCursor.setPen(qt.QPen(color))
+        self.__HLineCursor.update()
+
+    def _setState(self, bool):
+        """
+        Draw or Hide Hline canvas item
+        """
+        self.__state = bool
+        if self.__line is not None:
+            if self.__state:
+                self._connect(self._qubImage)
+                self.__line.show()
+                self.__HLineCursor.show()
+            else:
+                self._disconnect(self._qubImage)
+                self.__line.hide()
+                self.__HLineCursor.hide()
+            
+            self.__line.update()
+            self.__HLineCursor.update()
+                
+    def mousePress(self, event):
+        """
+        Update start and end point of the line to be the same on the mouse
+        position
+        """ 
+        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        self.__startPt.setX(0)
+        self.__startPt.setY(y)
+        self.__endPt.setX(self._qubImage.visibleWidth())
+        self.__endPt.setY(y)
+
+        try:
+            self.emit(qt.PYSIGNAL("HLineSelected"), (y,))
+            self.viewportUpdate()
+        except:
+            sys.excepthook(sys.exc_info()[0],
+                           sys.exc_info()[1],
+                           sys.exc_info()[2])
+            
+    def mouseMove(self, event):
+        """
+        Move the VLine cursor.
+        """
+        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(),
+                                                       event.y())
+        self.__cursorPos = y
+
+        self.viewportUpdate()
+
+    def mouseRelease(self, event):
+        """
+        """
+        pass 
+
+    def viewportUpdate(self):
+        """
+        Draw line either if qubImage pixmap has been updated or
+        line coordinates have been changed by the user
+        """
+        try:
+            startPt = self._qubImage.matrix.map(self.__startPt)
+            endPt = self._qubImage.matrix.map(self.__endPt)
+
+            self.__line.setPoints(startPt.x(),startPt.y(), endPt.x(), endPt.y())
+            self.__HLineCursor.setPoints(0, self.__cursorPos,
+                                         self._qubImage.visibleWidth(),
+                                         self.__cursorPos )
+                
+            self.__line.update()
+            self.__HLineCursor.update()
+
+        except:
+            sys.excepthook(sys.exc_info()[0],
+                       sys.exc_info()[1],
+                       sys.exc_info()[2])
+
+
+
+
+
+
+
+
+class QubCanvasEllipse(qtcanvas.QCanvasEllipse):      
+    def drawShape(self, p):
+        p.drawArc(int(self.x()-self.width()/2+0.5), 
+                  int(self.y()-self.height()/2+0.5), 
+                  self.width(), self.height(), 
+                  self.angleStart(), self.angleLength())       
+
+class QubCanvasDonut(qtcanvas.QCanvasEllipse):
+    """
+    """
+    def setClip(self, w, h):
+        self.win = w
+        self.hin = h
+             
+    def drawShape(self, p):
+        try:
+            xout = int(self.x() - self.width()/2+0.5)
+            yout = int(self.y() - self.height()/2+0.5)
+            
+            xin  = int(self.x() - self.win/2+0.5)
+            yin  = int(self.y() - self.hin/2+0.5)
+            
+            self.regionout = QRegion(xout, yout,
+                                     self.width() + 2,
+                                     self.height()+2, 
+                                     QRegion.Ellipse)
+            
+            self.regionin  = QRegion(xin, yin, self.win, self.hin,
+                                     QRegion.Ellipse)
+            self.region = self.regionout.subtract(self.regionin)
+            
+            p.setClipRegion(self.region, QPainter.CoordPainter)
+            p.setPen(Qt.NoPen)
+            p.drawEllipse(xout, yout, self.width(), self.height())
+            
+            p.setClipping(0)       
+        except:
+            sys.excepthook(sys.exc_info()[0],
+                       sys.exc_info()[1],
+                       sys.exc_info()[2])
+
+
+
+###############################################################################
+#####################          QubCircleSelection        ######################
+###############################################################################
+class QubCircleSelection(QubToggleImageAction):
+    """
+    Action acting on QubImage widget.
+    Select a circle and send its (center, radius) parameters using
+    PYSIGNAL("CircleSelected")
+    """
+    def __init__(self, *args, **keys):
+        """
+        Constructor method
+        name ... :  string name of the action
+        qubImage :  action will act on a QubImage object. It can be set in
+                    the constructor method or using the "viewConnect" method
+                    of the class 
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None)
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it
+        index .. :  Position of the selection widget of the action in its
+                    group
+        Creates action widget to put in "group" dockarea of the "toolbar"
+        Return this widget.
+        Use name of the action to find icon file
+        Initialyse circle position variables
+        """
+        QubToggleImageAction.__init__(self, *args, **keys)
+
+        self.__rectCoord = qt.QRect(0, 0, 1, 1)
+        self.__x0 = 0
+        self.__y0 = 0
+
+        self._name = "circle"
+    
+    def viewConnect(self, qubImage):
+        """
+        Once the qubImage is connected, create QCanvas Item
+        """
+        QubToggleImageAction.viewConnect(self, qubImage)
+
+        self.__circle = QubCanvasEllipse( self.__rectCoord.width(),
+                                         self.__rectCoord.height(),
+                                         self._qubImage.canvas()
+                                         )
+        self.setColor(self._qubImage.foregroundColor())
+
+    def setColor(self, color):
+        """   
+        Slot connected to "ForegroundColorChanged" "qubImage" signal
+        """
+        #self.__circle.setBrush(qt.QBrush(color,  qt.Qt.NoBrush ))
+        self.__circle.setPen(qt.QPen(color))
+        self.__circle.update()
+
+    def _setState(self, bool):
+        """
+        Draw or Hide circle canvas item
+        """
+        self.__state = bool
+        if self.__circle is not None:
+            if self.__state:
+                self._connect(self._qubImage)
+                self.__circle.show()
+            else:
+                self._disconnect(self._qubImage)
+                self.__circle.hide()
+            
+            self.__circle.update()
+
+    def mousePress(self, event):
+        """
+        Update upper-left corner position of the rectangle and sets its
+        width and height to 1
+        """ 
+        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        self.__x0 = x
+        self.__y0 = y
+        self.__rectCoord.setRect(x, y, 1, 1)
+        self.viewportUpdate()
+    
+    def mouseMove(self, event):
+        """
+        Upper-left corner of the rectangle has been fixed when mouse press,
+        Updates now the width and height to follow the mouse position
+        """
+        if event.state() == qt.Qt.LeftButton:
+            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), 
+                                                           event.y())
+
+            dx = x - self.__x0
+            dy = y - self.__y0
+            radius = math.sqrt( pow(dx,2) + pow(dy,2) )
+            w = radius * 2.0
+            h = radius * 2.0
+            xc = self.__x0 - radius
+            yc = self.__y0 - radius
+            self.__rectCoord.setRect(xc, yc, w, h)
+            self.viewportUpdate()
+            
+    def mouseRelease(self, event):
+        """
+        Rectangle selection is finished, send corresponding signal
+        with coordinates
+        """
+        self.emit(qt.PYSIGNAL("CircleSelected"), 
+                  (0, 0, 0))
+
+        self.viewportUpdate()
+        
+    def viewportUpdate(self):
+        """
+        Draw Circle either if qubImage pixmap has been updated or
+        rectangle coordinates have been changed by the user
+        """
+        rect = self._qubImage.matrix.map(self.__rectCoord)
+        (x,y) = self._qubImage.matrix.map(self.__x0, self.__y0)
+
+        self.__circle.setSize(rect.width(), rect.height())
+        self.__circle.move(x, y)
+        
+        self.__circle.update()            
+
+
+
+
+
+
+###############################################################################
+#####################          QubDiscSelection        ######################
+###############################################################################
+class QubDiscSelection(QubToggleImageAction):
+    """
+    Action acting on QubImage widget.
+    Select a disc and send its (center, radius) parameters using
+    PYSIGNAL("DiscSelected")
+    """
+    def __init__(self, *args, **keys):
+        """
+        Constructor method
+        name ... :  string name of the action
+        qubImage :  action will act on a QubImage object. It can be set in
+                    the constructor method or using the "viewConnect" method
+                    of the class 
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None)
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it
+        index .. :  Position of the selection widget of the action in its
+                    group
+        Creates action widget to put in "group" dockarea of the "toolbar"
+        Return this widget.
+        Use name of the action to find icon file
+        Initialyse disc position variables
+        """
+        QubToggleImageAction.__init__(self, *args, **keys)
+
+        self.__rectCoord = qt.QRect(0, 0, 1, 1)
+        self.__x0 = 0
+        self.__y0 = 0
+
+        self._name = "disc"
+    
+    def viewConnect(self, qubImage):
+        """
+        Once the qubImage is connected, create QCanvas Item
+        """
+        QubToggleImageAction.viewConnect(self, qubImage)
+
+        self.__disc = qtcanvas.QCanvasEllipse( self.__rectCoord.width(),
+                                         self.__rectCoord.height(),
+                                         self._qubImage.canvas()
+                                         )
+        self.setColor(self._qubImage.foregroundColor())
+
+    def setColor(self, color):
+        """   
+        Slot connected to "ForegroundColorChanged" "qubImage" signal
+        """
+        self.__disc.setBrush(qt.QBrush(color, qt.Qt.DiagCrossPattern))
+        self.__disc.setPen(qt.QPen(color))
+        self.__disc.update()
+
+    def _setState(self, bool):
+        """
+        Draw or Hide disc canvas item
+        """
+        self.__state = bool
+        if self.__disc is not None:
+            if self.__state:
+                self._connect(self._qubImage)
+                self.__disc.show()
+            else:
+                self._disconnect(self._qubImage)
+                self.__disc.hide()
+            
+            self.__disc.update()
+
+    def mousePress(self, event):
+        """
+        Update upper-left corner position of the rectangle and sets its
+        width and height to 1
+        """ 
+        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        self.__x0 = x
+        self.__y0 = y
+        self.__rectCoord.setRect(x, y, 1, 1)
+        self.viewportUpdate()
+    
+    def mouseMove(self, event):
+        """
+        Upper-left corner of the rectangle has been fixed when mouse press,
+        Updates now the width and height to follow the mouse position
+        """
+        if event.state() == qt.Qt.LeftButton:
+            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), 
+                                                           event.y())
+
+            dx = x - self.__x0
+            dy = y - self.__y0
+            radius = math.sqrt( pow(dx,2) + pow(dy,2) )
+            w = radius * 2.0
+            h = radius * 2.0
+            xc = self.__x0 - radius
+            yc = self.__y0 - radius
+            self.__rectCoord.setRect(xc, yc, w, h)
+            self.viewportUpdate()
+            
+    def mouseRelease(self, event):
+        """
+        Rectangle selection is finished, send corresponding signal
+        with coordinates
+        """
+        self.emit(qt.PYSIGNAL("DiscSelected"), 
+                  (0, 0, 0))
+
+        self.viewportUpdate()
+        
+    def viewportUpdate(self):
+        """
+        Draw Disc either if qubImage pixmap has been updated or
+        rectangle coordinates have been changed by the user
+        """
+        rect = self._qubImage.matrix.map(self.__rectCoord)
+        (x,y) = self._qubImage.matrix.map(self.__x0, self.__y0)
+
+        self.__disc.setSize(rect.width(), rect.height())
+        self.__disc.move(x, y)
+        
+        self.__disc.update()            
+
+
+
+
+
+
 ###############################################################################
 ####################            QubZoomListAction          ####################
 ###############################################################################
@@ -582,7 +1221,7 @@ class QubZoomListAction(QubAction):
 
     def viewConnect(self, qubImage):
         """
-        connect action with the QubImage object on which it will be applied
+        connect actio0n with the QubImage object on which it will be applied
         """
         self._qubImage = qubImage
               
@@ -590,7 +1229,7 @@ class QubZoomListAction(QubAction):
         """
         Creates widgets to be added in the toolbar
         """
-        
+
         """
         menu to select zoom value
         """
@@ -693,21 +1332,45 @@ class QubMain(qt.QMainWindow):
         
         actions = []
         
+
+        # A1
         action = QubColormapAction(show=1, group="color")
         actions.append(action)
+        
         action.setParam(self.colormap, self.colorMin, self.colorMax,
                         self.dataMin, self.dataMax, self.autoscale)
         self.connect(action, qt.PYSIGNAL("ColormapChanged"),
                         self.colormapChanged)
         
+        # A2
         action = QubPrintPreviewAction(show=1, group="admin")
         actions.append(action)
         
-        action = QubRectangleSelection(show=1, group="selection")
+        # A3
+        action = QubSeparatorAction(show=1)
         actions.append(action)
         
-        action = QubLineSelection(show=1,group="selection")
+        action = QubHLineSelection(show=1, group="selection")
         actions.append(action)
+
+        action = QubVLineSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubLineSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubRectangleSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubCircleSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubDiscSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubZoomListAction(show=1, group="zoom")
+        actions.append(action)
+
         
         container = qt.QWidget(self)
         
@@ -735,8 +1398,8 @@ class QubMain(qt.QMainWindow):
                                                self.colormapSps[self.colormap],
                                                self.autoscale, 
                                                (self.colorMin, self.colorMax))
-        image = qt.QImage(image_str,size[0],size[1],32,None,0,
-                      qt.QImage.IgnoreEndian)
+        image = qt.QImage(image_str, size[0], size[1], 32, None, 0,
+                          qt.QImage.IgnoreEndian)
         pixmap = qt.QPixmap()
         pixmap.convertFromImage(image)         	      
         
@@ -746,8 +1409,8 @@ class QubMain(qt.QMainWindow):
     def readEdfFile(self, file):    
         edf = EdfFile.EdfFile(file)
         self.data = edf.GetData(0)
-        self.dataMin = Numeric.minimum.reduce(Numeric.minimum.reduce(self.data))
-        self.dataMax = Numeric.maximum.reduce(Numeric.maximum.reduce(self.data))
+        self.dataMin = min(Numeric.ravel(self.data))
+        self.dataMax = min(Numeric.ravel(self.data))
 
                        
 ##  MAIN   
@@ -762,7 +1425,7 @@ if  __name__ == '__main__':
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
                     app, qt.SLOT("quit()"))
 
-    window = QubMain(file=sys.argv[1])
+    window = QubMain(None, file = sys.argv[1])
     
     window.resize(500,300)
     app.setMainWidget(window)
