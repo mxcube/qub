@@ -336,7 +336,9 @@ class QubToggleImageAction(QubImageAction):
                     group.
         """
         QubImageAction.__init__(self, *args, **keys)
-            
+
+        self._name = "default"
+        
     def addToolWidget(self, parent):
         """
         Creates action widget to put in "group" dockarea of the "toolbar"
