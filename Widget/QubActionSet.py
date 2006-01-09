@@ -323,13 +323,14 @@ class QubSeparatorAction(QubAction):
             
         return self._widget
     
+
 ###############################################################################
 ####################          QubRectangleSelection        ####################
 ###############################################################################
 class QubRectangleSelection(QubToggleImageAction):
     """
     Action acting on QubImage widget.
-    Select a rectangle and send its (x,y,width,height) parameters using
+    Select a rectangle and send its (x, y, width, height) parameters using
     PYSIGNAL("RectangleSelected")
     """
     def __init__(self, *args, **keys):
@@ -555,16 +556,16 @@ class QubLineSelection(QubToggleImageAction):
             
             self.__endPt.setX(x)
             self.__endPt.setY(y)
-            (x1,y1,x2,y2) = (self.__startPt.x(), self.__startPt.y(),
-                             self.__endPt.x(), self.__endPt.y())
+            (x1, y1, x2, y2) = (self.__startPt.x(), self.__startPt.y(),
+                                self.__endPt.x(), self.__endPt.y())
             
             self.emit(qt.PYSIGNAL("LineSelected"), (x1, y1, x2, y2))
 
             self.viewportUpdate()
         except:
             sys.excepthook(sys.exc_info()[0],
-                       sys.exc_info()[1],
-                       sys.exc_info()[2])
+                           sys.exc_info()[1],
+                           sys.exc_info()[2])
 
     def viewportUpdate(self):
         """
@@ -884,13 +885,9 @@ class QubHLineSelection(QubToggleImageAction):
                        sys.exc_info()[1],
                        sys.exc_info()[2])
 
-
-
-
-
-
-
-
+#
+# 2 classes to help to draw circles and donuts/2dTorus
+#
 class QubCanvasEllipse(qtcanvas.QCanvasEllipse):      
     def drawShape(self, p):
         p.drawArc(int(self.x()-self.width()/2+0.5), 
@@ -969,7 +966,8 @@ class QubCircleSelection(QubToggleImageAction):
         self.__rectCoord = qt.QRect(0, 0, 1, 1)
         self.__x0 = 0
         self.__y0 = 0
-
+        self.__radius = 0
+        
         self._name = "circle"
     
     def viewConnect(self, qubImage):
@@ -988,7 +986,6 @@ class QubCircleSelection(QubToggleImageAction):
         """   
         Slot connected to "ForegroundColorChanged" "qubImage" signal
         """
-        #self.__circle.setBrush(qt.QBrush(color,  qt.Qt.NoBrush ))
         self.__circle.setPen(qt.QPen(color))
         self.__circle.update()
 
@@ -1035,15 +1032,16 @@ class QubCircleSelection(QubToggleImageAction):
             xc = self.__x0 - radius
             yc = self.__y0 - radius
             self.__rectCoord.setRect(xc, yc, w, h)
+            self.__radius = radius
             self.viewportUpdate()
             
     def mouseRelease(self, event):
         """
         Rectangle selection is finished, send corresponding signal
-        with coordinates
+        with coordinates (center and radius)
         """
         self.emit(qt.PYSIGNAL("CircleSelected"), 
-                  (0, 0, 0))
+                  (self.__x0, self.__y0, self.__radius))
 
         self.viewportUpdate()
         
@@ -1100,7 +1098,8 @@ class QubDiscSelection(QubToggleImageAction):
         self.__rectCoord = qt.QRect(0, 0, 1, 1)
         self.__x0 = 0
         self.__y0 = 0
-
+        self.__radius = 0
+        
         self._name = "disc"
     
     def viewConnect(self, qubImage):
@@ -1165,6 +1164,7 @@ class QubDiscSelection(QubToggleImageAction):
             h = radius * 2.0
             xc = self.__x0 - radius
             yc = self.__y0 - radius
+            self.__radius = radius
             self.__rectCoord.setRect(xc, yc, w, h)
             self.viewportUpdate()
             
@@ -1174,7 +1174,7 @@ class QubDiscSelection(QubToggleImageAction):
         with coordinates
         """
         self.emit(qt.PYSIGNAL("DiscSelected"), 
-                  (0, 0, 0))
+                  (self.__x0, self.__y0, self.__radius))
 
         self.viewportUpdate()
         
@@ -1190,8 +1190,6 @@ class QubDiscSelection(QubToggleImageAction):
         self.__disc.move(x, y)
         
         self.__disc.update()            
-
-
 
 
 
@@ -1332,7 +1330,6 @@ class QubMain(qt.QMainWindow):
         
         actions = []
         
-
         # A1
         action = QubColormapAction(show=1, group="color")
         actions.append(action)
@@ -1424,6 +1421,10 @@ if  __name__ == '__main__':
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
                     app, qt.SLOT("quit()"))
+
+    if len(sys.argv) < 2:
+        print "Usage to test : QubActionSet.py file.edf"
+        sys.exit()
 
     window = QubMain(None, file = sys.argv[1])
     
