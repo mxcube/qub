@@ -1193,7 +1193,6 @@ class QubDiscSelection(QubToggleImageAction):
 
 
 
-
 ###############################################################################
 ####################            QubZoomListAction          ####################
 ###############################################################################
@@ -1212,7 +1211,9 @@ class QubZoomListAction(QubAction):
         self._zoomStrList = ["10%", "25%", "50%", "75%", "100%", "200%",
                              "300%", "400%", "500%"] 
         self._zoomValList = [0.1, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5]
-        
+
+        self._zoomVal = 1
+
         self._item = None
         
         self._qubImage = None
@@ -1257,8 +1258,8 @@ class QubZoomListAction(QubAction):
         self._menu = menu
         
         if self._item is None:
-            qstr = qt.QString("%d%%"%(int(self.zoomVal*100)))
-            self._item = menu.insertItem(qstr, self._ListPopupMenu)
+            qstr = qt.QString("%d%%"%(int(self._zoomVal*100)))
+            self._item = menu.insertItem(qstr, self._listPopupMenu)
             menu.connectItem(self._item, self._listPopupMenu.exec_loop)
 
     def _applyZoomFromList(self, index):
@@ -1271,17 +1272,17 @@ class QubZoomListAction(QubAction):
             """
             Calculate zoom value from array
             """        
-            zoomVal = self._zoomValList[index]
+            self._zoomVal = self._zoomValList[index]
 
             """
             check zoom value
             """
-            zoomVal = self._checkZoomVal(zoomVal)
+            self._zoomVal = self._checkZoomVal(self._zoomVal)
 
             """
             update zoom value as percentage in toolbar and menu widget
             """        
-            qstr = qt.QString("%d%%"%(int(zoomVal*100)))
+            qstr = qt.QString("%d%%"%(int(self._zoomVal*100)))
             self._widget.setText(qstr)
             if self._item is not None:
                 self.menu.changeItem(self._item, qstr)
@@ -1289,7 +1290,7 @@ class QubZoomListAction(QubAction):
             """
             calculate and display new pixmap not centered
             """
-            self._qubImage.setZoom(zoomVal, zoomVal)
+            self._qubImage.setZoom(self._zoomVal, self._zoomVal)
 
             """
             restore cursor
