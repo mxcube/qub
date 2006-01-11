@@ -1245,8 +1245,7 @@ class QubZoomListAction(QubAction):
         self._widget.setAutoRaise(True)
         self._widget.setPopup(self._listPopupMenu)
         self._widget.setPopupDelay(0)
-        self._widget.setIconSet(qt.QIconSet(loadIcon("zoomrect.png")))
-        #self._widget.setText(qt.QString(self._zoomStrList[4]))
+        self._widget.setText(qt.QString(self._zoomStrList[4]))
 
         self._widget.setFixedSize(75,27)
         
@@ -1263,6 +1262,14 @@ class QubZoomListAction(QubAction):
             menu.connectItem(self._item, self._listPopupMenu.exec_loop)
 
     def _applyZoomFromList(self, index):
+            """
+            Calculate zoom value from array
+            """        
+            zoomVal = self._zoomValList[index]
+            
+            self._applyZoom(zoomVal)
+    
+    def _applyZoom(self, zoomVal):
         if self._qubImage is not None:
             """
             set wait cursor as changing zoom factor could take some times
@@ -1296,7 +1303,7 @@ class QubZoomListAction(QubAction):
             restore cursor
             """
             self._qubImage.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
-        
+            
     def _checkZoomVal(self, zoom):
         maxVal = 3000
         
