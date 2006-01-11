@@ -312,7 +312,8 @@ class QubSeparatorAction(QubAction):
     """
     def __init__(self,  *args, **keys):
         QubAction.__init__(self, *args, **keys)
-        
+        self._name = "sep"
+
     def addToolWidget(self, parent):
         """
         create widget for the view toolbar
@@ -391,12 +392,13 @@ class QubRectangleSelection(QubToggleImageAction):
         Draw or Hide rectangle canvas item
         """
         self.__state = bool
+
         if self.__rectangle is not None:
             if self.__state:
-                self._connect(self._qubImage)
+                self.signalConnect(self._qubImage)
                 self.__rectangle.show()
             else:
-                self._disconnect(self._qubImage)
+                self.signalDisconnect(self._qubImage)
                 self.__rectangle.hide()
             
             self.__rectangle.update()
@@ -405,8 +407,8 @@ class QubRectangleSelection(QubToggleImageAction):
         """
         Update upper-left corner position of the rectangle and sets its
         width and height to 1
-        """ 
-        (x, y)=self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        """
+        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
         self.__rectCoord.setRect(x, y, 1, 1)
         self.viewportUpdate()
     
@@ -417,11 +419,11 @@ class QubRectangleSelection(QubToggleImageAction):
         """
         if event.state() == qt.Qt.LeftButton:
             (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), 
-                                                          event.y())
+                                                           event.y())
             w = x - self.__rectCoord.x()
             h = y - self.__rectCoord.y()
             self.__rectCoord.setSize(qt.QSize(w, h))
-
+                
             self.viewportUpdate()
     
     def mouseRelease(self, event):
@@ -433,11 +435,11 @@ class QubRectangleSelection(QubToggleImageAction):
         w = x - self.__rectCoord.x()
         h = y - self.__rectCoord.y()
         self.__rectCoord.setSize(qt.QSize(w, h))
-
+        
         self.emit(qt.PYSIGNAL("RectangleSelected"), 
                   (self.__rectCoord.x(), self.__rectCoord.y(), 
                    self.__rectCoord.width(), self.__rectCoord.height()))
-
+        
         self.viewportUpdate()
         
     def viewportUpdate(self):
@@ -520,10 +522,10 @@ class QubLineSelection(QubToggleImageAction):
         self.__state = bool
         if self.__line is not None:
             if self.__state:
-                self._connect(self._qubImage)
+                self.signalConnect(self._qubImage)
                 self.__line.show()
             else:
-                self._disconnect(self._qubImage)
+                self.signalDisconnect(self._qubImage)
                 self.__line.hide()
             
             self.__line.update()
@@ -538,7 +540,7 @@ class QubLineSelection(QubToggleImageAction):
         self.__startPt.setY(y)
         self.__endPt.setX(x)
         self.__endPt.setY(y)
-
+            
         self.viewportUpdate()
 
     def mouseMove(self, event):
@@ -551,7 +553,7 @@ class QubLineSelection(QubToggleImageAction):
                                                            event.y())
             self.__endPt.setX(x)
             self.__endPt.setY(y)
-
+            
             self.viewportUpdate()
 
     def mouseRelease(self, event):
@@ -560,7 +562,8 @@ class QubLineSelection(QubToggleImageAction):
         with PYSIGNAL("LineSelected")
         """
         try:
-            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(),
+                                                           event.y())
             
             self.__endPt.setX(x)
             self.__endPt.setY(y)
@@ -568,13 +571,13 @@ class QubLineSelection(QubToggleImageAction):
                                 self.__endPt.x(), self.__endPt.y())
             
             self.emit(qt.PYSIGNAL("LineSelected"), (x1, y1, x2, y2))
-
+            
             self.viewportUpdate()
         except:
             sys.excepthook(sys.exc_info()[0],
                            sys.exc_info()[1],
                            sys.exc_info()[2])
-
+                
     def viewportUpdate(self):
         """
         Draw line either if qubImage pixmap has been updated or
@@ -675,11 +678,11 @@ class QubVLineSelection(QubToggleImageAction):
         self.__state = bool
         if self.__line is not None:
             if self.__state:
-                self._connect(self._qubImage)
+                self.signalConnect(self._qubImage)
                 self.__line.show()
                 self.__VLineCursor.show()
             else:
-                self._disconnect(self._qubImage)
+                self.signalDisconnect(self._qubImage)
                 self.__line.hide()
                 self.__VLineCursor.hide()
             
@@ -696,7 +699,7 @@ class QubVLineSelection(QubToggleImageAction):
         self.__startPt.setY(0)
         self.__endPt.setX(x)
         self.__endPt.setY(self._qubImage.visibleHeight())
-
+        
         try:
             self.emit(qt.PYSIGNAL("VLineSelected"), (x,))
             self.viewportUpdate()
@@ -712,7 +715,6 @@ class QubVLineSelection(QubToggleImageAction):
         (x, y) = self._qubImage.matrix.invert()[0].map(event.x(),
                                                        event.y())
         self.__cursorPos = x
-
         self.viewportUpdate()
 
     def mouseRelease(self, event):
@@ -828,11 +830,11 @@ class QubHLineSelection(QubToggleImageAction):
         self.__state = bool
         if self.__line is not None:
             if self.__state:
-                self._connect(self._qubImage)
+                self.signalConnect(self._qubImage)
                 self.__line.show()
                 self.__HLineCursor.show()
             else:
-                self._disconnect(self._qubImage)
+                self.signalDisconnect(self._qubImage)
                 self.__line.hide()
                 self.__HLineCursor.hide()
             
@@ -849,7 +851,7 @@ class QubHLineSelection(QubToggleImageAction):
         self.__startPt.setY(y)
         self.__endPt.setX(self._qubImage.visibleWidth())
         self.__endPt.setY(y)
-
+        
         try:
             self.emit(qt.PYSIGNAL("HLineSelected"), (y,))
             self.viewportUpdate()
@@ -865,7 +867,7 @@ class QubHLineSelection(QubToggleImageAction):
         (x, y) = self._qubImage.matrix.invert()[0].map(event.x(),
                                                        event.y())
         self.__cursorPos = y
-
+        
         self.viewportUpdate()
 
     def mouseRelease(self, event):
@@ -1007,10 +1009,10 @@ class QubCircleSelection(QubToggleImageAction):
         self.__state = bool
         if self.__circle is not None:
             if self.__state:
-                self._connect(self._qubImage)
+                self.signalConnect(self._qubImage)
                 self.__circle.show()
             else:
-                self._disconnect(self._qubImage)
+                self.signalDisconnect(self._qubImage)
                 self.__circle.hide()
             
             self.__circle.update()
@@ -1034,7 +1036,7 @@ class QubCircleSelection(QubToggleImageAction):
         if event.state() == qt.Qt.LeftButton:
             (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), 
                                                            event.y())
-
+            
             dx = x - self.__x0
             dy = y - self.__y0
             radius = math.sqrt( pow(dx,2) + pow(dy,2) )
@@ -1053,7 +1055,7 @@ class QubCircleSelection(QubToggleImageAction):
         """
         self.emit(qt.PYSIGNAL("CircleSelected"), 
                   (self.__x0, self.__y0, self.__radius))
-
+        
         self.viewportUpdate()
         
     def viewportUpdate(self):
@@ -1141,10 +1143,10 @@ class QubDiscSelection(QubToggleImageAction):
         self.__state = bool
         if self.__disc is not None:
             if self.__state:
-                self._connect(self._qubImage)
+                self.signalConnect(self._qubImage)
                 self.__disc.show()
             else:
-                self._disconnect(self._qubImage)
+                self.signalDisconnect(self._qubImage)
                 self.__disc.hide()
             
             self.__disc.update()
@@ -1168,7 +1170,7 @@ class QubDiscSelection(QubToggleImageAction):
         if event.state() == qt.Qt.LeftButton:
             (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), 
                                                            event.y())
-
+            
             dx = x - self.__x0
             dy = y - self.__y0
             radius = math.sqrt( pow(dx,2) + pow(dy,2) )
@@ -1187,7 +1189,7 @@ class QubDiscSelection(QubToggleImageAction):
         """
         self.emit(qt.PYSIGNAL("DiscSelected"), 
                   (self.__x0, self.__y0, self.__radius))
-
+        
         self.viewportUpdate()
         
     def viewportUpdate(self):
@@ -1321,14 +1323,14 @@ class QubZoomListAction(QubAction):
         
         newzoom = zoom
         
-        w = self._qubImage.dataPixmap.width() * zoom
+        w = self._qubImage.dataPixmap.width()  * zoom
         h = self._qubImage.dataPixmap.height() * zoom
         
         if w > maxVal or h > maxVal:
             if w > h:
-                newzoom = float(maxVal) / float(self.drawable.dataPixmap.width())
+                newzoom = float(maxVal)/float(self.drawable.dataPixmap.width())
             else:
-                newzoom = float(maxVal) / float(self.drawable.dataPixmap.height())
+                newzoom = float(maxVal)/float(self.drawable.dataPixmap.height())
                 
         return newzoom
        
@@ -1379,6 +1381,9 @@ class QubMain(qt.QMainWindow):
         actions.append(action)
 
         action = QubCircleSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubSeparatorAction(show=1, group="selection")
         actions.append(action)
 
         action = QubDiscSelection(show=1, group="selection")

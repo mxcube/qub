@@ -218,6 +218,7 @@ class QubImageAction(QubAction):
         QubAction.__init__(self, name, place, show, group, index)
         
         self._qubImage = None
+        self._sigConnected = False
         
         if qubImage is not None:
             self.viewConnect(qubImage)
@@ -236,47 +237,59 @@ class QubImageAction(QubAction):
             "ViewportUpdated" : displayed pixmap of "qubImage" has changed 
                                 (new pixmap or new size)
         """
+        connect = self._sigConnected
+        
         if self._qubImage is not None and qubImage is not None and \
            self._qubImage != qubImage:
             """
             disconnect action from previous qubImage
             """
-            self._disconnect(self._qubImage)
+            self.signalDisconnect(self._qubImage)
             self._qubImage = None
 
         if qubImage is not None:
             self._qubImage = qubImage
-            self._connect(self._qubImage)
-            
-    def _connect(self, view):
+            if connect:
+                self.signalConnect(self._qubImage)
+            else:
+                self.signalDisconnect(self._qubImage)
+
+    def signalConnect(self, view):
         """
         Connect action to view signals
         """
-        self.connect(view, qt.PYSIGNAL("ForegroundColorChanged"),
-                        self.setColor)
-        self.connect(view, qt.PYSIGNAL("MouseMoved"),
-                        self.mouseMove)
-        self.connect(view, qt.PYSIGNAL("MousePressed"),
-                        self.mousePress)
-        self.connect(view, qt.PYSIGNAL("MouseReleased"),
-                        self.mouseRelease)
-        self.connect(view, qt.PYSIGNAL("ViewportUpdated"),
-                        self.viewportUpdate)
-    
-    def _disconnect(self, view):
+        if not self._sigConnected:
+            self.connect(view, qt.PYSIGNAL("ForegroundColorChanged"),
+                         self.setColor)
+            self.connect(view, qt.PYSIGNAL("MouseMoved"),
+                         self.mouseMove)
+            self.connect(view, qt.PYSIGNAL("MousePressed"),
+                         self.mousePress)
+            self.connect(view, qt.PYSIGNAL("MouseReleased"),
+                         self.mouseRelease)
+            self.connect(view, qt.PYSIGNAL("ViewportUpdated"),
+                         self.viewportUpdate)
+
+        self._sigConnected = True
+
+    def signalDisconnect(self, view):
         """
         Disconnect action to view signals
         """
-        self.disconnect(view, qt.PYSIGNAL("ForegroundColorChanged"),
-                        self.setColor)
-        self.disconnect(view, qt.PYSIGNAL("MouseMoved"),
-                        self.mouseMove)
-        self.disconnect(view, qt.PYSIGNAL("MousePressed"),
-                        self.mousePress)
-        self.disconnect(view, qt.PYSIGNAL("MouseReleased"),
-                        self.mouseRelease)
-        self.disconnect(view, qt.PYSIGNAL("ViewportUpdated"),
-                        self.viewportUpdate)
+        if self._sigConnected:
+            self.disconnect(view, qt.PYSIGNAL("ForegroundColorChanged"),
+                            self.setColor)
+            self.disconnect(view, qt.PYSIGNAL("MouseMoved"),
+                            self.mouseMove)
+            self.disconnect(view, qt.PYSIGNAL("MousePressed"),
+                            self.mousePress)
+            self.disconnect(view, qt.PYSIGNAL("MouseReleased"),
+                            self.mouseRelease)
+            self.disconnect(view, qt.PYSIGNAL("ViewportUpdated"),
+                            self.viewportUpdate)
+
+        self._sigConnected = False
+        
                             
     def setColor(self, color):
         """
