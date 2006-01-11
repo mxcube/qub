@@ -1315,7 +1315,7 @@ class QubZoomListAction(QubAction):
             qstr = qt.QString(strVal)
             self._widget.setText(qstr)
             if self._item is not None:
-                self.menu.changeItem(self._item, qstr)
+                self._menu.changeItem(self._item, qstr)
                 
     def _checkZoomVal(self, zoom):
         maxVal = 3000
@@ -1357,9 +1357,9 @@ class QubZoomAction(QubAction):
         self._selName  = "Fit2Screen"
         
         self._toolName = ["Fit2Screen", "FillScreen"]
-        self._toolPixmap = {}
-        self._toolPixmap["Fit2Screen"] = loadIcon("zfit.png")
-        self._toolPixmap["FillScreen"]   = loadIcon("zfill.png")
+        self._toolIcon = {}
+        self._toolIcon["Fit2Screen"] = qt.QIconSet(loadIcon("zfit.png"))
+        self._toolIcon["FillScreen"] = qt.QIconSet(loadIcon("zfill.png"))
         
         self._item = None
         self._qubImage = None
@@ -1382,7 +1382,8 @@ class QubZoomAction(QubAction):
         """
         self._toolPopupMenu = qt.QPopupMenu(parent)
         for i in range(len(self._toolName)):
-            self._toolPopupMenu.insertItem(self._toolPixmap[self._toolName[i]],i)
+            self._toolPopupMenu.insertItem(self._toolIcon[self._toolName[i]],
+                                           qt.QString(self._toolName[i]),i)
         self.connect(self._toolPopupMenu, qt.SIGNAL("activated(int )"),
                         self._selectToolFromList)
                         
@@ -1390,7 +1391,7 @@ class QubZoomAction(QubAction):
         ToolButton to set or not selected zoom tool
         """
         self._widget = qt.QToolButton(parent, "%s"%self._name)
-        self._widget.setIconSet(qt.QIconSet(self._toolPixmap[self._selName]))
+        self._widget.setIconSet(self._toolIcon[self._selName])
         self._widget.setAutoRaise(True)
         self._widget.setToggleButton(True)
         self._widget.setPopup(self._toolPopupMenu)
@@ -1404,8 +1405,9 @@ class QubZoomAction(QubAction):
         self._menu = menu
         
         if self._item is None:
-            icon = qt.QIconSet(self._toolPixmap[self._selName])
-            self._item = menu.insertItem(icon, self._toolPopupMenu)
+            icon = self._toolIcon[self._selName]
+            self._item = menu.insertItem(icon, qt.QString(self._selName),
+                                         self._toolPopupMenu)
             menu.connectItem(self._item, self._toolPopupMenu.exec_loop)
                 
     def setState(self, state):
@@ -1472,9 +1474,10 @@ class QubZoomAction(QubAction):
         self._selName = self._toolName[index]
         
         if self._widget is not None:                
-            self._widget.setIconSet(qt.QIconSet(self._toolPixmap[self._selName]))
+            self._widget.setIconSet(self._toolIcon[self._selName])
             if self._item is not None:
-                self._item.changeItem(self._toolPixmap[self._selName])
+                self._menu.changeItem(self._item, self._toolIcon[self._selName],
+                                      qt.QString(self._selName))
             
             self.setState(1)
         
@@ -1545,7 +1548,7 @@ class QubMain(qt.QMainWindow):
         action = QubCircleSelection(show=1, group="selection")
         actions.append(action)
 
-        action = QubSeparatorAction(show=1, group="selection")
+        action = QubSeparatorAction(name="sep2", show=1, group="selection")
         actions.append(action)
 
         action = QubDiscSelection(show=1, group="selection")
@@ -1559,7 +1562,6 @@ class QubMain(qt.QMainWindow):
         actions.append(action)
         
         action1.setList(action)
-
         
         container = qt.QWidget(self)
         
@@ -1599,7 +1601,7 @@ class QubMain(qt.QMainWindow):
         edf = EdfFile.EdfFile(file)
         self.data = edf.GetData(0)
         self.dataMin = min(Numeric.ravel(self.data))
-        self.dataMax = min(Numeric.ravel(self.data))
+        self.dataMax = max(Numeric.ravel(self.data))
 
                        
 ##  MAIN   
