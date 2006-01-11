@@ -1386,7 +1386,7 @@ class QubZoomAction(QubAction):
                                            qt.QString(self._toolName[i]),i)
         self.connect(self._toolPopupMenu, qt.SIGNAL("activated(int )"),
                         self._selectToolFromList)
-                        
+        
         """
         ToolButton to set or not selected zoom tool
         """
