@@ -199,7 +199,8 @@ class QubViewToolbar(qt.QDockArea):
         """
         qt.QDockArea.__init__(self, qt.Qt.Horizontal,qt.QDockArea.Normal,parent)
         
-        self.__groupList = {}
+        self.__groupList  = {}
+        self.__groupIndex = {}
         
         if parent is not None: 
             self.__contextMenu = qt.QPopupMenu(parent)
@@ -241,6 +242,9 @@ class QubViewToolbar(qt.QDockArea):
         strGroupName = qt.QString(groupName)
         newGroup["menubar"] = self.__contextMenu.insertItem(strGroupName,
                                                             self.__changeGroup)
+        self.__contextMenu.setItemParameter(newGroup["menubar"],
+                                            newGroup["menubar"])
+        self.__groupIndex[newGroup["menubar"]] = groupName
                                                             
     def __delGroup(self, groupName):
         """
@@ -263,19 +267,19 @@ class QubViewToolbar(qt.QDockArea):
             
             del(self.__groupList[groupName])
         
-    def __changeGroup(self):
+    def __changeGroup(self, item):
         """
         method call when user presses on a "group" toggle button in 
         contextmenu to switch the display of a "group" from "contextmenu" to
         "toolbar" or vice versa
         """
-        for groupName in self.__groupList.keys():
-            groupObject = self.__groupList[groupName]
-            status=self.__contextMenu.isItemChecked(groupObject["menubar"])
-            if  groupObject["visible"]:
-                self.__showGroup(groupName, 0)
-            else:
-                self.__showGroup(groupName, 1)
+        groupName = self.__groupIndex[item]
+        groupObject = self.__groupList[groupName]
+        status=self.__contextMenu.isItemChecked(groupObject["menubar"])
+        if  groupObject["visible"]:
+            self.__showGroup(groupName, 0)
+        else:
+            self.__showGroup(groupName, 1)
         
     def __showGroup(self, gName, inToolbar):
         """
@@ -463,65 +467,133 @@ class QubViewStatusbar(qt.QWidget):
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
-class QubTestView(QubView):
-    def __init__(self, parent, name, actions, file):
-        QubView.__init__(self, parent, name)
-                
-        widget = QubImage(self, "QubImage", qt.QPixmap(file), 0)
-        self.setView(widget)
-        
-        if actions != []:
-            self.addAction(actions)
-        
 class QubMain(qt.QMainWindow):
     def __init__(self, parent=None, file=None):
         qt.QMainWindow.__init__(self, parent)
         
-        self.action = QubPrintPreviewAction(name="print", place="toolbar",
-                                            show=1, group="toto")
+        self.colormapSps = [spslut.GREYSCALE, spslut.REVERSEGREY, spslut.TEMP,
+                            spslut.RED, spslut.GREEN, spslut.BLUE, spslut.MANY]
+        #pixmap = qt.QPixmap(file)
+        self.readEdfFile(file)
+        self.colormap = 0
+        self.colorMin = self.dataMin
+        self.colorMax = self.dataMax
+        self.autoscale = 0
         
-        self.action1 = QubColormapAction(name="colormap", place="toolbar",
-                                            show=1, group="toto1")
+        actions = []
+        
+        # A1
+        action = QubColormapAction(show=1, group="admin")
+        actions.append(action)
+        
+        action.setParam(self.colormap, self.colorMin, self.colorMax,
+                        self.dataMin, self.dataMax, self.autoscale)
+        self.connect(action, qt.PYSIGNAL("ColormapChanged"),
+                        self.colormapChanged)
+        
+        action = QubSeparatorAction(name="sep1", show=1, group="admin")
+        actions.append(action)
+
+        action = QubPrintPreviewAction(name="PP", show=1, group="admin")
+        actions.append(action)
+        
+        # A2
+        action = QubHLineSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubVLineSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubLineSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubRectangleSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubCircleSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubSeparatorAction(name="sep2", show=1, group="selection")
+        actions.append(action)
+
+        action = QubDiscSelection(show=1, group="selection")
+        actions.append(action)
+
+        # A3
+        action1 = QubZoomAction(show=1, group="zoom")
+        actions.append(action1)
+        
+        action = QubZoomListAction(show=1, group="zoom")
+        actions.append(action)
+        
+        action1.setList(action)
+
         
         container = qt.QWidget(self)
         
-        vlayout = qt.QVBoxLayout(container)
+        hlayout = qt.QVBoxLayout(container)
     
-        self.qubImage = QubTestView(container, "QubTestView",
-                                    [self.action1], file)
-        vlayout.addWidget(self.qubImage)
-        
-        hlayout = qt.QHBoxLayout(vlayout)
-        
-        addButton = qt.QPushButton("Add Action", container)
-        self.connect(addButton, qt.SIGNAL("clicked()"), self.addAction)
-        hlayout.addWidget(addButton)
-        
-        hlayout.addStretch(1)
-        
-        remButton = qt.QPushButton("Rem Action", container)
-        self.connect(remButton, qt.SIGNAL("clicked()"), self.remAction)
-        hlayout.addWidget(remButton)
-        
+        self.qubImage = QubImageView(container, "actions", None, actions)
+        hlayout.addWidget(self.qubImage)
+        self.updatePixmap()
+    
         self.setCentralWidget(container)
+
+    def colormapChanged(self, colormap, autoscale, colorMin, colorMax):
+        print "ColormapChanged (TEST)"
+        self.colormap  = colormap
+        self.autoscale = autoscale
+        self.colorMin  = colorMin
+        self.colorMax  = colorMax
+        self.updatePixmap()
         
-    def addAction(self):
-        self.qubImage.addAction([self.action])
+    def updatePixmap(self):
+        (image_str, size, minmax) = spslut.transform(self.data ,
+                                               (1,0), 
+                                               (spslut.LINEAR, 3.0),
+                                               "BGRX", 
+                                               self.colormapSps[self.colormap],
+                                               self.autoscale, 
+                                               (self.colorMin, self.colorMax))
+        image = qt.QImage(image_str, size[0], size[1], 32, None, 0,
+                          qt.QImage.IgnoreEndian)
+        pixmap = qt.QPixmap()
+        pixmap.convertFromImage(image)         	      
         
-    def remAction(self):
-        self.qubImage.delAction([self.action])
+        if self.qubImage is not None:
+            self.qubImage.setPixmap(pixmap)       
+        
+    def readEdfFile(self, file):    
+        edf = EdfFile.EdfFile(file)
+        self.data = edf.GetData(0)
+        self.dataMin = min(Numeric.ravel(self.data))
+        self.dataMax = max(Numeric.ravel(self.data))
                
 ##  MAIN   
 if  __name__ == '__main__':
-    from Qub.Widget.QubImage import QubImage
+    from Qub.Widget.QubImageView import QubImageView
+    import EdfFile
+    import Numeric
+    import spslut
+
     from Qub.Widget.QubActionSet import QubPrintPreviewAction,QubColormapAction
+    from Qub.Widget.QubActionSet import QubSeparatorAction,QubHLineSelection
+    from Qub.Widget.QubActionSet import QubVLineSelection, QubLineSelection
+    from Qub.Widget.QubActionSet import QubRectangleSelection,QubCircleSelection
+    from Qub.Widget.QubActionSet import QubDiscSelection, QubZoomAction
+    from Qub.Widget.QubActionSet import QubZoomListAction
     
     app = qt.QApplication(sys.argv)
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
                     app, qt.SLOT("quit()"))
 
-    window = QubMain(file=sys.argv[1])
+
+    if len(sys.argv) < 2:
+        print "Usage to test : QubActionSet.py file.edf"
+        sys.exit()
+
+    window = QubMain(None, file = sys.argv[1])
     
     window.resize(500,300)
     app.setMainWidget(window)
