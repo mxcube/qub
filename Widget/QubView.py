@@ -241,6 +241,27 @@ class QubViewToolbar(qt.QDockArea):
         strGroupName = qt.QString(groupName)
         newGroup["menubar"] = self.__contextMenu.insertItem(strGroupName,
                                                             self.__changeGroup)
+                                                            
+    def __delGroup(self, groupName):
+        """
+        delete the group and its assiciated widgets if there is
+        no more action in it
+        """
+        groupObject = self.__groupList[groupName]
+        if len(groupObject["action"]) == 0:
+            del(groupObject["action"])
+            
+            if groupObject["separator"] is not None:
+                self.__contextMenu.removeItem(groupObject["separator"])
+            del(groupObject["separator"])
+            
+            groupObject["toolbar"].close(1)
+            del(groupObject["toolbar"])
+            
+            self.__contextMenu.removeItem(groupObject["menubar"])
+            del(groupObject["menubar"])
+            
+            del(self.__groupList[groupName])
         
     def __changeGroup(self):
         """
@@ -378,8 +399,12 @@ class QubViewToolbar(qt.QDockArea):
                     action.delMenuWidget()
             
                 groupObject["action"].remove(action)
-                    
-
+                
+                """
+                if there is no more action in the group, delete the group
+                """
+                if len(self.__groupList[groupName]["action"]) == 0:
+                    self.__delGroup(groupName)
 
 
         
@@ -456,7 +481,7 @@ class QubMain(qt.QMainWindow):
                                             show=1, group="toto")
         
         self.action1 = QubColormapAction(name="colormap", place="toolbar",
-                                            show=1, group="toto")
+                                            show=1, group="toto1")
         
         container = qt.QWidget(self)
         
