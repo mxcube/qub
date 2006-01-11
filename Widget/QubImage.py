@@ -167,7 +167,7 @@ class QubImage(qtcanvas.QCanvasView):
 
     def __calcZoom(self, w, h):
         if self.__scrollbarMode == "Fit2Screen" or \
-           self.__scrollbarMode == "FullScreen":
+           self.__scrollbarMode == "FillScreen":
             dataW = self.dataPixmap.width()
             dataH = self.dataPixmap.height()
         
@@ -224,13 +224,13 @@ class QubImage(qtcanvas.QCanvasView):
         """
         self.time = time.time()
         if self.__scrollbarMode == "Fit2Screen" or \
-           self.__scrollbarMode == "FullScreen":
+           self.__scrollbarMode == "FillScreen":
             (zoomx, zoomy) = self.__calcZoom(event.size().width(),
                                              event.size().height())            
             self.setZoom(zoomx, zoomy)
             
-        #self.emit(qt.PYSIGNAL("ViewportResized"), (event,))
-        #self.canvas().update()
+        self.emit(qt.PYSIGNAL("ViewportResized"), (event,))
+        self.canvas().update()
           
     def contentsContextMenuEvent(self, event):
         """
@@ -286,7 +286,13 @@ class QubImage(qtcanvas.QCanvasView):
         Return the foreground QubImage foreground Color
         """
         return self.__foregroundColor
-        
+    
+    def zoom(self):
+        """
+        return current x and y zoom values
+        """
+        return((self.__zoomx,self.__zoomy))
+         
     def setZoom(self, zoomx, zoomy):
         try:
             """
@@ -364,10 +370,10 @@ class QubImage(qtcanvas.QCanvasView):
             "AlwaysOff" :   Scrollbars are never displayed
             "Fit2Screen" :  Displayed pixmap size follow CanvasView size 
                             keeping data pixmap ratio
-            "FullScreen":   Displayed pixmap size is CanvasView size without 
+            "FillScreen":   Displayed pixmap size is CanvasView size without 
                             keeping data pixmap ratio
         """
-        if mode in ["Auto", "AlwaysOff", "Fit2Screen", "FullScreen"]:
+        if mode in ["Auto", "AlwaysOff", "Fit2Screen", "FillScreen"]:
             self.__scrollbarMode = mode
             
             if mode == "Auto":
@@ -378,7 +384,7 @@ class QubImage(qtcanvas.QCanvasView):
                 self.setHScrollBarMode(self.AlwaysOff)
                 self.setVScrollBarMode(self.AlwaysOff)
 
-            if mode == "Fit2Screen" or mode == "FullScreen":
+            if mode == "Fit2Screen" or mode == "FillScreen":
                 self.setHScrollBarMode(self.AlwaysOff)
                 self.setVScrollBarMode(self.AlwaysOff)
                 if self.dataPixmap is not None:
@@ -394,7 +400,7 @@ class QubImageTest(qt.QMainWindow):
     def __init__(self, parent=None, file=None):
         qt.QMainWindow.__init__(self, parent)
         
-        self.__scrollbarMode = ["Auto", "AlwaysOff", "Fit2Screen", "FullScreen"]
+        self.__scrollbarMode = ["Auto", "AlwaysOff", "Fit2Screen", "FillScreen"]
         
         container = qt.QWidget(self)
         
