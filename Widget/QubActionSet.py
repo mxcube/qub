@@ -319,8 +319,13 @@ class QubSeparatorAction(QubAction):
         """
                 
         if self._widget is None:
-            self._widget = qt.QLabel("", parent)
-            
+            self._widget = qt.QFrame(parent)
+            self._widget.setFrameShape(qt.QFrame.VLine)
+            self._widget.setFrameShadow(qt.QFrame.Sunken)
+            rect = self._widget.rect()
+            rect.setY(rect.y()+2)
+            self._widget.setFrameRect(rect)
+        
         return self._widget
     
 
@@ -358,7 +363,8 @@ class QubRectangleSelection(QubToggleImageAction):
 
         self.__rectCoord = qt.QRect(0, 0, 1, 1)
 
-        self._name = "rectangle"
+        if self._name == "default":
+            self._name = "rectangle"
     
     def viewConnect(self, qubImage):
         """
@@ -483,7 +489,9 @@ class QubLineSelection(QubToggleImageAction):
         self.__startPt = qt.QPoint(0,0)
         self.__endPt   = qt.QPoint(1,1)
 
-        self._name = "line"
+
+        if self._name == "default":
+            self._name = "line"
         
     def viewConnect(self, qubImage):
         """
@@ -628,7 +636,8 @@ class QubVLineSelection(QubToggleImageAction):
         self.__startPt = qt.QPoint(0, 0)
         self.__endPt   = qt.QPoint(0, self.__imageHeight)
 
-        self._name = "vline"
+        if self._name == "default":
+            self._name = "vline"
         
     def viewConnect(self, qubImage):
         """
@@ -780,7 +789,8 @@ class QubHLineSelection(QubToggleImageAction):
         self.__startPt = qt.QPoint(0, 0)
         self.__endPt   = qt.QPoint(0, __imgWidth)
 
-        self._name = "hline"
+        if self._name == "default":
+            self._name = "hline"
         
     def viewConnect(self, qubImage):
         """
@@ -968,7 +978,8 @@ class QubCircleSelection(QubToggleImageAction):
         self.__y0 = 0
         self.__radius = 0
         
-        self._name = "circle"
+        if self._name == "default":
+            self._name = "circle"
     
     def viewConnect(self, qubImage):
         """
@@ -1099,8 +1110,9 @@ class QubDiscSelection(QubToggleImageAction):
         self.__x0 = 0
         self.__y0 = 0
         self.__radius = 0
-        
-        self._name = "disc"
+              
+        if self._name == "default":
+            self._name = "disc"
     
     def viewConnect(self, qubImage):
         """
@@ -1339,7 +1351,7 @@ class QubMain(qt.QMainWindow):
         actions = []
         
         # A1
-        action = QubColormapAction(show=1, group="color")
+        action = QubColormapAction(show=1, group="admin")
         actions.append(action)
         
         action.setParam(self.colormap, self.colorMin, self.colorMax,
@@ -1347,14 +1359,13 @@ class QubMain(qt.QMainWindow):
         self.connect(action, qt.PYSIGNAL("ColormapChanged"),
                         self.colormapChanged)
         
+        action = QubSeparatorAction(name="sep1", show=1, group="admin")
+        actions.append(action)
+
+        action = QubPrintPreviewAction(name="PP", show=1, group="admin")
+        actions.append(action)
+        
         # A2
-        action = QubPrintPreviewAction(show=1, group="admin")
-        actions.append(action)
-        
-        # A3
-        action = QubSeparatorAction(show=1)
-        actions.append(action)
-        
         action = QubHLineSelection(show=1, group="selection")
         actions.append(action)
 
@@ -1373,6 +1384,7 @@ class QubMain(qt.QMainWindow):
         action = QubDiscSelection(show=1, group="selection")
         actions.append(action)
 
+        # A3
         action = QubZoomListAction(show=1, group="zoom")
         actions.append(action)
 
