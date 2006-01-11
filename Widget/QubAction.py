@@ -22,7 +22,7 @@ class QubAction(qt.QObject):
     ACTION_LIST, indexing by the name of the action and containing the class
     name.
     """
-    def __init__(self, name="action", place="toolbar", show=1,
+    def __init__(self, name=None, place="toolbar", show=1,
                  group="", index=-1):
         """
         Constructor method
@@ -40,9 +40,13 @@ class QubAction(qt.QObject):
         
         qt.QObject.__init__(self)
         
-        self._name       = name
-        self.__place     = place
-        self.__show      = show
+        if name is None:
+            self._name = "default"
+        else:
+            self._name  = name
+        
+        self.__place    = place
+        self.__show     = show
         self.__groupName = group
         self.__index     = index
         
@@ -337,7 +341,6 @@ class QubToggleImageAction(QubImageAction):
         """
         QubImageAction.__init__(self, *args, **keys)
 
-        self._name = "default"
         
     def addToolWidget(self, parent):
         """
