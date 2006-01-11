@@ -323,9 +323,9 @@ class QubSeparatorAction(QubAction):
             self._widget = qt.QFrame(parent)
             self._widget.setFrameShape(qt.QFrame.VLine)
             self._widget.setFrameShadow(qt.QFrame.Sunken)
-            rect = self._widget.rect()
-            rect.setY(rect.y()+2)
-            self._widget.setFrameRect(rect)
+            #rect = self._widget.rect()
+            #rect.setY(rect.y()+2)
+            #self._widget.setFrameRect(rect)
         
         return self._widget
     
@@ -1260,8 +1260,6 @@ class QubZoomListAction(QubAction):
         self._widget.setPopup(self._listPopupMenu)
         self._widget.setPopupDelay(0)
         self._widget.setText(qt.QString(self._zoomStrList[4]))
-
-        self._widget.setFixedSize(75,27)
         
         qt.QToolTip.add(self._widget, "Zoom List")
                                      
@@ -1291,22 +1289,14 @@ class QubZoomListAction(QubAction):
             self._qubImage.setCursor(qt.QCursor(qt.Qt.WaitCursor))
 
             """
-            Calculate zoom value from array
-            """        
-            self._zoomVal = self._zoomValList[index]
-
-            """
             check zoom value
             """
-            self._zoomVal = self._checkZoomVal(self._zoomVal)
+            self._zoomVal = self._checkZoomVal(zoomVal)
 
             """
             update zoom value as percentage in toolbar and menu widget
-            """        
-            qstr = qt.QString("%d%%"%(int(self._zoomVal*100)))
-            self._widget.setText(qstr)
-            if self._item is not None:
-                self.menu.changeItem(self._item, qstr)
+            """   
+            self.writeStrValue("%d%%"%(int(self._zoomVal*100)))    
 
             """
             calculate and display new pixmap not centered
@@ -1317,7 +1307,16 @@ class QubZoomListAction(QubAction):
             restore cursor
             """
             self._qubImage.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
-            
+    
+    def writeStrValue(self, strVal):
+            """
+            update zoom value in toolbar and menu widget
+            """        
+            qstr = qt.QString(strVal)
+            self._widget.setText(qstr)
+            if self._item is not None:
+                self.menu.changeItem(self._item, qstr)
+                
     def _checkZoomVal(self, zoom):
         maxVal = 3000
         
@@ -1333,7 +1332,170 @@ class QubZoomListAction(QubAction):
                 newzoom = float(maxVal)/float(self.drawable.dataPixmap.height())
                 
         return newzoom
-       
+
+
+###############################################################################
+####################              QubZoomAction            ####################
+###############################################################################
+class QubZoomAction(QubAction):
+    """
+    This class add a zoom facility for QubImageView as a list:
+        + fit to screen (keep image ratio)
+        + fill screen (do not keep image ratio)
+    This action can be linked to a ZoomListAction object in order to
+    see the exact value of the zoom. Use "setList" method with the
+    ZoomListAction object as parameter to do that
+    """
+    def __init__(self, *args, **keys):
+        """
+        Constructor method
+        Initialyse variables
+        """
+        QubAction.__init__(self, *args, **keys)
+        
+        self._selIndex = 0
+        self._selName  = "Fit2Screen"
+        
+        self._toolName = ["Fit2Screen", "FillScreen"]
+        self._toolPixmap = {}
+        self._toolPixmap["Fit2Screen"] = loadIcon("zfit.png")
+        self._toolPixmap["FillScreen"]   = loadIcon("zfill.png")
+        
+        self._item = None
+        self._qubImage = None
+        self._sigConnected = False
+        self._name = "Zoom tools"
+                
+    def viewConnect(self, qubImage):
+        """
+        connect action with the QubImage object on which it will be applied
+        """
+        self._qubImage = qubImage
+        
+    def addToolWidget(self, parent):
+        """
+        Creates widgets to be added in the toolbar
+        """
+
+        """
+        menu to select zoom tool
+        """
+        self._toolPopupMenu = qt.QPopupMenu(parent)
+        for i in range(len(self._toolName)):
+            self._toolPopupMenu.insertItem(self._toolPixmap[self._toolName[i]],i)
+        self.connect(self._toolPopupMenu, qt.SIGNAL("activated(int )"),
+                        self._selectToolFromList)
+                        
+        """
+        ToolButton to set or not selected zoom tool
+        """
+        self._widget = qt.QToolButton(parent, "%s"%self._name)
+        self._widget.setIconSet(qt.QIconSet(self._toolPixmap[self._selName]))
+        self._widget.setAutoRaise(True)
+        self._widget.setToggleButton(True)
+        self._widget.setPopup(self._toolPopupMenu)
+        self._widget.setPopupDelay(0)
+        self.connect(self._widget, qt.SIGNAL("toggled(bool)"),self.setState)
+        qt.QToolTip.add(self._widget, "%s"%self._name)
+
+        return self._widget
+        
+    def addMenuWidget(self, menu):
+        self._menu = menu
+        
+        if self._item is None:
+            icon = qt.QIconSet(self._toolPixmap[self._selName])
+            self._item = menu.insertItem(icon, self._toolPopupMenu)
+            menu.connectItem(self._item, self._toolPopupMenu.exec_loop)
+                
+    def setState(self, state):
+        """
+        "state" is True or False.
+        Set toolbar, contextmenu or statusbar widgets of the action to
+        the "state" value.
+        Call the internal method _setState which manage the behavior.
+        """
+        if self._widget is not None:
+            self._widget.setOn(state)
+        
+        if self._item is not None:
+            self._menu.setItemChecked(self._item, state)
+        
+        self._setState(state)
+        
+    def _setState(self, state):
+        """
+        manage behavior of the action toolbutton according to the "state" value
+        """
+        self.__state = state
+        
+        if self._qubImage is not None:
+            if state:
+                self._qubImage.setScrollbarMode(self._selName)
+                
+                """
+                update zoom value on the ZoomListAction  object if needed
+                and link update zoom value to the view resize event
+                """
+                if self._listAction is not None:
+                    self._updateZoomValue()
+                    
+                    if self._selName == "Fit2Screen":
+                        if self._sigConnected == False:
+                            self.connect(self._qubImage,
+                                         qt.PYSIGNAL("ViewportResized"),
+                                         self._updateZoomValue)
+                            self._sigConnected = True
+                    else:
+                        if self._sigConnected == True:
+                            self.disconnect(self._qubImage,
+                                            qt.PYSIGNAL("ViewportResized"),
+                                            self._updateZoomValue)
+                            self._sigConnected = False
+            else:
+                self._qubImage.setScrollbarMode("Auto")
+
+                if self._sigConnected == True:
+                    self.disconnect(self._qubImage,
+                                    qt.PYSIGNAL("ViewportResized"),
+                                    self._updateZoomValue)
+                    self._sigConnected = False
+                
+
+        
+    def _selectToolFromList(self, index):
+        """
+        change zoom tool
+        set it to on automatically
+        """
+        self._selIndex = index
+        self._selName = self._toolName[index]
+        
+        if self._widget is not None:                
+            self._widget.setIconSet(qt.QIconSet(self._toolPixmap[self._selName]))
+            if self._item is not None:
+                self._item.changeItem(self._toolPixmap[self._selName])
+            
+            self.setState(1)
+        
+    def setList(self, listAction):
+        self._listAction = listAction
+        
+    def _updateZoomValue(self):
+        """
+        when a new zoom tool is selected or when image view is resized,
+        update zoom value in the ZoomStrListAction object if necessary
+        """
+        if self._listAction is not None:
+            (zoomx, zoomy) = self._qubImage.zoom()
+            if zoomx == zoomy:
+                strVal = "%d%%"%(int(zoomx*100))
+            else:
+                strVal = "???"
+                    
+            self._listAction.writeStrValue(strVal)
+        
+        
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
@@ -1342,7 +1504,7 @@ class QubMain(qt.QMainWindow):
         qt.QMainWindow.__init__(self, parent)
         
         self.colormapSps = [spslut.GREYSCALE, spslut.REVERSEGREY, spslut.TEMP,
-                             spslut.RED, spslut.GREEN, spslut.BLUE, spslut.MANY]
+                            spslut.RED, spslut.GREEN, spslut.BLUE, spslut.MANY]
         #pixmap = qt.QPixmap(file)
         self.readEdfFile(file)
         self.colormap = 0
@@ -1390,8 +1552,13 @@ class QubMain(qt.QMainWindow):
         actions.append(action)
 
         # A3
+        action1 = QubZoomAction(show=1, group="zoom")
+        actions.append(action1)
+        
         action = QubZoomListAction(show=1, group="zoom")
         actions.append(action)
+        
+        action1.setList(action)
 
         
         container = qt.QWidget(self)
