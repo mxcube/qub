@@ -6,6 +6,11 @@ from Qub.Print.QubPrintEditors import QubTitleEditor
 
 __revision__="$Revision$"
 
+# TODO:
+# - automatic picture centering
+# - print quality
+
+
 ################################################################################
 ####################             BoundingRect               ####################
 ################################################################################
