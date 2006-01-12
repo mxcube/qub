@@ -212,7 +212,7 @@ class QubGraph(qwt.QwtPlot):
         self.noneCursor       = qt.QCursor(qt.Qt.ArrowCursor)
         self.zoomCursor       = qt.QCursor(qt.QPixmap(zoom_xpm ), 5, 4)
         self.hselectionCursor = qt.QCursor(qt.QPixmap(hselection_xpm), 5, 4)
-        self.movePointCursor  = qt.QCursor(qt.QPixmap(move_point_xpm ), 5, 4)
+        self.movePointCursor  = qt.QCursor(qt.QPixmap(move_point_xpm ), 11, 11)
 
     def setMode(self, mode):
         """
