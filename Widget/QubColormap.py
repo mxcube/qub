@@ -85,8 +85,8 @@ class QubColormapDialog(qt.QDialog):
         QubImage to view chosen colormap
         """
         self.colormapImage = QubImage(self)
-        self.colormapImage.setScrollbarMode("FullScreen")
-        self.colormapImage.setMinimumHeight(2*self.colormapCombo.sizeHint().height())
+        self.colormapImage.setScrollbarMode("FillScreen")
+        self.colormapImage.setMinimumHeight(1.5*self.colormapCombo.sizeHint().height())
         hlayout1.addWidget(self.colormapImage)
         
         self._updateColormap()
