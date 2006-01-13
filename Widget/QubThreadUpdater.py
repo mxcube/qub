@@ -38,10 +38,7 @@ class QubThreadUpdater(qt.QThread):
         """
         Start the thread
         """
-        if self.stopEvent == 0:
-            print self.name,": THREAD ALREADY STARTED"
-        else:
-            print self.name,": waiting to start ..."
+        if self.stopEvent != 0:
             self.stopEvent = 0
             qt.QThread.start(self, priority)
         
@@ -50,9 +47,7 @@ class QubThreadUpdater(qt.QThread):
         stop the thread
         """
         self.stopEvent = 1
-        print self.name,": waiting to finish ..."
         self.wait()
-        print self.name,": finished"
         
     def update(self):
         """
@@ -68,7 +63,6 @@ class QubThreadUpdater(qt.QThread):
         send a Qt CustomEvent.
         """
         
-        print self.name,": started"
         while self.stopEvent == 0:
             if self.updateEvent:
 
@@ -172,9 +166,7 @@ class QubJpeg2Pixmap(QubThreadUpdater):
         """
         if self.receiver.data is not None:
             self.receiver.pixmap = qt.QPixmap()
-            print self.name,": load jpeg"
             self.receiver.pixmap.loadFromData(self.receiver.data)
-            print self.name,": load jpeg DONE"
 
             event = qt.QCustomEvent(QEvent.User)
             event.event_name = "Jpeg2PixmapUpdated"
