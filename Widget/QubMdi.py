@@ -246,6 +246,7 @@ class QubMdiChild(qt.QWidget):
             self.title = self.masterWindow.getTitle() + "-" + self.name
         else:
             self.title = self.name
+
         self.setCaption(self.title)
 
     def getTitle(self):
@@ -286,7 +287,7 @@ if  __name__ == '__main__':
             self.setCentralWidget(self.mdi)
         
         def addMdiChild(self):
-            child = QubMdiChild(self.mdi)
+            child = QubMdiChild(self.mdi, "titre")
             
             
             
