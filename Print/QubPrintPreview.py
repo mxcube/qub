@@ -953,18 +953,18 @@ class QubPrintPreview(qt.QDialog):
         # status bar
         statusBar = qt.QStatusBar(self)
 
-        self.defaultPrinterLabel = qt.QLabel( statusBar)
-        statusBar.addWidget(self.defaultPrinterLabel)
+        self.targetLabel = qt.QLabel( "???", statusBar, "targetLabel")
+        statusBar.addWidget(self.targetLabel)
 
         # finally, building main widget.
         layout.addWidget(toolBar)
         layout.addWidget(self.canvasView)
         layout.addWidget(statusBar)
-
+        
         # use user printer or a default QPrinter
         if printer == None:
             printer = qt.QPrinter()
-
+            
         self.setPrinter(printer)
 
     def setPrinter(self, printer):
@@ -972,7 +972,7 @@ class QubPrintPreview(qt.QDialog):
         define a printer 
         """
         self.printer = printer
-        self.__updatePrinter()
+        self.updatePrinter()
 
     def setOutputFileName(self, name):
         """
@@ -983,7 +983,7 @@ class QubPrintPreview(qt.QDialog):
         else:
             print "error setOutputFileName : a printer must be defined before"
 
-    def setOutputToFile(self, value):
+    def setPrintToFile(self, value):
         """
         define if the output is in a file (default True)
         """
@@ -992,7 +992,7 @@ class QubPrintPreview(qt.QDialog):
         else:
             print "error setOutputToFile : a printer must be defined before"
 
-    def __updatePrinter(self):
+    def updatePrinter(self):
         """
         """
         # --- set paper size
@@ -1002,7 +1002,7 @@ class QubPrintPreview(qt.QDialog):
 
         # --- find correct zoom
         wsize = (self.width(), self.height())
-        scale = min(float(wsize[0])/float(psize[0]),       \
+        scale = min(float(wsize[0])/float(psize[0]),
                     float(wsize[1])/float(psize[1]))
         iscale = int(100*scale)
         dscale = [ abs(iscale - val) for val in self.scaleValues ]
@@ -1024,10 +1024,10 @@ class QubPrintPreview(qt.QDialog):
 
         # update output target
         if self.printer.outputToFile():
-            self.defaultPrinterLabel.setText(qt.QString("File:").append(       \
+            self.targetLabel.setText(qt.QString("File:").append(
                 self.printer.outputFileName()))
         else:
-            self.defaultPrinterLabel.setText(qt.QString("Printer:").append(    \
+            self.targetLabel.setText(qt.QString("Printer:").append(
                 self.printer.printerName()))
             
         self.update()
@@ -1067,7 +1067,7 @@ class QubPrintPreview(qt.QDialog):
         """
         """
         if self.printer is not None:
-            if self.printer.setup(): self.__updatePrinter()
+            if self.printer.setup(): self.updatePrinter()
 
     def __cancel(self):
         """
@@ -1119,7 +1119,7 @@ def testPreview():
     a = qt.QApplication(sys.argv)
  
     p = qt.QPrinter()
-    p.setOutputToFile(1)
+    p.setPrintToFile(1)
     p.setOutputFileName(os.path.splitext(filename)[0]+".ps")
     p.setColorMode(qt.QPrinter.Color)
 
