@@ -224,6 +224,7 @@ class QubColormapAction(QubAction):
         self.dataMin = 0
         self.dataMax = 200
         self.autoscale = 0
+        self.name = "Array Colormap"
         
     def addToolWidget(self, parent):
         """
@@ -1568,6 +1569,7 @@ class QubMain(qt.QMainWindow):
         hlayout = qt.QVBoxLayout(container)
     
         self.qubImage = QubImageView(container, "actions", None, actions)
+        
         hlayout.addWidget(self.qubImage)
         self.updatePixmap()
     
