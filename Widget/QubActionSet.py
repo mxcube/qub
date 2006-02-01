@@ -4,6 +4,7 @@ import sys
 import math
 
 from Qub.Widget.QubAction import QubAction, QubImageAction, QubToggleImageAction
+from Qub.Widget.QubWidgetSet import QubColorToolButton, QubColorToolMenu
 from Qub.Icons.QubIcons import loadIcon
 
   
@@ -471,6 +472,7 @@ class QubRectangleSelection(QubToggleImageAction):
         if self.__rectangle is not None:
             if self.__state:
                 self.signalConnect(self._qubImage)
+                self.setColor(self._qubImage.foregroundColor())
                 self.__rectangle.show()
             else:
                 self.signalDisconnect(self._qubImage)
@@ -598,6 +600,7 @@ class QubLineSelection(QubToggleImageAction):
         if self.__line is not None:
             if self.__state:
                 self.signalConnect(self._qubImage)
+                self.setColor(self._qubImage.foregroundColor())
                 self.__line.show()
             else:
                 self.signalDisconnect(self._qubImage)
@@ -754,6 +757,7 @@ class QubVLineSelection(QubToggleImageAction):
         if self.__line is not None:
             if self.__state:
                 self.signalConnect(self._qubImage)
+                self.setColor(self._qubImage.foregroundColor())
                 self.__line.show()
                 self.__VLineCursor.show()
             else:
@@ -906,6 +910,7 @@ class QubHLineSelection(QubToggleImageAction):
         if self.__line is not None:
             if self.__state:
                 self.signalConnect(self._qubImage)
+                self.setColor(self._qubImage.foregroundColor())
                 self.__line.show()
                 self.__HLineCursor.show()
             else:
@@ -1085,6 +1090,7 @@ class QubCircleSelection(QubToggleImageAction):
         if self.__circle is not None:
             if self.__state:
                 self.signalConnect(self._qubImage)
+                self.setColor(self._qubImage.foregroundColor())
                 self.__circle.show()
             else:
                 self.signalDisconnect(self._qubImage)
@@ -1219,6 +1225,7 @@ class QubDiscSelection(QubToggleImageAction):
         if self.__disc is not None:
             if self.__state:
                 self.signalConnect(self._qubImage)
+                self.setColor(self._qubImage.foregroundColor())
                 self.__disc.show()
             else:
                 self.signalDisconnect(self._qubImage)
@@ -1573,7 +1580,89 @@ class QubZoomAction(QubAction):
                     
             self._listAction.writeStrValue(strVal)
         
+
+
+###############################################################################
+####################        QubForegroundColorAction       ####################
+###############################################################################
+class QubForegroundColorAction(QubAction):
+    """
+    This action allow to select a color.
+    When the color is selected, it call the "setForegroundColor" method of
+    the "view()" to wich it is connected.
+    """
+    def __init__(self, view =None, *args, **keys):
+        """
+        Constructor method
+        name ... :  string name of the action
+        view ... :  action will act on the "view()" object of a QubView.
+                    the view can be set in the constructor method or using
+                    the "viewConnect" method of the class 
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None)
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it
+        index .. :  Position of the selection widget of the action in its
+                    group
+        """
+        QubAction.__init__(self, *args, **keys)
         
+        self._view = None
+        
+        self._colorMenu = None
+        
+        if view is not None:
+            self.viewConnect(view)
+
+    def viewConnect(self, view):
+        """
+        reference the "QubView.view()" object in order to its
+        "setForegroundColor" method
+        """
+        self._view = view
+       
+    def addToolWidget(self, parent):
+        """
+        Creates action widget to put in "group" dockarea of the "toolbar"
+        Return this widget.
+        """
+        if self._widget is None:
+            self._widget = QubColorToolButton(parent)
+            self.connect(self._widget, qt.PYSIGNAL("colorSelected"),
+                         self.colorChanged)
+            qt.QToolTip.add(self._widget, "change color pen for selections")
+        
+        return self._widget
+             
+    def addMenuWidget(self, menu):
+        """
+        This method should be reimplemented.
+        Creates item in contextmenu "menu" for the action.
+        """
+        self._menu = menu
+        
+        if self._item is None:
+            if self._colorMenu is None:
+                self._colorMenu = QubColorToolMenu(menu)
+                self._colorMenu.connect(self.colorMenu,
+                                       PYSIGNAL("colorSelected"),
+                                       self.colorChanged)
+                    
+            self._item = menu.insertItem(self._colorMenu.iconSet,
+                                         QString("Color"), self.colorMenu)
+            menu.connectItem(self._item, self._colorMenu.exec_loop)
+
+    def colorChanged(self, color):
+        if self._view is not None:
+            self._view.setForegroundColor(color)
+        
+        if self._item is not None:
+            self._menu.changeItem(self._item, self._colorMenu.iconSet,
+                                  QString("Color"))
+                                                  
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
@@ -1593,13 +1682,16 @@ class QubMain(qt.QMainWindow):
         actions = []
         
         # A1
-        action = QubColormapAction(show=1, group="admin")
+        action = QubColormapAction(show=1, group="color")
         actions.append(action)
         
         action.setParam(self.colormap, self.colorMin, self.colorMax,
                         self.dataMin, self.dataMax, self.autoscale)
         self.connect(action, qt.PYSIGNAL("ColormapChanged"),
                         self.colormapChanged)
+        
+        action = QubForegroundColorAction(name="Foreground", group="color")
+        actions.append(action)
         
         action = QubSeparatorAction(name="sep1", show=1, group="admin")
         actions.append(action)
