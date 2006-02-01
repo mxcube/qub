@@ -45,7 +45,7 @@ class QubToolButtonAction(QubAction):
         QubAction.__init__(self, *args, **keys)
         
         self._item  = None
-        self.label = label
+        self._label = label
         
     def addToolWidget(self, parent):
         """
