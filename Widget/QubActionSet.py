@@ -53,6 +53,7 @@ class QubToolButtonAction(QubAction):
         """
         if self._widget is None:
             self._widget = qt.QToolButton(parent)
+            self._widget.setAutoRaise(True)
             icon = qt.QIconSet(loadIcon("%s.png"%self._name))
             self._widget.setIconSet(icon)
             self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
