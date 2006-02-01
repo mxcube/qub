@@ -1,6 +1,7 @@
 import sys
 
 import qt
+import qtcanvas
 
 __revision__="$Revision$"
 
