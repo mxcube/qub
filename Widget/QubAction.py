@@ -329,7 +329,8 @@ class QubImageAction(QubAction):
         QubAction.__init__(self, name, place, show, group, index)
         
         self._qubImage = None
-        self._sigConnected = autoConnect
+        self._sigConnected = False
+        self._autoConnect = autoConnect
         
         if qubImage is not None:
             self.viewConnect(qubImage)
@@ -348,7 +349,10 @@ class QubImageAction(QubAction):
             "ViewportUpdated" : displayed pixmap of "qubImage" has changed 
                                 (new pixmap or new size)
         """
-        connect = self._sigConnected
+        if self._autoConnect:
+            connect = True
+        else:
+            connect = self._sigConnected
         
         if self._qubImage is not None and qubImage is not None and \
            self._qubImage != qubImage:
