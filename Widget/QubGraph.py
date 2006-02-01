@@ -9,7 +9,7 @@ import math
 import time
 import sys
 
-from Qub.Widget.QubCursors import zoom_xpm, hselection_xpm, move_point_xpm
+from Qub.Widget.QubCursors import zoom_xpm, hselection_xpm, smove_point_xpm
 
 # TODO
 # - enableOutline() is deprecated ...
@@ -32,6 +32,7 @@ from Qub.Widget.QubCursors import zoom_xpm, hselection_xpm, move_point_xpm
 # + highlight points on "onMouseOver"
 # + do not highlight (onMousePress/Move) non movable points 
 # + reduce point do not porevent from highlight... and unhighlight is bogus
+# + change cursor to 4-arrows on "over Movable Point"
 
 #############################################################################
 ##########                        QubGraph                         ##########
@@ -184,7 +185,7 @@ class QubGraph(qwt.QwtPlot):
             self.can.setCursor(self.hselectionCursor)
 
         if self.mode == "movepoint":
-            self.can.setCursor(self.movePointCursor)
+            self.can.setCursor(self.noneCursor)
             # self.can.setCursor(qt.QCursor(qt.Qt.SizeAllCursor))
 
         if self.mode == None:
@@ -212,7 +213,7 @@ class QubGraph(qwt.QwtPlot):
         self.noneCursor       = qt.QCursor(qt.Qt.ArrowCursor)
         self.zoomCursor       = qt.QCursor(qt.QPixmap(zoom_xpm ), 5, 4)
         self.hselectionCursor = qt.QCursor(qt.QPixmap(hselection_xpm), 5, 4)
-        self.movePointCursor  = qt.QCursor(qt.QPixmap(move_point_xpm ), 11, 11)
+        self.movePointCursor  = qt.QCursor(qt.QPixmap(smove_point_xpm ), 11, 11)
 
     def setMode(self, mode):
         """
@@ -538,7 +539,14 @@ class QubGraph(qwt.QwtPlot):
         else:
             pass
         
-
+    def addCurve(self, name, V1, V2=None):
+        """
+        Create a curve named "name" and defined by the vectors V1 and V2.
+        V1 as Xs V2 as Ys. if V2 is None, V1 as Ys and naturals numer as Xs.
+        """
+        curve = QubGraphCurve(self, name, V1, V2)
+        self.setCurve(curve)
+        
     def delCurve(self, name):
         """
         destroy a curve and remove it from the graph.
@@ -584,15 +592,16 @@ class QubGraph(qwt.QwtPlot):
         """
 
         if curve.isMovable[point]:
-            # move the point
-            (ax, ay) = curve._changePointCoords(point, x, y)
+            # move the point (if possible) and get corrected coords
+            (nx, ny) = curve._changePointCoords(point, x, y)
             
             # update the curve
             curve._update()
             
             # move the marker
             marker = curve.markerIdx[point]
-            self.setMarkerPos(marker, ax, ay)
+            self.setMarkerPos(marker, nx, ny)
+            return (nx, ny)
         else:
             print "error point unmovable"
 
@@ -648,11 +657,11 @@ class QubGraph(qwt.QwtPlot):
         """
 
         # move the point
-        self.deplace(self._movingCurve, self._movingPoint, x,y)
+        (nx, ny) = self.deplace(self._movingCurve, self._movingPoint, x,y)
 
         # notifies the change to the outer world
         self.emit(qt.PYSIGNAL("PointMoved"),  (self._movingCurve.name(),
-                                               self._movingPoint, x, y)
+                                               self._movingPoint, nx, ny)
                   )
 
     def _highlightPointMarker(self, marker, onoff):
@@ -662,8 +671,10 @@ class QubGraph(qwt.QwtPlot):
         """
         if onoff:
             self.setMarkerSymbol( marker, self.markerSymbolHiglighted )
+            self.can.setCursor(self.movePointCursor)
         else:
             self.setMarkerSymbol( marker, self.markerSymbolMovable )
+            self.can.setCursor(self.noneCursor)
 
         self.replot()
 
@@ -1522,7 +1533,7 @@ class QubGraphTest(qt.QWidget):
         hselButton.setPixmap(qt.QPixmap(hselection_xpm))
         
         moveButton = qt.QPushButton( "move", bbar )
-        moveButton.setPixmap(qt.QPixmap(move_point_xpm))
+        moveButton.setPixmap(qt.QPixmap(smove_point_xpm))
         
         noneButton = qt.QPushButton( "none", bbar )
         
@@ -1591,7 +1602,7 @@ class QubGraphTest(qt.QWidget):
         
         # move point 2 of curve "ConstrainedCurve" to position (5, 4) 
         # self.qubGW.deplace("ConstrainedCurve", 2, 6.0, 4.0)
-                    
+
     def setModeZoom(self):
         self.qubGW.setMode("zoom")
 
