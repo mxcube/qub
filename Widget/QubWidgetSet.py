@@ -190,7 +190,7 @@ class QubColorToolButton(qt.QToolButton):
         paintbrush_xpm[8] = "j  c #%02x%02x%02x"%(r, g, b)
         self.setPixmap(qt.QPixmap(paintbrush_xpm))
           
-class ColorToolMenu(qt.QPopupMenu):
+class QubColorToolMenu(qt.QPopupMenu):
     """
     """
     def __init__(self, parent=None, name=None):
