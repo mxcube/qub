@@ -17,6 +17,77 @@ from Qub.Icons.QubIcons import loadIcon
 
 
 ###############################################################################
+####################           QubToolButtonAction         ####################
+###############################################################################
+class QubToolButtonAction(QubAction):
+    """
+    This action send a signal "ButtonPressed" when user hit the button
+    It creates a pushbutton in the toolbar/contextmenu or statusbar
+    """
+    def __init__(self, *args, **keys):
+        """
+        Constructor method
+        name ... :  string name of the action. Will be used to get the
+                    QToolButton icon file
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None).
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu.
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it.
+        index .. :  Position of the selection widget of the action in its
+                    group.
+        
+        Store in self._label the pushbutton label
+        """
+        QubAction.__init__(self, *args, **keys)
+        
+        self._item  = None
+        
+    def addToolWidget(self, parent):
+        """
+        create default pushbutton (with a label) in the toolbar of the view.
+        """
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent)
+            icon = qt.QIconSet(loadIcon("%s.png"%self._name))
+            self._widget.setIconSet(icon)
+            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
+                                 self.sendSignal)
+            qt.QToolTip.add(self._widget, self._label)
+            
+        return self._widget
+        
+    def addMenuWidget(self, menu):
+        """
+        Create context menu item pushbutton
+        """
+        self._menu = menu
+        icon = qt.QIconSet(loadIcon("%s.png"%self._name))
+        self._item = menu.insertItem(icon, qt.QString("%s"%self._name),
+                                      self.sendSignal)
+        
+    def addStatusWidget(self, parent):
+        """
+        create pushbutton in the statusbar of the view
+        """
+        if self._widget is None:
+            self._widget = qt.QPushButton(self._label, parent, "addtoppbutton")
+            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
+                                 self.sendSignal)
+            qt.QToolTip.add(self._widget, self._label)
+            
+        return self._widget
+         
+    def sendSignal(self):
+        """
+        User have hit toolbar/contextmenu or statusbar pushbutton
+        send "ButtonPressed" signal
+        """ 
+        self.emit(qt.PYSIGNAL("ButtonPressed"), ())
+
+###############################################################################
 ####################             QubButtonAction           ####################
 ###############################################################################
 class QubButtonAction(QubAction):
