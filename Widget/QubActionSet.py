@@ -224,7 +224,7 @@ class QubColormapAction(QubAction):
         self.dataMin = 0
         self.dataMax = 200
         self.autoscale = 0
-        self.name = "Array Colormap"
+        self._name = "Array Colormap"
         
     def addToolWidget(self, parent):
         """
