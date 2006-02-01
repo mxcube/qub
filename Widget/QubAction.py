@@ -308,7 +308,7 @@ class QubImageAction(QubAction):
     QubImage Object.
     Main adds on are slots for drawings.
     """
-    def __init__(self, name=None, qubImage=None, place="toolbar",
+    def __init__(self, name=None, qubImage=None, autoConnect=False, place="toolbar",
                  show=1, group="", index=-1):
         """
         Constructor method
@@ -329,7 +329,7 @@ class QubImageAction(QubAction):
         QubAction.__init__(self, name, place, show, group, index)
         
         self._qubImage = None
-        self._sigConnected = False
+        self._sigConnected = autoConnect
         
         if qubImage is not None:
             self.viewConnect(qubImage)
