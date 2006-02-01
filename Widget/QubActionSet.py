@@ -24,9 +24,10 @@ class QubToolButtonAction(QubAction):
     This action send a signal "ButtonPressed" when user hit the button
     It creates a pushbutton in the toolbar/contextmenu or statusbar
     """
-    def __init__(self, *args, **keys):
+    def __init__(self, label="", *args, **keys):
         """
         Constructor method
+        label .. :  label is used as tooltip and as string in contextmenu
         name ... :  string name of the action. Will be used to get the
                     QToolButton icon file
         place .. :  where to put in the view widget, the selection widget
@@ -44,6 +45,7 @@ class QubToolButtonAction(QubAction):
         QubAction.__init__(self, *args, **keys)
         
         self._item  = None
+        self._lable = label
         
     def addToolWidget(self, parent):
         """
@@ -65,7 +67,7 @@ class QubToolButtonAction(QubAction):
         """
         self._menu = menu
         icon = qt.QIconSet(loadIcon("%s.png"%self._name))
-        self._item = menu.insertItem(icon, qt.QString("%s"%self._name),
+        self._item = menu.insertItem(icon, qt.QString("%s"%self._label),
                                       self.sendSignal)
         
     def addStatusWidget(self, parent):
