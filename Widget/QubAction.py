@@ -188,6 +188,117 @@ class QubAction(qt.QObject):
         """
         pass
         
+###############################################################################
+####################               QubToggleAction          ###################
+###############################################################################
+class QubToggleAction(QubAction):
+    """
+    Base class for all action represented by a toggle button
+    in the menubar or statusbar of the QubView.
+    The name of the action will be used to find the icon file.
+    Signal "StateChanged"
+    """
+    def __init__(self,*args, **keys):
+        """
+        Constructor method.
+        name ... :  string name of the action. Will be used to get the icon
+                    file
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None).
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu.
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it
+        index .. :  Position of the selection widget of the action in its
+                    group.
+        """
+        QubAction.__init__(self, *args, **keys)
+
+        
+    def addToolWidget(self, parent):
+        """
+        Creates action widget to put in "group" dockarea of the "toolbar"
+        Return this widget.
+        Use name of the action to find icon file
+        """
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent, "%s"%self._name)
+            self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png"%self._name)))
+            self._widget.setAutoRaise(True)
+            self._widget.setToggleButton(True)
+            self.connect(self._widget, qt.SIGNAL("toggled(bool)"),
+                         self.setState)
+            qt.QToolTip.add(self._widget, "%s"%self._name)
+        
+        return self._widget
+        
+    def addMenuWidget(self, menu):
+        """
+        This method should be reimplemented.
+        Creates item in contextmenu "menu" for the action.
+        """
+        if self._item is None:
+            self._menu = menu
+            iconSet = qt.QIconSet(loadIcon("%s.png"%self._name))
+            self._item = menu.insertItem(iconSet, qt.QString(self._name),
+                                          self.menuChecked)
+
+    def addStatusWidget(self, parent):
+        """
+        Creates action widget to put in  the "statusbar"
+        Return this widget.
+        Use name of the action to find icon file
+        """
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent, "%s"%self._name)
+            self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png"%self._name)))
+            self._widget.setAutoRaise(True)
+            self._widget.setToggleButton(True)
+            self.connect(self._widget, qt.SIGNAL("toggled(bool)"),
+                         self.setState)
+            qt.QToolTip.add(self._widget, "%s"%self._name)
+        
+        return self._widget
+       
+    def menuChecked(self):
+        """
+        Slot connected to clicked() signal of menu item.
+        As there is no parameter on the state of the toglle menu item,
+        we build it and call the setState method of the class
+        """
+        if self._menu.isItemChecked(self._item):
+            checked = 0
+        else:
+            checked = 1
+        self.setState(checked)
+        
+            
+    def setState(self, state):
+        """
+        "state" is True or False.
+        Set toolbar, contextmenu or statusbar widgets of the action to
+        the "state" value.
+        Call the internal method _setState which is specific for each subclass
+        and which manage the behavior.
+        """
+        if self._widget is not None:
+            self._widget.setOn(state)
+        
+        if self._item is not None:
+            self._menu.setItemChecked(self._item, state)
+        
+        self._setState(state)
+        
+        self.emit(qt.PYSIGNAL("StateChanged"), (state,))
+        
+    def _setState(self, state):
+        """
+        Set action behavior to "state".
+        Should be reimplemented
+        """
+        pass
+        
 ################################################################################
 ####################              QubImageAction            ####################
 ################################################################################
