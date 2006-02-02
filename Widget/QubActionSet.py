@@ -409,6 +409,155 @@ class QubSeparatorAction(QubAction):
     
 
 ###############################################################################
+####################            QubPointSelection          ####################
+###############################################################################
+class QubPointSelection(QubToggleImageAction):
+    """
+    Action acting on QubImage widget.
+    Select a point and send its (x, y) parameters using
+    PYSIGNAL("PointSelected")
+    """
+    def __init__(self, *args, **keys):
+        """
+        Constructor method
+        name ... :  string name of the action
+        qubImage :  action will act on a QubImage object. It can be set in
+                    the constructor method or using the "viewConnect" method
+                    of the class 
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None)
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it
+        index .. :  Position of the selection widget of the action in its
+                    group
+        Creates action widget to put in "group" dockarea of the "toolbar"
+        Return this widget.
+        Use name of the action to find icon file
+        Initialyse rectangle position variables
+        """
+        QubToggleImageAction.__init__(self, *args, **keys)
+
+        self.__point = qt.QPoint(0,0)
+        self.__mpoint = qt.QPoint(0,0)
+        
+        if self._name == "default":
+            self._name = "point"
+    
+    def viewConnect(self, qubImage):
+        """
+        Once the qubImage is connected, create QCanvas Item
+        """
+        QubToggleImageAction.viewConnect(self, qubImage)
+
+        canvas = self._qubImage.canvas()
+
+        self._l1  = qtcanvas.QCanvasLine(canvas)
+        self._l2  = qtcanvas.QCanvasLine(canvas)
+        self._c   = QubCanvasEllipse(20, 20, 0, 5760, canvas)
+
+        self._cl1 = qtcanvas.QCanvasLine(canvas)
+        self._cl2 = qtcanvas.QCanvasLine(canvas)
+        self._cc  = QubCanvasEllipse(20, 20, 0, 5760, canvas)
+
+        self.setColor(self._qubImage.foregroundColor())
+
+    def setColor(self, color):
+        """   
+        Slot connected to "ForegroundColorChanged" "qubImage" signal
+        """
+        
+        for item in [self._l1,self._l2,self._c,self._cl1,self._cl2,self._cc]:
+            item.setPen(qt.QPen(color))
+            item.update()
+       
+    def _setState(self, bool):
+        """
+        Draw or Hide point canvas item
+        """
+        self.__state = bool
+
+        if self._l1  is not None and self._l2  is not None and \
+           self._c   is not None and self._cl1 is not None and \
+           self._cl2 is not None and self._cc  is not None:
+            if self.__state:
+                self.signalConnect(self._qubImage)
+                self.setColor(self._qubImage.foregroundColor())
+                for item in [self._l1,self._l2,self._c,self._cl1,self._cl2,self._cc]:
+                    item.show()
+            else:
+                self.signalDisconnect(self._qubImage)
+                for item in [self._l1,self._l2,self._c,self._cl1,self._cl2,self._cc]:
+                    item.hide()
+
+            for item in [self._l1,self._l2,self._c,self._cl1,self._cl2,self._cc]:
+                item.update()
+    
+    def mouseMove(self, event):
+        """
+        One of the drawing follows the mouse during the move
+        """
+        try:
+            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+            self.__mpoint.setX(x)
+            self.__mpoint.setY(y)
+
+            self.viewportUpdate()
+        except:
+            sys.excepthook(sys.exc_info()[0],
+                       sys.exc_info()[1],
+                       sys.exc_info()[2])
+    
+    def mouseRelease(self, event):
+        """
+        Rectangle selection is finished, send corresponding signal
+        with coordinates
+        """
+        try:
+            (x, y)=self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+
+            self.__mpoint.setX(x)
+            self.__mpoint.setY(y)
+
+            self.__point.setX(x)
+            self.__point.setY(y)
+
+            self.emit(qt.PYSIGNAL("PointSelected"),  (x, y))
+
+            self.viewportUpdate()
+        except:
+            sys.excepthook(sys.exc_info()[0],
+                       sys.exc_info()[1],
+                       sys.exc_info()[2])
+        
+    def viewportUpdate(self):
+        """
+        Draw rectangle either if qubImage pixmap has been updated or
+        rectangle coordinates have been changed by the user
+        """
+        point = self._qubImage.matrix.map(self.__point)
+        mpoint = self._qubImage.matrix.map(self.__mpoint)
+
+        self._l1.setPoints(point.x()-10, point.y()-10,
+                           point.x()+10, point.y()+10)   
+        self._l2.setPoints(point.x()-10, point.y()+10,
+                           point.x()+10, point.y()-10)
+        self._c.move(point.x(), point.y())  
+
+        self._cl1.setPoints(mpoint.x()-10, mpoint.y()-10,
+                            mpoint.x()+10, mpoint.y()+10)   
+        self._cl2.setPoints(mpoint.x()-10, mpoint.y()+10,
+                            mpoint.x()+10, mpoint.y()-10)   
+        self._cc.move(mpoint.x(), mpoint.y())  
+
+        for item in [self._l1,self._l2,self._c,self._cl1,self._cl2,self._cc]:
+            if item is not None:
+                item.update()
+
+
+###############################################################################
 ####################          QubRectangleSelection        ####################
 ###############################################################################
 class QubRectangleSelection(QubToggleImageAction):
@@ -1666,6 +1815,9 @@ class QubMain(qt.QMainWindow):
         actions.append(action)
 
         action = QubRectangleSelection(show=1, group="selection")
+        actions.append(action)
+
+        action = QubPointSelection(show=1, group="selection")
         actions.append(action)
 
         action = QubCircleSelection(show=1, group="selection")
