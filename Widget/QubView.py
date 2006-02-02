@@ -178,6 +178,12 @@ class QubView(qt.QWidget):
                 
                 del(self.__actionList[action.name()])
 
+    def getAction(self, name):
+        if name in self.__actionList.keys():
+            return self.__actionList[name]
+            
+        return None
+        
 
 ################################################################################
 ####################              QubViewToolbar            ####################
