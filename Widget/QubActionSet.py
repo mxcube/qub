@@ -1752,11 +1752,11 @@ class QubForegroundColorAction(QubAction):
         if self._item is None:
             if self._colorMenu is None:
                 self._colorMenu = QubColorToolMenu(menu)
-                self.connect(self._colorMenu, PYSIGNAL("colorSelected"),
+                self.connect(self._colorMenu, qt.PYSIGNAL("colorSelected"),
                              self.colorChanged)
                     
             self._item = menu.insertItem(self._colorMenu.iconSet,
-                                         QString("Color"), self.colorMenu)
+                                         qt.QString("Color"), self._colorMenu)
             menu.connectItem(self._item, self._colorMenu.exec_loop)
 
     def colorChanged(self, color):
@@ -1765,7 +1765,7 @@ class QubForegroundColorAction(QubAction):
         
         if self._item is not None:
             self._menu.changeItem(self._item, self._colorMenu.iconSet,
-                                  QString("Color"))
+                                  qt.QString("Color"))
                                                   
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
