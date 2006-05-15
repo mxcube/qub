@@ -2,6 +2,7 @@ import qt
 import sys
 
 from Qub.Widget.QubView import QubView
+
 from Qub.Widget.QubImage import QubImage
 
 ################################################################################
