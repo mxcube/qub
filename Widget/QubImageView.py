@@ -21,7 +21,7 @@ class QubImageView(QubView):
                 scrollMode=None, useThread=0, flags=qt.Qt.WDestructiveClose):
         QubView.__init__(self, parent, name, flags)
         
-        widget = QubImage(self, "QubImage", pixmap, 0)
+        widget = QubImage(self, name, pixmap, useThread)
         
         self.setView(widget)
         
@@ -63,6 +63,10 @@ class QubImageView(QubView):
         view = self.view()
         if view is not None:
             view.setThread(useThread)
+            
+    def closeWidget(self):
+        print "CloseWidget ImageView"
+        self.view().closeWidget()
                       
                       
 ################################################################################
