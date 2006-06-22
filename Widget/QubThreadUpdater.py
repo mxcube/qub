@@ -9,7 +9,7 @@ import spslut
 import sps
 
 from QubProfiler import AppProfiler
-import blisspixmap
+#import blisspixmap
 
 ################################################################################
 ####################            QubThreadUpdater            ####################
@@ -212,8 +212,8 @@ class QubJpeg2Pixmap(QubThreadUpdater):
 class QubArray2Pixmap(QubThreadUpdater):
     def __init__(self, receiver, name):
         QubThreadUpdater.__init__(self, receiver, name)
-        self.pixmapIO = blisspixmap.IO()
-        self.pixmapIO.setShmPolicy(blisspixmap.IO.ShmKeepAndGrow)
+        #self.pixmapIO = blisspixmap.IO()
+        #self.pixmapIO.setShmPolicy(blisspixmap.IO.ShmKeepAndGrow)
         
         
     def buildEvent(self):
@@ -245,8 +245,8 @@ class QubArray2Pixmap(QubThreadUpdater):
                 self.receiver.pix = qt.QPixmap(size[0], size[1])
                 
                 AppProfiler.interStart("t8", "    pixmap")
-                #self.receiver.pix.convertFromImage(image, qt.Qt.ColorOnly)
-                self.pixmapIO.putImage(self.receiver.pix,0,0,image)
+                self.receiver.pix.convertFromImage(image, qt.Qt.ColorOnly)
+                #self.pixmapIO.putImage(self.receiver.pix,0,0,image)
          	      
                 AppProfiler.interStop("t8")
                 
