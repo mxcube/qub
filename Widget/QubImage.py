@@ -1,9 +1,9 @@
 import qt
 import qtcanvas
-import time
 import sys
 
 from Qub.Widget.QubThreadUpdater import QubPixmap2Canvas
+from QubProfiler import AppProfiler
 
 __revision__="$Revision$"
 class QubImage(qtcanvas.QCanvasView):
@@ -40,13 +40,13 @@ class QubImage(qtcanvas.QCanvasView):
         """        
         qtcanvas.QCanvasView.__init__(self, parent, name, 
                                       qt.Qt.WNoAutoErase|qt.Qt.WStaticContents ) 
-                                      
-        self.time = -1  
-     
+                                           
         """
         parent widget
         """
         self.__parent = parent
+        self.__name = name
+        self.working = False
         
         """
         initialization of thread to build bckPixmap id needed
@@ -54,6 +54,7 @@ class QubImage(qtcanvas.QCanvasView):
         self.__bckSize = (-1, -1)
         self.__oldDataPixmap = None
         self.__pixmapUpdater = None
+        
         if useThread:
             self.__useThread = 0
         else:
@@ -161,9 +162,8 @@ class QubImage(qtcanvas.QCanvasView):
             self.canvas().setBackgroundPixmap(self.bckPixmap)
 
             self.__emitUpdate()
-            
-        print "Display no thread (ms): %d"%(int((time.time()-self.time)*1000),)
-        self.time = -1
+                    
+        self.working = False
 
     def __calcZoom(self, w, h):
         if self.__scrollbarMode == "Fit2Screen" or \
@@ -222,7 +222,6 @@ class QubImage(qtcanvas.QCanvasView):
         """
         Viewport has been resized, tells the actions
         """
-        self.time = time.time()
         if self.__scrollbarMode == "Fit2Screen" or \
            self.__scrollbarMode == "FillScreen":
             (zoomx, zoomy) = self.__calcZoom(event.size().width(),
@@ -246,16 +245,23 @@ class QubImage(qtcanvas.QCanvasView):
         bckPixmap has been rebuild by the thread
         """
         if event.event_name == "Pixmap2CanvasUpdated":
+            AppProfiler.interStop("t16")
+            AppProfiler.interStart("t17", "DisplayPixmap")
             if self.bckPixmap is not None:
                 self.canvas().resize(self.bckPixmap.width(),
                                      self.bckPixmap.height())
                 self.canvas().setBackgroundPixmap(self.bckPixmap)
 
             self.__emitUpdate()
-        
-        if self.time > 1:
-            print "Display thread (ms): %d"%(int((time.time()-self.time)*1000),)
-        self.time = -1
+                    
+            self.working = False
+            
+            AppProfiler.interStop("t17")
+            AppProfiler.stop()
+            
+    def closeWidget(self):
+        if self.__useThread:
+            self.__pixmapUpdater.stop()
         
     ##################################################
     ## PUBLIC METHOD    
@@ -299,15 +305,14 @@ class QubImage(qtcanvas.QCanvasView):
             change zoom factor, redisplay image and
             send update signal for actions
             """
-            if self.time == -1:
-                self.time = time.time()
-
             if self.__zoomx != zoomx or self.__zoomy != zoomy:
                 self.matrix.setMatrix(zoomx, 0, 0, zoomy, 0, 0)
                 self.__zoomx = zoomx
                 self.__zoomy = zoomy
 
             if self.__useThread:
+                AppProfiler.interStop("t11")
+                AppProfiler.interStart("t12", "Calling BuildPixmap")
                 self.__pixmapUpdater.update()
             else:
                 self.__updatePixmap()
@@ -336,14 +341,22 @@ class QubImage(qtcanvas.QCanvasView):
         """
         New pixmap to be displayed
         """
-        self.time = time.time()
-                
-        self.dataPixmap = pixmap
-
-        (zoomx, zoomy) = self.__calcZoom(self.viewport().width(),
-                                         self.viewport().height())
+        if not self.working:
+            AppProfiler.interStop("t10")
+            AppProfiler.interStart("t11", "ImageView -> BuildPixmap")
             
-        self.setZoom(zoomx, zoomy)
+            self.working = True
+                            
+            if pixmap is not None:
+                self.dataPixmap = pixmap
+
+                (zoomx, zoomy) = self.__calcZoom(self.viewport().width(),
+                                                 self.viewport().height())
+            
+                self.setZoom(zoomx, zoomy)
+            else:
+                self.dataPixmap = None
+                self.working = False
 
     def setThread(self, onoff):
         """
