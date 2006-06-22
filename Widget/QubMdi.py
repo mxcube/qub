@@ -1,5 +1,6 @@
 import qt
 import os
+import sys
 
 from Qub.Icons.QubIcons import loadIcon
 
@@ -257,10 +258,19 @@ class QubMdiChild(qt.QWidget):
     def closeEvent(self, ce):
         """
         """
-        for window in self.parentWindow.windowList():
-            if window.masterWindow is self:
-                window.close(1)
-        ce.accept()
+        try:
+            for window in self.parentWindow.windowList():
+                if window.masterWindow is self:
+                    window.close(1)
+
+            self.emit(qt.PYSIGNAL("MDIChildClose"), ())
+
+            ce.accept()
+        except:
+            sys.excepthook(sys.exc_info()[0],
+                       sys.exc_info()[1],
+                       sys.exc_info()[2])
+        
     
 #############################################################################
 ##########                                                         ##########
