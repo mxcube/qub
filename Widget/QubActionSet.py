@@ -1514,9 +1514,9 @@ class QubZoomListAction(QubAction):
         
         if w > maxVal or h > maxVal:
             if w > h:
-                newzoom = float(maxVal)/float(self.drawable.dataPixmap.width())
+                newzoom = float(maxVal)/float(self._qubImage.dataPixmap.width())
             else:
-                newzoom = float(maxVal)/float(self.drawable.dataPixmap.height())
+                newzoom = float(maxVal)/float(self._qubImage.dataPixmap.height())
                 
         return newzoom
 
