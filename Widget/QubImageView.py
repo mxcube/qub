@@ -98,6 +98,7 @@ class QubMain(qt.QMainWindow):
 ##  MAIN   
 if  __name__ == '__main__':
     from QubActionSet import QubRectangleSelection,QubLineSelection
+    from Qub.Widget.QubProfiler import QubProfiler
     app = qt.QApplication(sys.argv)
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
