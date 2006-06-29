@@ -5,6 +5,7 @@ from Qub.Widget.QubView import QubView
 
 from Qub.Widget.QubImage import QubImage
 
+
 ################################################################################
 ####################               QubImageView             ####################
 ################################################################################
@@ -67,11 +68,28 @@ class QubImageView(QubView):
     def closeWidget(self):
         print "CloseWidget ImageView"
         self.view().closeWidget()
-                      
+
                       
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
+from Qub.Data.Plug.QubPlug import QubPlug
+import Numeric
+
+class QubShm2Pixmap(QubPlug) :
+    def __init__(self,aQubImageView,timeout = 1000) :
+        QubPlug.__init__(self,timeout)
+        self.__imageView = aQubImageView
+        
+    def update(self,specversion,specshm,data) :
+        (image_str,size,minmax) = spslut.transform(data,
+                                                   (1,0), (spslut.LINEAR, 3.0),
+                                                   "BGRX", spslut.GREYSCALE,1,(0,255))
+        image = qt.QImage(image_str,size[0],size[1],32,None,0,
+                          qt.QImage.IgnoreEndian)
+        
+        self.__imageView.setPixmap(qt.QPixmap(image))
+
 class QubMain(qt.QMainWindow):
     def __init__(self, parent=None, file=None):
         qt.QMainWindow.__init__(self, parent)
@@ -105,8 +123,25 @@ if  __name__ == '__main__':
                     app, qt.SLOT("quit()"))
 
     if len(sys.argv) < 2:
-        print "Give an image file name as argument"
-        sys.exit(1)
+##        print "Give an image file name as argument"
+##        sys.exit(1)
+        import sps,spslut
+        from Qub.Data.Source.QubSpecSource import getSpecVersions
+        SpecVers = getSpecVersions()
+        sebSpec = SpecVers.getObjects('seb')
+        if(sebSpec) :
+            imgArray = sebSpec.getObjects('image')
+            if(imgArray) :
+                window = qt.QMainWindow()
+                layout = qt.QVBoxLayout(window)
+                imgView = QubImageView(window,"Test")
+                layout.addWidget(imgView)
+                plug = QubShm2Pixmap(imgView)
+                imgArray.plug(plug)
+            else :
+                print "Array not found"
+        else :
+            print "Spec version not found"
     else:
         window = QubMain(file = sys.argv[1])
     
