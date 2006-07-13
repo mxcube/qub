@@ -17,46 +17,53 @@ class QubPad(qt.QWidget):
         
         padLayout = qt.QVBoxLayout(self,11,6,"padLayout")
 
-        layout2 = qt.QHBoxLayout(None,0,6,"layout2")
+##        layout2 = qt.QHBoxLayout(None,0,6,"layout2")
+        layout = qt.QGridLayout(None,2,5)
+        self.__hIcon = qt.QLabel(self,"__hIcon")
+        self.__hIcon.setPixmap(qt.QPixmap(QubIcons.getIconPath('horizontal.png')))
+        layout.addWidget(self.__hIcon,0,0)
 
         self.__hAxis = qt.QLabel(self,"__hAxis")
-        layout2.addWidget(self.__hAxis)
+        layout.addWidget(self.__hAxis,0,1)
         spacer1 = qt.QSpacerItem(40,20,qt.QSizePolicy.Expanding,qt.QSizePolicy.Minimum)
-        layout2.addItem(spacer1)
+        layout.addItem(spacer1,0,2)
         self.__hStepCombo = _combo_box(True,self,"__hStepCombobox")
         self.__hStepCombo.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed,0,0,
                                                     self.__hStepCombo.sizePolicy().hasHeightForWidth()))
         self.__hStepCombo.setAutoCompletion(1)
         self.__hStepCombo.setDuplicatesEnabled(0)
-        layout2.addWidget(self.__hStepCombo)
+        layout.addWidget(self.__hStepCombo,0,3)
         
         self.__hMultiplyText = qt.QLabel(self,"__hMultiplyText")
-        layout2.addWidget(self.__hMultiplyText)
-        padLayout.addLayout(layout2)
+        layout.addWidget(self.__hMultiplyText,0,4)
+
         
         self.__vAxis = qt.QLabel(self,"__vAxis")
  
-        self.__padButton = _pad_button(self.__hAxis,self.__vAxis,self,"__padButton")
-        self.__padButton.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.MinimumExpanding,
-                                                      0,0,self.__padButton.sizePolicy().hasHeightForWidth()))
-        self.__padButton.setFlat(1)
-        padLayout.addWidget(self.__padButton)
 
-        layout1 = qt.QHBoxLayout(None,0,6,"layout1")
-
-        layout1.addWidget(self.__vAxis)
+        self.__vIcon = qt.QLabel(self,"__vIcon")
+        self.__vIcon.setPixmap(qt.QPixmap(QubIcons.getIconPath('vertical.png')))
+        layout.addWidget(self.__vIcon,1,0)
+        
+        layout.addWidget(self.__vAxis,1,1)
         spacer2 = qt.QSpacerItem(40,20,qt.QSizePolicy.Expanding,qt.QSizePolicy.Minimum)
-        layout1.addItem(spacer2)
+        layout.addItem(spacer2,1,2)
         self.__vStepCombo = _combo_box(True,self,"__vStepCombo")
         self.__vStepCombo.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed,0,0,
                                                     self.__vStepCombo.sizePolicy().hasHeightForWidth()))
         self.__vStepCombo.setAutoCompletion(1)
         self.__vStepCombo.setDuplicatesEnabled(0)
-        layout1.addWidget(self.__vStepCombo)
+        layout.addWidget(self.__vStepCombo,1,3)
 
         self.__vMultiplyText = qt.QLabel(self,"__vMultiplyText")
-        layout1.addWidget(self.__vMultiplyText)
-        padLayout.addLayout(layout1)
+        layout.addWidget(self.__vMultiplyText,1,4)
+        padLayout.addLayout(layout)
+
+        self.__padButton = _pad_button(self.__hAxis,self.__vAxis,self,"__padButton")
+        self.__padButton.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.MinimumExpanding,
+                                                      0,0,self.__padButton.sizePolicy().hasHeightForWidth()))
+        self.__padButton.setFlat(1)
+        padLayout.addWidget(self.__padButton)
 
         self.languageChange()
 
@@ -97,11 +104,15 @@ class QubPad(qt.QWidget):
         Horizontal Motor's position format
         """
         self.__hFormat = format
+        self.__refreshHLabel()
+        
     def setHPos(self,pos) :
         """
         Horizontal Motor's position
         """
         self.__hPos = pos
+        self.__refreshHLabel()
+        
     def __refreshHLabel(self) :
         format = '%s : ' + self.__hFormat
         self.__hAxis.setText(format % (self.__hName,self.__hPos))
@@ -124,6 +135,23 @@ class QubPad(qt.QWidget):
         """
         self.__vPos = pos
         self.__refreshVLabel()
+
+    def setRAxisName(self,name) :
+        """
+        Rotation Motor's name
+        """
+        pass
+    def setRFormat(self,format) :
+        """
+        Rotation Motor's position format
+        """
+        pass
+    def setRPos(self,pos) :
+        """
+        Rotation Motor's position
+        """
+        pass
+
     def __refreshVLabel(self) :
         format = '%s : ' + self.__vFormat
         self.__vAxis.setText(format % (self.__vName,self.__vPos))
@@ -149,6 +177,18 @@ class QubPad(qt.QWidget):
         vStep,hValid = self.__vStepCombo.currentText().toFloat()
         return self.__multiplyInUse * vStep
 
+    def setHSteps(self,step_list) :
+        self.__hStepCombo.clear()
+        for step in step_list :
+            self.__hStepCombo.insertItem(str(step))
+
+    def setVSteps(self,step_list) :
+        self.__vStepCombo.clear()
+        for step in step_list :
+            self.__vStepCombo.insertItem(str(step))
+
+    def setRSteps(self,step_list) :
+        pass                            # TODO
     
 class QubPadPlug :
     def __init__(self) :
@@ -235,6 +275,8 @@ class _hMotorState :
         self._mgr.needRebuildImage = True
         _hError(self._mgr,self._plug)
     
+    def externalMove(self) :
+        pass
     def move_left(self) :
         pass
     def move_right(self) :
@@ -275,6 +317,9 @@ class _hConnected(_hMotorState) :
         _hMotorState.__init__(self,manager,plug)
     def connect(self) :
         pass
+    def externalMove(self) :
+        self._mgr.needRebuildImage = True
+        _hExternalMove(self._mgr,self._plug)
     def move_left(self) :
         self._mgr.needRebuildImage = True
         _hMoveLeft(self._mgr,self._plug)
@@ -283,19 +328,36 @@ class _hConnected(_hMotorState) :
         _hMoveRight(self._mgr,self._plug)
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('green'))
+
+class _hExternalMove(_hMotorState) :
+    def __init__(self,manager,plug) :
+        _hMotorState.__init__(self,manager,plug)
+        self._mgr.moveState.move()
+    def __del__(self) :
+        self._mgr.moveState.endMove()
+
+    def end_move(self,aCbkFlag = False) :
+        _hConnected(self._mgr,self._plug)
+        if(aCbkFlag and self._plug) :
+            self._plug.stopHorizontal()
+
+    def setBackgroundLabel(self,label) :
+        label.setPaletteBackgroundColor(qt.QColor('yellow'))
+    def setYourStateOnImage(self,image) :
+        self._mgr.setGrayOn(image,self._mgr.LEFT)
+        self._mgr.setGrayOn(image,self._mgr.RIGHT)
         
+
 class _hMoveLeft(_hMotorState) :
     def __init__(self,manager,plug) :
         _hMotorState.__init__(self,manager,plug)
-        self.move_left()
+        if(self._plug) :
+            self._plug.left(self._mgr.getHStep())
         self._mgr.moveState.move()
 
     def __del__(self) :
         self._mgr.moveState.endMove()
 
-    def move_left(self) :
-        if(self._plug) :
-            self._plug.left(self._mgr.getHStep())
     def end_move(self,aCbkFlag = False) :
         _hConnected(self._mgr,self._plug)
         if(aCbkFlag and self._plug) :
@@ -311,15 +373,12 @@ class _hMoveLeft(_hMotorState) :
 class _hMoveRight(_hMotorState) :
     def __init__(self,manager,plug) :
         _hMotorState.__init__(self,manager,plug)
-        self.move_right()
+        if(self._plug) :
+            self._plug.right(self._mgr.getHStep())
         self._mgr.moveState.move()
 
     def __del__(self) :
         self._mgr.moveState.endMove()
-
-    def move_right(self) :
-        if(self._plug) :
-            self._plug.right(self._mgr.getHStep())
 
     def end_move(self,aCbkFlag = False) :
         _hConnected(self._mgr,self._plug)
@@ -359,6 +418,9 @@ class _vMotorState :
         self._mgr.needRebuildImage = True
         _vError(self._mgr,self._plug)
     
+    def externalMove(self) :
+        pass
+
     def move_up(self) :
         pass
     def move_down(self) :
@@ -397,6 +459,9 @@ class _vConnected(_vMotorState) :
         _vMotorState.__init__(self,manager,plug)
     def connect(self) :
         pass
+    def externalMove(self) :
+        self._mgr.needRebuildImage = True
+        _vExternalMove(self._mgr,self._plug)
     def move_up(self) :
         self._mgr.needRebuildImage = True
         _vMoveUp(self._mgr,self._plug)
@@ -406,18 +471,33 @@ class _vConnected(_vMotorState) :
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('green'))
 
+class _vExternalMove(_vMotorState) :
+    def __init__(self,manager,plug) :
+        _vMotorState.__init__(self,manager,plug)
+        self._mgr.moveState.move()
+    def __del__(self) :
+        self._mgr.moveState.endMove()
+
+    def end_move(self,aCbkFlag = False) :
+        _vConnected(self._mgr,self._plug)
+        if(aCbkFlag and self._plug) :
+            self._plug.stopVertical()
+
+    def setBackgroundLabel(self,label) :
+        label.setPaletteBackgroundColor(qt.QColor('yellow'))
+    def setYourStateOnImage(self,image) :
+        self._mgr.setGrayOn(image,self._mgr.UP)
+        self._mgr.setGrayOn(image,self._mgr.DOWN)
+
 class _vMoveUp(_vMotorState) :
     def __init__(self,manager,plug) :
         _vMotorState.__init__(self,manager,plug)
-        self.move_up()
+        if(self._plug) :
+            self._plug.up(self._mgr.getVStep())
         self._mgr.moveState.move()
     def __del__(self) :
         self._mgr.moveState.endMove()
     
-    def move_up(self) :
-        if(self._plug) :
-            self._plug.up(self._mgr.getVStep())
-
     def end_move(self,aCbkFlag = False) :
         self._mgr.needRebuildImage = True
         _vConnected(self._mgr,self._plug)
@@ -434,13 +514,11 @@ class _vMoveUp(_vMotorState) :
 class _vMoveDown(_vMotorState) :
     def __init__(self,manager,plug) :
         _vMotorState.__init__(self,manager,plug)
-        self.move_down()
+        if(self._plug) :
+            self._plug.down(self._mgr.getVStep())
         self._mgr.moveState.move()
     def __del__(self) :
         self._mgr.moveState.endMove()
-    def move_down(self) :
-        if(self._plug) :
-            self._plug.down(self._mgr.getVStep())
 
     def end_move(self,aCbkFlag = False) :
         self._mgr.needRebuildImage = True
@@ -490,7 +568,7 @@ class _pad_button(qt.QPushButton) :
         self.UNDEF,self.UP,self.DOWN,self.LEFT,self.RIGHT,self.STOP = range(6)
         self.__under = self.UNDEF
         
-        self.__tuple2ArrowType = {(0,1) : self.RIGHT,(2,1) : self.LEFT,
+        self.__tuple2ArrowType = {(2,1) : self.RIGHT,(0,1) : self.LEFT,
                                   (1,1) : self.STOP,
                                    (1,0) : self.UP, (1,2) : self.DOWN}
         self.__arrowType2tuple = {}
@@ -660,6 +738,9 @@ class _pad_button(qt.QPushButton) :
             self.__multiplymode = aFlag
             self.__pad.setMultiplyStep(self.__multiplymode)
 
+    def getPad(self) :
+        return self.__pad
+    
     def getHStep(self) :
         return self.__pad.getHStep()
 
@@ -697,8 +778,18 @@ class _pad_button(qt.QPushButton) :
         if self.needRebuildImage and not self.__idle.isActive() :
             self.__idle.start(0)
 
+    def hMotorDisconnected(self) :
+        self.hstate.disconnect()
+        if self.needRebuildImage and not self.__idle.isActive() :
+            self.__idle.start(0)
+
     def vMotorConnected(self) :
         self.vstate.connect()
+        if self.needRebuildImage and not self.__idle.isActive() :
+            self.__idle.start(0)
+
+    def vMotorDisconnected(self) :
+        self.vstate.disconnect()
         if self.needRebuildImage and not self.__idle.isActive() :
             self.__idle.start(0)
 
@@ -712,6 +803,17 @@ class _pad_button(qt.QPushButton) :
         if self.needRebuildImage and not self.__idle.isActive() :
             self.__idle.start(0)
         
+    def hMotorExternalMove(self) :
+        self.hstate.externalMove()
+        if self.needRebuildImage and not self.__idle.isActive() :
+            self.__idle.start(0)
+
+    def vMotorExternalMove(self) :
+        self.vstate.externalMove()
+        if self.needRebuildImage and not self.__idle.isActive() :
+            self.__idle.start(0)
+
+
 class _combo_box(qt.QComboBox) :
     def __init__(self,rw,parent,name) :
         qt.QComboBox.__init__(self,rw,parent,name)
