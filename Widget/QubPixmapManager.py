@@ -15,11 +15,12 @@ class QubPixmapManager :
             self.__plugs = []
             self.__allow2skip = allow2skip
             self.__mutex = qt.QMutex()
-            self.__PrevImage = None
+            self.__PrevImageNeedZoom = (None,False)
             self.__imageZoomProcess = _ImageZoomProcess(self)
         def plug(self,aPlug) :
             if isinstance(aPlug,QubPlugPixmapManager2Pixmap) :
                 aLock = QubLock(self.__mutex)
+                aPlug.setManager(self)
                 self.__plugs.append(aPlug)
             else :
                 raise StandardError('Must be a QubPlugPixmapManager2Pixmap')
@@ -28,8 +29,8 @@ class QubPixmapManager :
             aLock = QubLock(self.__mutex)
             return self.__plugs
         
-        def putImage(self,aQImage) :
-            aLock = QubLock(self.__mutex)
+        def putImage(self,aQImage,aLockFlag = True) :
+            aLock = QubLock(self.__mutex,aLockFlag)
             if len(self.__plugs) :
                 needZoomFlag = False
                 for plug in self.__plugs :
@@ -37,10 +38,11 @@ class QubPixmapManager :
                     if zoom.needZoom():
                         needZoomFlag = True
                         break
+                self.__PrevImageNeedZoom = (aQImage,needZoomFlag)
                 if needZoomFlag :
                     self.__imageZoomProcess.putImage(aQImage)
                 else :
-                    self.appendPendingList([(plug,aQImage) for plug in self.__plugs],False)
+                    self.appendPendingList([(plug,aQImage,aQImage) for plug in self.__plugs],False)
 
         def appendPendingList(self,aList,aLock = True) :
             aLock = QubLock(self.__mutex,aLock)
@@ -52,8 +54,13 @@ class QubPixmapManager :
                     
         def refresh(self) :
             aLock = QubLock(self.__mutex)
-            if self.__PrevImage is not None :
-                pass
+            previmage,needzoom = self.__PrevImageNeedZoom
+            if needzoom and previmage != self.__imageZoomProcess.lastImagePending() :
+                self.putImage(previmage,False)
+            elif not needzoom :
+                if not len(self.__plugsNimagesPending) or self.__plugsNimagesPending[-1][2] != previmage :
+                    self.putImage(previmage,False)
+                
                     
         def __idleCopy(self) :
             self.__copy()
@@ -70,10 +77,10 @@ class QubPixmapManager :
             plugsNimages = self.__plugsNimagesPending.pop(0)
             aLock.unLock()
             
-            for plug,image in plugsNimages :
+            for plug,image,fullSizeImage in plugsNimages :
                 if not plug.isEnd() :
                     pixmap = plug.zoom().getPixmapFrom(image)
-                    if plug.display(pixmap,image) :
+                    if plug.setPixmap(pixmap,fullSizeImage) :
                         aLock.lock()
                         self.__plugs.remove(plug)
                         aLock.unLock()
@@ -99,8 +106,9 @@ class QubPixmapManager :
                     
 class QubPlugPixmapManager2Pixmap :
     class Zoom :
-        def __init__(self) :
-            self.__zoom = 1
+        def __init__(self,cnt) :
+            self.__cnt = cnt
+            self.__zoom = (1,1)
             self.__ox,self.__oy = (0,0)
             self.__width,self.__height = (0,0)
             self.__allimage = True
@@ -117,21 +125,24 @@ class QubPlugPixmapManager2Pixmap :
         def zoom(self) :
             aLock = QubLock(self.__mutex)
             return self.__zoom
-        def setZoom(self,zoom) :
+        def setZoom(self,zoomx,zoomy) :
             aLock = QubLock(self.__mutex)
-            self.__zoom = zoom
-            self.__allimage = True
+            if self.__zoom != (zoomx,zoomy) :
+                self.__zoom = (zoomy,zoomy)
+                self.__allimage = True
+                self.__cnt.refresh()
             
-        def setRoiNZoom(self,ox,oy,width,height,zoom) :
+        def setRoiNZoom(self,ox,oy,width,height,zoomx,zoomy) :
             aLock = QubLock(self.__mutex)
             self.__allimage = False
             self.__ox,self.__oy,self.__width,self.__height = (ox,oy,width,height)
-            self.__zoom = zoom
-            if zoom < 1 :
+            self.__zoom = (zoomx,zoomy)
+            if self.__zoom < (1,1) :
                 self.__interpolationInUse = cv.CV_INTER_NN
             else :
                 self.__interpolationInUse = self._interpolation
-                                      
+            self.__cnt.refresh()
+            
         def roi(self) :
             aLock = QubLock(self.__mutex)
             return (self.__ox,self.__oy,self.__width,self.__height)
@@ -139,7 +150,7 @@ class QubPlugPixmapManager2Pixmap :
                ####### USE by ImageZoomProcess #######
         def needZoom(self) :
             aLock = QubLock(self.__mutex)
-            return self.__zoom != 1
+            return self.__zoom != (1,1)
 
         def getZoomedImage(self,imageOpencv) :
             aLock = QubLock(self.__mutex) # LOCK
@@ -150,8 +161,8 @@ class QubPlugPixmapManager2Pixmap :
                 width = (self.__width - self.__ox)
                 height = (self.__height - self.__oy)
 
-            width *= self.__zoom
-            height *= self.__zoom
+            width *= self.__zoom[0]
+            height *= self.__zoom[1]
             width = int(width)
             height = int(height)
             oldroi = imageOpencv.roi
@@ -193,22 +204,33 @@ class QubPlugPixmapManager2Pixmap :
 
     def __init__(self) :
         self.__endFlag = False
-        self._zoom = QubPlugPixmapManager2Pixmap.Zoom()
-
+        self._zoom = QubPlugPixmapManager2Pixmap.Zoom(self)
+        self._mgr = None
+        
     def zoom(self) :
         return self._zoom
     
-    def display(self,pixmap,image) :
+    def setPixmap(self,pixmap,image) :
         """
         This methode is call when an image is copied on pixmap
         """
         return True
 
+    def refresh(self) :
+        if self._mgr is not None :
+            self._mgr.refresh()
+
+    def setEnd(self) :
+        """
+        this is the end ... of the plug. after this call, the plug will be removed from every polling.
+        """
+        self.__endFlag = True
+
     def isEnd(self) :
         return self.__endFlag
     
-            
-        
+    def setManager(self,aMgr) :
+        self._mgr = aMgr
 #Private
 class _ImageZoomProcess(QubThreadProcess):
     class _process_struct :
@@ -240,6 +262,13 @@ class _ImageZoomProcess(QubThreadProcess):
             self._threadMgr.pop(self,False)
         return self.zoomProcess
 
+    def lastImagePending(self) :
+        aLock = QubLock(self.__mutex)
+        lastImagePending = None
+        if len(self.__imageZoomPending) :
+            lastImagePending = self.__imageZoomPending[-1]
+        return lastImagePending
+    
     def putImage(self,image) :
         aLock = QubLock(self.__mutex)
         self.__imageZoomPending.append(image)
@@ -265,9 +294,9 @@ class _ImageZoomProcess(QubThreadProcess):
             zoom = plug.zoom()
             if zoom.needZoom() :
                 imageZoomed = zoom.getZoomedImage(imageOpencv)
-                struct.plugNimage.append((plug,imageZoomed))
+                struct.plugNimage.append((plug,imageZoomed,struct.image))
             else :
-                struct.plugNimage.append((plug,struct.image))
+                struct.plugNimage.append((plug,struct.image,struct.image))
         aLock.lock()
         struct.end = True
         if struct == self.__InProgress[0] :
@@ -287,7 +316,7 @@ if __name__ == "__main__":
             QubPlugPixmapManager2Pixmap.__init__(self)
             self.__label = label
                         
-        def display(self,pixmap,image) :
+        def setPixmap(self,pixmap,image) :
             self.__label.setPixmap(pixmap)
             return False
         
@@ -326,9 +355,11 @@ if __name__ == "__main__":
     pixmapMgr = QubPixmapManager()
 
     i2p = Image2Pixmap(label1)
+    z = i2p.zoom()
+    z.setZoom(1/2.,1/2.)
     i2pzoom = Image2Pixmap(label2)
     zoom = i2pzoom.zoom()
-    zoom.setRoiNZoom(100,0,300,200,1/5.)
+    zoom.setRoiNZoom(100,0,300,200,1,2.5)
 
     pixmapMgr.plug(i2p)
     pixmapMgr.plug(i2pzoom)
