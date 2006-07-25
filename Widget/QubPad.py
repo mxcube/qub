@@ -16,74 +16,93 @@ class QubPad(qt.QWidget):
         self.__multiplyInUse = 1
         self.__multiplyfactor = 10
         
-        padLayout = qt.QVBoxLayout(self,11,6,"padLayout")
-
-        layout = qt.QGridLayout(None,3,5)
+        padLayout = qt.QVBoxLayout(self,5,0,"padLayout")
 
                       ####### HORIZONTAL #######
-        self.__hIcon = qt.QLabel(self,"__hIcon")
+        self.__hFrame = qt.QFrame(self,"__hFrame")
+        self.__hFrame.setFrameShape(qt.QFrame.GroupBoxPanel)
+        self.__hFrame.setFrameShadow(qt.QFrame.Raised)
+        hlayout = qt.QHBoxLayout(self.__hFrame,2,0,"hlayout")
+        
+        self.__hIcon = qt.QLabel(self.__hFrame,"__hIcon")
         self.__hIcon.setPixmap(qt.QPixmap(QubIcons.getIconPath('horizontal.png')))
-        layout.addWidget(self.__hIcon,0,0)
+        hlayout.addWidget(self.__hIcon)
 
-        self.__hAxis = qt.QLabel(self,"__hAxis")
-        layout.addWidget(self.__hAxis,0,1)
+        self.__hAxisName = qt.QLabel(self.__hFrame,"__hAxisName")
+        hlayout.addWidget(self.__hAxisName)
+        self.__hAxisPos = qt.QLabel(self.__hFrame,"__hAxisPos")
+        hlayout.addWidget(self.__hAxisPos)
         self.__hSpacer = qt.QSpacerItem(40,20,qt.QSizePolicy.Expanding,qt.QSizePolicy.Minimum)
-        layout.addItem(self.__hSpacer,0,2)
-        self.__hStepCombo = _combo_box(True,self,"__hStepCombobox")
+        hlayout.addItem(self.__hSpacer)
+        self.__hStepCombo = _combo_box(True,self.__hFrame,"__hStepCombobox")
         self.__hStepCombo.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed,0,0,
                                                     self.__hStepCombo.sizePolicy().hasHeightForWidth()))
         self.__hStepCombo.setAutoCompletion(1)
         self.__hStepCombo.setDuplicatesEnabled(0)
-        layout.addWidget(self.__hStepCombo,0,3)
+        hlayout.addWidget(self.__hStepCombo)
         
-        self.__hMultiplyText = qt.QLabel(self,"__hMultiplyText")
-        layout.addWidget(self.__hMultiplyText,0,4)
+        self.__hMultiplyText = qt.QLabel(self.__hFrame,"__hMultiplyText")
+        hlayout.addWidget(self.__hMultiplyText)
 
+        padLayout.addWidget(self.__hFrame)
         
                        ####### VERTICAL #######
-        self.__vAxis = qt.QLabel(self,"__vAxis")
-        self.__vIcon = qt.QLabel(self,"__vIcon")
+        self.__vFrame = qt.QFrame(self,"__vFrame")
+        self.__vFrame.setFrameShape(qt.QFrame.GroupBoxPanel)
+        self.__vFrame.setFrameShadow(qt.QFrame.Raised)
+        vlayout = qt.QHBoxLayout(self.__vFrame,2,0,"vlayout")
+
+        self.__vIcon = qt.QLabel(self.__vFrame,"__vIcon")
         self.__vIcon.setPixmap(qt.QPixmap(QubIcons.getIconPath('vertical.png')))
-        layout.addWidget(self.__vIcon,1,0)
-        
-        layout.addWidget(self.__vAxis,1,1)
+        vlayout.addWidget(self.__vIcon)
+
+        self.__vAxisName = qt.QLabel(self.__vFrame,"__vAxisName")
+        vlayout.addWidget(self.__vAxisName)
+        self.__vAxisPos = qt.QLabel(self.__vFrame,"__vAxisPos")
+        vlayout.addWidget(self.__vAxisPos)
         self.__vSpacer = qt.QSpacerItem(40,20,qt.QSizePolicy.Expanding,qt.QSizePolicy.Minimum)
-        layout.addItem(self.__vSpacer,1,2)
-        self.__vStepCombo = _combo_box(True,self,"__vStepCombo")
+        vlayout.addItem(self.__vSpacer)
+        self.__vStepCombo = _combo_box(True,self.__vFrame,"__vStepCombo")
         self.__vStepCombo.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed,0,0,
                                                     self.__vStepCombo.sizePolicy().hasHeightForWidth()))
         self.__vStepCombo.setAutoCompletion(1)
         self.__vStepCombo.setDuplicatesEnabled(0)
-        layout.addWidget(self.__vStepCombo,1,3)
+        vlayout.addWidget(self.__vStepCombo)
 
-        self.__vMultiplyText = qt.QLabel(self,"__vMultiplyText")
-        layout.addWidget(self.__vMultiplyText,1,4)
+        self.__vMultiplyText = qt.QLabel(self.__vFrame,"__vMultiplyText")
+        vlayout.addWidget(self.__vMultiplyText)
 
+        padLayout.addWidget(self.__vFrame)
                        ####### ROTATION #######
+        self.__rFrame = qt.QFrame(self,"__rFrame")
+        self.__rFrame.setFrameShape(qt.QFrame.GroupBoxPanel)
+        self.__rFrame.setFrameShadow(qt.QFrame.Raised)
+        rlayout = qt.QHBoxLayout(self.__rFrame,2,0,"rlayout")
 
-        self.__rAxis = qt.QLabel(self,"__rAxis")
-        self.__rIcon = qt.QLabel(self,"__rIcon")
+        self.__rIcon = qt.QLabel(self.__rFrame,"__rIcon")
         self.__rIcon.setPixmap(qt.QPixmap(QubIcons.getIconPath('rotation.png')))
-        layout.addWidget(self.__rIcon,2,0)
+        rlayout.addWidget(self.__rIcon)
         
-        layout.addWidget(self.__rAxis,2,1)
+        self.__rAxisName = qt.QLabel(self.__rFrame,"__rAxisName")
+        rlayout.addWidget(self.__rAxisName)
+        self.__rAxisPos = qt.QLabel(self.__rFrame,"__rAxisPos")
+        rlayout.addWidget(self.__rAxisPos)
         self.__rSpacer = qt.QSpacerItem(40,20,qt.QSizePolicy.Expanding,qt.QSizePolicy.Minimum)
-        layout.addItem(self.__rSpacer,1,2)
-        self.__rStepCombo = _combo_box(True,self,"__rStepCombo")
+        rlayout.addItem(self.__rSpacer)
+        self.__rStepCombo = _combo_box(True,self.__rFrame,"__rStepCombo")
         self.__rStepCombo.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed,0,0,
                                                     self.__rStepCombo.sizePolicy().hasHeightForWidth()))
         self.__rStepCombo.setAutoCompletion(1)
         self.__rStepCombo.setDuplicatesEnabled(0)
-        layout.addWidget(self.__rStepCombo,2,3)
+        rlayout.addWidget(self.__rStepCombo)
 
-        self.__rMultiplyText = qt.QLabel(self,"__rMultiplyText")
-        layout.addWidget(self.__rMultiplyText,2,4)
+        self.__rMultiplyText = qt.QLabel(self.__rFrame,"__rMultiplyText")
+        rlayout.addWidget(self.__rMultiplyText)
         
-
-        padLayout.addLayout(layout)
+        padLayout.addWidget(self.__rFrame)
 
                          ####### PAD #######
-        self.__padButton = _pad_button(self.__hAxis,self.__vAxis,self.__rAxis,self,"__padButton")
+        self.__padButton = _pad_button(self.__hAxisPos,self.__vAxisPos,self.__rAxisPos,self,"__padButton")
         self.__padButton.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.MinimumExpanding,
                                                       0,0,self.__padButton.sizePolicy().hasHeightForWidth()))
         self.__padButton.setFlat(1)
@@ -118,9 +137,9 @@ class QubPad(qt.QWidget):
 
 
     def setAxis(self,axisOring) :
-        widgetDic = {QubPad.HORIZONTAL_AXIS : [self.__hIcon,self.__hAxis,self.__hStepCombo,self.__hMultiplyText],
-                     QubPad.VERTICAL_AXIS : [self.__vIcon,self.__vAxis,self.__vStepCombo,self.__vMultiplyText],
-                     QubPad.ROTATION_AXIS : [self.__rIcon,self.__rAxis,self.__rStepCombo,self.__rMultiplyText]}
+        widgetDic = {QubPad.HORIZONTAL_AXIS : [self.__hFrame],
+                     QubPad.VERTICAL_AXIS : [self.__vFrame],
+                     QubPad.ROTATION_AXIS : [self.__rFrame]}
         for axis_type,widget_list in widgetDic.iteritems() :
             if not (axisOring & axis_type) :
                 for widget in widget_list :
@@ -155,8 +174,8 @@ class QubPad(qt.QWidget):
         self.__refreshHLabel()
         
     def __refreshHLabel(self) :
-        format = '%s : ' + self.__hFormat
-        self.__hAxis.setText(format % (self.__hName,self.__hPos))
+        self.__hAxisName.setText('%s : ' % self.__hName)
+        self.__hAxisPos.setText(self.__hFormat % self.__hPos)
 
     def setVAxisName(self,name) :
         """
@@ -178,8 +197,8 @@ class QubPad(qt.QWidget):
         self.__refreshVLabel()
 
     def __refreshVLabel(self) :
-        format = '%s : ' + self.__vFormat
-        self.__vAxis.setText(format % (self.__vName,self.__vPos))
+        self.__vAxisName.setText('%s : ' % self.__vName)
+        self.__vAxisPos.setText(self.__vFormat % self.__vPos)
 
     def setRAxisName(self,name) :
         """
@@ -201,8 +220,8 @@ class QubPad(qt.QWidget):
         self.__refreshRLabel()
 
     def __refreshRLabel(self) :
-        format = '%s : ' + self.__rFormat
-        self.__rAxis.setText(format % (self.__rName,self.__rPos))
+        self.__rAxisName.setText('%s : ' % self.__rName)
+        self.__rAxisPos.setText(self.__rFormat % self.__rPos)
 
 
     def setPlug(self,aPadPlug) :
