@@ -92,13 +92,31 @@ IplImage* qtTools::getImageOpencvFromQImage(const QImage *aQImage)
     {
       if(aQImage->depth() == 8)
 	{
-	  int lines;
+	  int line;
 	  char *aPt;
-	  aIplImage = cvCreateImage(cvSize(aQImage->width(),aQImage->height()),
-				    IPL_DEPTH_8U,1);
-	  for(lines = 0,aPt = aIplImage->imageData;
-	      lines < aIplImage->height;++lines,aPt += aIplImage->widthStep)
-	    memcpy(aPt,aQImage->scanLine(lines),aIplImage->width);
+	  if(aQImage->allGray())
+	    {
+	      aIplImage = cvCreateImage(cvSize(aQImage->width(),aQImage->height()),
+					IPL_DEPTH_8U,1);
+	      for(line = 0,aPt = aIplImage->imageData;
+		  line < aIplImage->height;++line,aPt += aIplImage->widthStep)
+		memcpy(aPt,aQImage->scanLine(line),aIplImage->width);
+	    }
+	  else
+	    {
+	      aIplImage = cvCreateImage(cvSize(aQImage->width(),aQImage->height()),
+					IPL_DEPTH_8U,3);
+	      for(line = 0;line < aQImage->height();++line)
+		{
+		  aPt = aIplImage->imageData + line * aIplImage->widthStep;
+		  uchar *aSrcPt = aQImage->scanLine(line);
+		  for(int column = 0;column < aQImage->width();++column,aPt += 3,++aSrcPt)
+		    {
+		      QRgb aColor = aQImage->color(*aSrcPt);
+		      aPt[0] = qBlue(aColor),aPt[1] = qGreen(aColor),aPt[2] = qRed(aColor);
+		    }
+		}
+	    }
 	}
       else
 	{
