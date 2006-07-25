@@ -1,6 +1,7 @@
 import qt
 import qtcanvas
 import sys
+import Qub.Objects.QubImage2Pixmap import QubImage2PixmapPlug
 
 class QubPixmapDisplay(qtcanvas.QCanvasView):
     def __init__(self, parent=None, name=None):
@@ -168,7 +169,16 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
                 self.setVScrollBarMode(self.AlwaysOff)
                 self.__plug.refresh()
                 
-
+class QubPixmapZoomPlug(QubImage2PixmapPlug):
+    def __init__(self, receiver) :
+        QubImage2PixmapPlug.__init__(self)
+        
+        self.__receiver = receiver
+                        
+    def setPixmap(self, pixmap, image) :
+        self.__receiver.setPixmap(pixmap, image)
+        return False
+            
 #########################################################################
 ###  CLASS TEST PART
 #########################################################################
