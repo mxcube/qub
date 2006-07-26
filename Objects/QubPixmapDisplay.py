@@ -1,7 +1,7 @@
 import qt
 import qtcanvas
 import sys
-import Qub.Objects.QubImage2Pixmap import QubImage2PixmapPlug
+from Qub.Objects.QubImage2Pixmap import QubImage2PixmapPlug
 
 class QubPixmapDisplay(qtcanvas.QCanvasView):
     def __init__(self, parent=None, name=None):
@@ -42,7 +42,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
         """
         By default set the scrollbar mode to automatic
         """
-        self.__scrollbarMode = "Auto"
+        self.__scrollMode = "Auto"
         self.setHScrollBarMode(self.Auto)
         self.setVScrollBarMode(self.Auto)
         
@@ -72,6 +72,8 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
     ## PUBLIC METHOD    
     ##################################################
     def setPixmapPlug(self, plug):
+        if self.__plug is not None :
+            self.__plug.setEnd()
         self.__plug = plug
            
     def setContextMenu(self, menu):
@@ -119,27 +121,31 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
             self.setContentsPos(px, py)
                         
     def setPixmap(self, pixmap, image):
-        (cvs_w, cvs_h) = (self.__cvs.width(), self.cvs.height())
+        (cvs_w, cvs_h) = (self.__cvs.width(), self.__cvs.height())
+        (pix_w, pix_h) = (pixmap.width(), pixmap.height())
         if self.__scrollMode in ["Auto", "AlwaysOff"]:
-            (pix_w, pix_h) = (pixmap.width(), pixmap.height())
             if (cvs_w, cvs_h) != (pix_w, pix_h):
                 self.__cvs.resize(pix_w, pix_h)
             self.__cvs.setBackgroundPixmap(pixmap)
         else:
-            zoom = self.__plug.zoom().getZoom()
+            zoom = self.__plug.zoom().zoom()
+            (view_w, view_h) = (self.viewport().width(), self.viewport().height())
             (im_w, im_h) = (image.width(), image.height())
             (w, h) = (int(im_w * zoom[0]), int(im_h * zoom[1]))
-            if (w, h) == (cvs_w, cvs_h):
+
+            if((w, h) == (view_w, view_h) and self.__scrollMode == "FillScreen" or
+               self.__scrollMode == "Fit2Screen" and zoom[0] == zoom[1] and min(w,h) == min(view_w,view_h)) :
+                if (cvs_w, cvs_h) != (pix_w, pix_h):
+                    self.__cvs.resize(pix_w, pix_h)
                 self.__cvs.setBackgroundPixmap(pixmap)
             else:
-                zoom_w = float(cvs_w) / im_w
-                zoom_h = float(cvs_h) / im_h
+                zoom_w = float(view_w) / im_w
+                zoom_h = float(view_h) / im_h
                 if self.__scrollMode == "Fit2Screen":
                     zoom_val = min(zoom_w, zoom_h)
                     self.__plug.zoom().setZoom(zoom_val, zoom_val)
                 else:
                     self.__plug.zoom().setZoom(zoom_w, zoom_h)                    
-            
     def setScrollbarMode(self, mode):
         """
         Change the scroll bar policy
@@ -152,29 +158,33 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
                             keeping data pixmap ratio
         """
         if mode in ["Auto", "AlwaysOff", "Fit2Screen", "FillScreen"]:
-            self.__scrollbarMode = mode
+            self.__scrollMode = mode
             
             if mode == "Auto":
                 self.setHScrollBarMode(self.Auto)
                 self.setVScrollBarMode(self.Auto)
-                self.__plug.zoom().setZoom(1, 1)
+                if self.__plug is not None :
+                    self.__plug.zoom().setZoom(1, 1)
                 
-            if mode == "AlwaysOff":
+            elif mode == "AlwaysOff":
                 self.setHScrollBarMode(self.AlwaysOff)
                 self.setVScrollBarMode(self.AlwaysOff)
-                self.__plug.zoom().setZoom(1, 1)
+                if self.__plug is not None :
+                    self.__plug.zoom().setZoom(1, 1)
 
-            if mode == "Fit2Screen" or mode == "FillScreen":
+            elif mode == "Fit2Screen" or mode == "FillScreen":
                 self.setHScrollBarMode(self.AlwaysOff)
                 self.setVScrollBarMode(self.AlwaysOff)
-                self.__plug.refresh()
+                if self.__plug is not None :
+                    self.__plug.refresh()
                 
 class QubPixmapZoomPlug(QubImage2PixmapPlug):
     def __init__(self, receiver) :
         QubImage2PixmapPlug.__init__(self)
         
         self.__receiver = receiver
-                        
+        receiver.setPixmapPlug(self)
+        
     def setPixmap(self, pixmap, image) :
         self.__receiver.setPixmap(pixmap, image)
         return False
@@ -183,43 +193,61 @@ class QubPixmapZoomPlug(QubImage2PixmapPlug):
 ###  CLASS TEST PART
 #########################################################################
 class QubImageTest(qt.QMainWindow):
+    class _timer(qt.QTimer) :
+        def __init__(self,pixmapMgr) :
+            qt.QTimer.__init__(self)
+            import os
+            import os.path
+            self.connect(self,qt.SIGNAL('timeout()'),self.__putImage)
+            self.images = []
+            for root,dirs,files in os.walk('/bliss/users/petitdem/TestGui/Image') :
+                for file_name in files :
+                  basename,ext = os.path.splitext(file_name)
+                  if ext == '.jpeg' :
+                      self.images.append(qt.QImage(os.path.join(root,file_name)))
+                break
+            self.__pixmapManager = pixmapMgr
+            self.id = 0
+            self.start(10)
+
+        def __putImage(self) :
+            self.__pixmapManager.putImage(self.images[self.id % len(self.images)])
+            self.id += 1
+
     def __init__(self, parent=None, file=None):
         qt.QMainWindow.__init__(self, parent)
-        
-        self.__scrollbarMode = ["Auto", "AlwaysOff", "Fit2Screen", "FillScreen"]
+        self.__scrollMode = ["Auto", "AlwaysOff", "Fit2Screen", "FillScreen"]
         
         container = qt.QWidget(self)
         
         hlayout = qt.QVBoxLayout(container)
     
-        self.qubImage = QubImage(container, "QubImage", 
-                                 qt.QPixmap(file), 0)
-        self.qubImage.setScrollbarMode("Auto")
-        hlayout.addWidget(self.qubImage)
+        self.__qubpixmapdisplay = QubPixmapDisplay(container, "QubImage")
+        self.__qubpixmapdisplay.setScrollbarMode("Auto")
+        hlayout.addWidget(self.__qubpixmapdisplay)
     
         vlayout = qt.QHBoxLayout(hlayout)
     
-        self.scrollBarWidget = qt.QButtonGroup(len(self.__scrollbarMode), 
+        self.scrollBarWidget = qt.QButtonGroup(len(self.__scrollMode), 
                                                qt.Qt.Vertical, container, 
                                                "Scrollbar mode")
         self.connect(self.scrollBarWidget, qt.SIGNAL("clicked(int)"),
                      self.setScrollbarMode)
-        for name in self.__scrollbarMode:
+        for name in self.__scrollMode:
             scrollbarModeWidget = qt.QRadioButton(name, self.scrollBarWidget)
         
         vlayout.addWidget(self.scrollBarWidget)
         
-        self.useThreadWidget = qt.QPushButton("Use Thread", container)
-        self.useThreadWidget.setToggleButton(True)
-        self.connect(self.useThreadWidget, qt.SIGNAL("toggled(bool)"),
-                     self.qubImage.setThread)
-
-        vlayout.addWidget(self.useThreadWidget)
-
         self.setCentralWidget(container)
 
+        from Qub.Objects.QubImage2Pixmap import QubImage2Pixmap
+        self.__image2Pixmap = QubImage2Pixmap()
+        plug = QubPixmapZoomPlug(self.__qubpixmapdisplay)
+        self.__image2Pixmap.plug(plug)
+        self.__timer = QubImageTest._timer(self.__image2Pixmap)
+
     def setScrollbarMode(self, item):
-        self.qubImage.setScrollbarMode(self.__scrollbarMode[item])            
+        self.__qubpixmapdisplay.setScrollbarMode(self.__scrollMode[item])            
 
 
 ##  MAIN   
@@ -229,7 +257,7 @@ if  __name__ == '__main__':
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
                     app, qt.SLOT("quit()"))
 
-    window = QubImageTest(file=sys.argv[1])
+    window = QubImageTest()
     
     window.resize(500,300)
     app.setMainWidget(window)
