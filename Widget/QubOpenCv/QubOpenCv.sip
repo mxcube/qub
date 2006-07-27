@@ -23,11 +23,11 @@ This class provide a transformation between Opencv image and QImage (Only in 8 b
     if (sipIsErr == NULL)
       {
 	IplImage *aBuffer;
-	return SWIG_ConvertPtr(sipPy,(void **)&aBuffer,SWIG_IplImageInfo(), 1) != -1;
+	return SWIG_ConvertPtr(sipPy,(void **)&aBuffer,SWIG_IplImageInfo(), 0) != -1;
       }
   
   IplImage *anImage;
-  SWIG_ConvertPtr(sipPy,(void **)&anImage,SWIG_IplImageInfo(), 1);
+  SWIG_ConvertPtr(sipPy,(void **)&anImage,SWIG_IplImageInfo(), 0);
   
   // Return the instance on the heap.
   *sipCppPtrV = anImage;
@@ -51,6 +51,6 @@ class qtTools
 %End
 
 public :
-  static QImage* getQImageFromImageOpencv(const IplImage*);
+  static QImage getQImageFromImageOpencv(const IplImage*);
   static IplImage* getImageOpencvFromQImage(const QImage*);
 };
