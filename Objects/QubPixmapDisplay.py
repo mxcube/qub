@@ -200,15 +200,18 @@ class QubImageTest(qt.QMainWindow):
             import os.path
             self.connect(self,qt.SIGNAL('timeout()'),self.__putImage)
             self.images = []
+            imagenames = []
             for root,dirs,files in os.walk('/bliss/users/petitdem/TestGui/Image') :
                 for file_name in files :
                   basename,ext = os.path.splitext(file_name)
                   if ext == '.jpeg' :
-                      self.images.append(qt.QImage(os.path.join(root,file_name)))
+                      imagenames.append(file_name)
                 break
+            for name in sorted(imagenames) :
+                self.images.append(qt.QImage(os.path.join(root,name)))
             self.__pixmapManager = pixmapMgr
             self.id = 0
-            self.start(10)
+            self.start(0)
 
         def __putImage(self) :
             self.__pixmapManager.putImage(self.images[self.id % len(self.images)])
@@ -241,7 +244,7 @@ class QubImageTest(qt.QMainWindow):
         self.setCentralWidget(container)
 
         from Qub.Objects.QubImage2Pixmap import QubImage2Pixmap
-        self.__image2Pixmap = QubImage2Pixmap()
+        self.__image2Pixmap = QubImage2Pixmap(True)
         plug = QubPixmapZoomPlug(self.__qubpixmapdisplay)
         self.__image2Pixmap.plug(plug)
         self.__timer = QubImageTest._timer(self.__image2Pixmap)

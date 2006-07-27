@@ -8,12 +8,12 @@ from QubOpenCv import qtTools
 
 class QubImage2Pixmap :
     class _Idle(qt.QTimer) :
-        def __init__(self,allow2skip) :
+        def __init__(self,skipSmooth) :
             qt.QTimer.__init__(self)
             self.connect(self,qt.SIGNAL('timeout()'),self.__idleCopy)
             self.__plugsNimagesPending = []
             self.__plugs = []
-            self.__allow2skip = allow2skip
+            self.__skipSmooth = skipSmooth
             self.__mutex = qt.QMutex()
             self.__PrevImageNeedZoom = None
             self.__imageZoomProcess = _ImageZoomProcess(self)
@@ -77,11 +77,7 @@ class QubImage2Pixmap :
         
         def __copy(self) :
             aLock = QubLock(self.__mutex)
-            if self.__allow2skip :
-                nbSkipImage = (len(self.__plugsNimagesPending) / 5) * 2
-                for x in xrange(0,nbSkipImage,2) :
-                    self.__plugsNimagesPending.pop(x)
-
+            self.decim(self.__plugsNimagesPending)
             plugsNimages = self.__plugsNimagesPending.pop(0)
             aLock.unLock()
             for plug,image,fullSizeImage in plugsNimages :
@@ -96,11 +92,19 @@ class QubImage2Pixmap :
                     aLock.lock()
                     self.__plugs.remove(plug)
                     aLock.unLock()
+        def decim(self,l) :
+            if self.__skipSmooth :
+                nbSkip = len(l) / 5
+                for x in xrange(nbSkip) :
+                    l.pop(0)
+            elif len(l) > 1 :                      # last
+                for x in xrange(len(l) - 1) :
+                    l.pop(0)
     """
     This class manage the copy between QImage and QPixmap
     """
-    def __init__(self,allow2skip = True) :
-        self.__idle = QubImage2Pixmap._Idle(allow2skip)
+    def __init__(self,skipSmooth = True) :
+        self.__idle = QubImage2Pixmap._Idle(skipSmooth)
         
     def putImage(self,aQImage) :
         """
@@ -261,10 +265,7 @@ class _ImageZoomProcess(QubThreadProcess):
          
     def getFunc2Process(self) :
         aLock = QubLock(self.__mutex)
-        lenght = len(self.__imageZoomPending)
-        nbSkipImage = (lenght / 5) * 2
-        for x in xrange(0,nbSkipImage,2) :
-            self.__imageZoomPending.pop(x)
+        self.__cnt.decim(self.__imageZoomPending)
         self.__InProgress.append(_ImageZoomProcess._process_struct(self.__imageZoomPending.pop(0)))
         if not len(self.__imageZoomPending) :
             self.__actif = False
