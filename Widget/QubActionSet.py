@@ -271,9 +271,9 @@ class QubPrintPreviewAction(QubAction):
 ###############################################################################
 ####################            QubColormapAction          ####################
 ###############################################################################
-from Qub.Widget.QubColormap import QubColormapDialog
 
 class QubColormapAction(QubAction):
+    from Qub.Widget.QubColormap import QubColormapDialog
     """
     This action will allow in a display widget to open the QubColormap dialog
     """
