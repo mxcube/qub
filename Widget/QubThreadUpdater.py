@@ -8,7 +8,7 @@ import time
 import spslut
 import sps
 
-from QubProfiler import AppProfiler
+from Qub.Widget.QubProfiler import AppProfiler
 #import blisspixmap
 
 ################################################################################
