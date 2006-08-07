@@ -273,11 +273,11 @@ class QubPrintPreviewAction(QubAction):
 ###############################################################################
 
 class QubColormapAction(QubAction):
-    from Qub.Widget.QubColormap import QubColormapDialog
     """
     This action will allow in a display widget to open the QubColormap dialog
     """
     def __init__(self, *args, **keys):
+        from Qub.Widget.QubColormap import QubColormapDialog
         """
         Constructor method
         name ... :  string name of the action.
