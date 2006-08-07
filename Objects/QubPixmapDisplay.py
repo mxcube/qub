@@ -60,6 +60,34 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
     ##################################################
     ## EVENTS    
     ##################################################          
+    def contentsMouseMoveEvent(self, event):
+        """
+        Mouse has moved, tells the actions
+        if right button is set, this move is for context menu only
+        """
+        if event.button() != qt.Qt.RightButton:
+            self.emit(qt.PYSIGNAL("MouseMoved"), (event,))
+            self.canvas().update()        
+
+    def contentsMousePressEvent(self, event):
+        """
+        Mouse has been pressed, tells the actions
+        if right button is set, this press is for context menu only
+        """
+        if event.button() != qt.Qt.RightButton:   
+            self.emit(qt.PYSIGNAL("MousePressed"), (event,))
+            self.canvas().update()        
+
+
+    def contentsMouseReleaseEvent(self, event):
+        """
+        Mouse has been pressed, tells the actions
+        if right button is set, this press is for context menu only
+        """
+        if event.button() != qt.Qt.RightButton:   
+            self.emit(qt.PYSIGNAL("MouseReleased"), (event,))
+            self.canvas().update()
+
     def contentsContextMenuEvent(self, event):
         """
         right mouse button has been hit. make the context menu appears
@@ -97,13 +125,12 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
         
         raise StandardError("QubPixmapDisplay object not plugged")
             
-    def setZoom(self, zoomx, zoomy):
+    def setZoom(self, zoomx, zoomy,keepROI = False):
         if self.__plug is None:
             raise StandardError("QubPixmapDisplay object not plugged")
         
         if self.__scrollMode in ["Auto", "AlwaysOff"]:
-            self.__matrix.setMatrix(zoomx, 0, 0, zoomy, 0, 0)
-            self.__plug.zoom().setZoom(zoomx, zoomy)
+            self.__plug.zoom().setZoom(zoomx, zoomy,keepROI)
         
     def setImagePos(x=0, y=0, center=False):
         """
@@ -123,18 +150,20 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
     def setPixmap(self, pixmap, image):
         (cvs_w, cvs_h) = (self.__cvs.width(), self.__cvs.height())
         (pix_w, pix_h) = (pixmap.width(), pixmap.height())
+        zoomClass = self.__plug.zoom()
         if self.__scrollMode in ["Auto", "AlwaysOff"]:
             if (cvs_w, cvs_h) != (pix_w, pix_h):
                 self.__cvs.resize(pix_w, pix_h)
             self.__cvs.setBackgroundPixmap(pixmap)
         else:
-            zoom = self.__plug.zoom().zoom()
+            zoom = zoomClass.zoom()
             (view_w, view_h) = (self.viewport().width(), self.viewport().height())
             (im_w, im_h) = (image.width(), image.height())
             (w, h) = (int(im_w * zoom[0]), int(im_h * zoom[1]))
 
             if((w, h) == (view_w, view_h) and self.__scrollMode == "FillScreen" or
-               self.__scrollMode == "Fit2Screen" and zoom[0] == zoom[1] and min(w,h) == min(view_w,view_h)) :
+               self.__scrollMode == "Fit2Screen" and zoom[0] == zoom[1] and
+               (w == view_w and h <= view_h or w <= view_w and h == view_h)) :
                 if (cvs_w, cvs_h) != (pix_w, pix_h):
                     self.__cvs.resize(pix_w, pix_h)
                 self.__cvs.setBackgroundPixmap(pixmap)
@@ -145,7 +174,14 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
                     zoom_val = min(zoom_w, zoom_h)
                     self.__plug.zoom().setZoom(zoom_val, zoom_val)
                 else:
-                    self.__plug.zoom().setZoom(zoom_w, zoom_h)                    
+                    self.__plug.zoom().setZoom(zoom_w, zoom_h)
+        offx,offy = (0,0)
+        zoomx,zoomy = zoomClass.zoom()
+        self.__matrix.setMatrix(zoomx, 0, 0, zoomy,0,0)
+        if zoomClass.isRoiZoom() :
+            offx,offy,width,height = zoomClass.roi()
+            self.__matrix = self.__matrix.translate(-offx,-offy)
+
     def setScrollbarMode(self, mode):
         """
         Change the scroll bar policy
@@ -177,16 +213,18 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
                 self.setVScrollBarMode(self.AlwaysOff)
                 if self.__plug is not None :
                     self.__plug.refresh()
-                
+    def matrix(self) :
+        return self.__matrix
+    
 class QubPixmapZoomPlug(QubImage2PixmapPlug):
     def __init__(self, receiver) :
         QubImage2PixmapPlug.__init__(self)
         
-        self.__receiver = receiver
+        self._receiver = receiver
         receiver.setPixmapPlug(self)
         
     def setPixmap(self, pixmap, image) :
-        self.__receiver.setPixmap(pixmap, image)
+        self._receiver.setPixmap(pixmap, image)
         return False
             
 #########################################################################

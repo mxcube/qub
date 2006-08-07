@@ -1,3 +1,4 @@
+import sys
 import qt
 import QubPixmapTools
 
@@ -49,8 +50,12 @@ class QubImage2Pixmap :
             self.__plugsNimagesPending.append(aList)
             aLock.unLock()
             aQtLock = QubLock(qt.qApp)
-            if not self.isActive() :
-                self.start(0)
+            try :
+                qt.qApp.lock()
+                if not self.isActive() :
+                    self.start(0)
+            finally:
+                qt.qApp.unlock()
                     
         def refresh(self) :
             aLock = QubLock(self.__mutex)
@@ -61,11 +66,12 @@ class QubImage2Pixmap :
                     needzoom = True
                     break
             previmage = self.__PrevImageNeedZoom
-            if needzoom and previmage != self.__imageZoomProcess.lastImagePending() :
-                self.__imageZoomProcess.putImage(previmage)
-            elif not needzoom :
-                if not len(self.__plugsNimagesPending) :
-                    self.putImage(previmage,False)
+            if previmage is not None :
+                if needzoom and previmage != self.__imageZoomProcess.lastImagePending() :
+                    self.__imageZoomProcess.putImage(previmage)
+                elif not needzoom :
+                    if not len(self.__plugsNimagesPending) :
+                        self.putImage(previmage,False)
                 
                     
         def __idleCopy(self) :
@@ -78,27 +84,35 @@ class QubImage2Pixmap :
         def __copy(self) :
             aLock = QubLock(self.__mutex)
             self.decim(self.__plugsNimagesPending)
-            plugsNimages = self.__plugsNimagesPending.pop(0)
-            aLock.unLock()
-            for plug,image,fullSizeImage in plugsNimages :
-                if not plug.isEnd() :
-                    aQtLock = QubLock(qt.qApp)
-                    pixmap = plug.zoom().getPixmapFrom(image)
-                    if plug.setPixmap(pixmap,fullSizeImage) :
+            if len(self.__plugsNimagesPending) :
+                plugsNimages = self.__plugsNimagesPending.pop(0)
+                aLock.unLock()
+                for plug,image,fullSizeImage in plugsNimages :
+                    if not plug.isEnd() :
+                        try:
+                            qt.qApp.lock()
+                            pixmap = plug.zoom().getPixmapFrom(image)
+                            if plug.setPixmap(pixmap,fullSizeImage) :
+                                aLock.lock()
+                                self.__plugs.remove(plug)
+                                aLock.unLock()
+                        finally:
+                            qt.qApp.unlock()
+                    else :
                         aLock.lock()
-                        self.__plugs.remove(plug)
+                        try:
+                            self.__plugs.remove(plug)
+                        except:
+                            pass
                         aLock.unLock()
-                else :
-                    aLock.lock()
-                    self.__plugs.remove(plug)
-                    aLock.unLock()
         def decim(self,l) :
-            if self.__skipSmooth :
-                nbSkip = len(l) / 5
+            lenght = len(l)
+            if self.__skipSmooth  and lenght < 25 : # (<25 -> stream is up to 4x)
+                nbSkip = lenght / 5
                 for x in xrange(nbSkip) :
                     l.pop(0)
-            elif len(l) > 1 :                      # last
-                for x in xrange(len(l) - 1) :
+            elif lenght > 1 :                      # last
+                for x in xrange(lenght - 1) :
                     l.pop(0)
     """
     This class manage the copy between QImage and QPixmap
@@ -137,14 +151,14 @@ class QubImage2PixmapPlug :
         def zoom(self) :
             aLock = QubLock(self.__mutex)
             return self.__zoom
-        def setZoom(self,zoomx,zoomy) :
+        def setZoom(self,zoomx,zoomy,keepROI = False) :
             aLock = QubLock(self.__mutex)
             if self.__zoom != (zoomx,zoomy) :
                 self.__zoom = (zoomx,zoomy)
-                self.__allimage = True
+                self.__allimage = not keepROI
                 aLock.unLock()
                 self.__cnt.refresh()
-            
+        
         def setRoiNZoom(self,ox,oy,width,height,zoomx,zoomy) :
             aLock = QubLock(self.__mutex)
             self.__allimage = False
@@ -156,7 +170,10 @@ class QubImage2PixmapPlug :
                 self.__interpolationInUse = self._interpolation
             aLock.unLock()    
             self.__cnt.refresh()
-            
+
+        def isRoiZoom(self) :
+            return not self.__allimage
+        
         def roi(self) :
             aLock = QubLock(self.__mutex)
             return (self.__ox,self.__oy,self.__width,self.__height)
@@ -168,12 +185,11 @@ class QubImage2PixmapPlug :
 
         def getZoomedImage(self,imageOpencv) :
             aLock = QubLock(self.__mutex) # LOCK
-
             width = imageOpencv.width
             height = imageOpencv.height
             if not self.__allimage :
-                width = (self.__width - self.__ox)
-                height = (self.__height - self.__oy)
+                width = self.__width
+                height = self.__height
 
             width *= self.__zoom[0]
             height *= self.__zoom[1]
@@ -304,10 +320,17 @@ class _ImageZoomProcess(QubThreadProcess):
         for plug in plugs :
             zoom = plug.zoom()
             if zoom.needZoom() :
-                imageZoomed = zoom.getZoomedImage(imageOpencv)
-                struct.plugNimage.append((plug,imageZoomed,struct.image))
+                try:
+                    imageZoomed = zoom.getZoomedImage(imageOpencv)
+                    struct.plugNimage.append((plug,imageZoomed,struct.image))
+                except:
+                    sys.excepthook(sys.exc_info()[0],
+                                   sys.exc_info()[1],
+                                   sys.exc_info()[2])
+
             else :
                 struct.plugNimage.append((plug,struct.image,struct.image))
+
         aLock.lock()
         struct.end = True
         tmplist = []
