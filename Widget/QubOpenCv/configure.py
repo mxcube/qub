@@ -32,7 +32,7 @@ whole_line = ''
 for line in bfile :
     if 'sources' in line :
         begin,end = line.split('=')
-        line = '%s = QubOpenCv_qtTools.cpp swig_opencv_image.cpp %s' % (begin,end)
+        line = '%s = QubOpenCv_qtTools.cpp QubOpenCv_bayer.cpp swig_opencv_image.cpp %s' % (begin,end)
     whole_line += line
 bfile.close()
 bfile = file(build_file,'w')
@@ -66,7 +66,7 @@ makefile.extra_include_dirs.append(OpencvInclude) # TODO
 # Add the library we are wrapping.  The name doesn't include any platform
 # specific prefixes or extensions (e.g. the "lib" prefix on UNIX, or the
 # ".dll" extension on Windows).
-makefile.extra_libs = ["cxcore"]
+makefile.extra_libs = ["cv","cxcore"]
 makefile.extra_lflags = [OpencvLib]
 # Generate the Makefile itself.
 makefile.generate()

@@ -22,8 +22,8 @@ class QubAction(qt.QObject):
     ACTION_LIST, indexing by the name of the action and containing the class
     name.
     """
-    def __init__(self, name=None, place="toolbar", show=1,
-                 group="", index=-1):
+    def __init__(self, *args, **keys) :
+     
         """
         Constructor method
         name ... :  string name of the action.
@@ -39,6 +39,11 @@ class QubAction(qt.QObject):
         """
         
         qt.QObject.__init__(self)
+        name = keys.get('name',None)
+        place = keys.get('place',"toolbar")
+        show = keys.get('show',1)
+        group = keys.get('group',"")
+        index = keys.get('index',-1)
         
         if name is None:
             self._name = "default"
@@ -308,8 +313,7 @@ class QubImageAction(QubAction):
     QubImage Object.
     Main adds on are slots for drawings.
     """
-    def __init__(self, name=None, qubImage=None, autoConnect=False, place="toolbar",
-                 show=1, group="", index=-1):
+    def __init__(self, *args, **keys):
         """
         Constructor method
         name ... :  string name of the action
@@ -326,6 +330,14 @@ class QubImageAction(QubAction):
         index .. :  Position of the selection widget of the action in its
                     group
         """
+        name = keys.get("name",None)
+        qubImage = keys.get("qubImage",None)
+        autoConnect = keys.get("autoConnect",False)
+        place = keys.get("place","toolbar")
+        show = keys.get("show",1)
+        group = keys.get("group","")
+        index = keys.get("index",-1)
+        
         QubAction.__init__(self, name, place, show, group, index)
         
         self._qubImage = None
@@ -385,7 +397,7 @@ class QubImageAction(QubAction):
             self.connect(view, qt.PYSIGNAL("ViewportUpdated"),
                          self.viewportUpdate)
 
-        self._sigConnected = True
+            self._sigConnected = True
 
     def signalDisconnect(self, view):
         """
@@ -403,7 +415,7 @@ class QubImageAction(QubAction):
             self.disconnect(view, qt.PYSIGNAL("ViewportUpdated"),
                             self.viewportUpdate)
 
-        self._sigConnected = False
+            self._sigConnected = False
         
                             
     def setColor(self, color):

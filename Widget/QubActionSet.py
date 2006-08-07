@@ -500,7 +500,7 @@ class QubPointSelection(QubToggleImageAction):
         One of the drawing follows the mouse during the move
         """
         try:
-            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
             self.__mpoint.setX(x)
             self.__mpoint.setY(y)
 
@@ -516,7 +516,7 @@ class QubPointSelection(QubToggleImageAction):
         with coordinates
         """
         try:
-            (x, y)=self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+            (x, y)=self._qubImage.matrix().invert()[0].map(event.x(), event.y())
 
             self.__mpoint.setX(x)
             self.__mpoint.setY(y)
@@ -537,8 +537,8 @@ class QubPointSelection(QubToggleImageAction):
         Draw rectangle either if qubImage pixmap has been updated or
         rectangle coordinates have been changed by the user
         """
-        point = self._qubImage.matrix.map(self.__point)
-        mpoint = self._qubImage.matrix.map(self.__mpoint)
+        point = self._qubImage.matrix().map(self.__point)
+        mpoint = self._qubImage.matrix().map(self.__mpoint)
 
         self._l1.setPoints(point.x()-10, point.y()-10,
                            point.x()+10, point.y()+10)   
@@ -582,6 +582,7 @@ class QubRectangleSelection(QubToggleImageAction):
                     automatically created and the action is added to it
         index .. :  Position of the selection widget of the action in its
                     group
+        square   :  selction is fixed aspect square selection
         Creates action widget to put in "group" dockarea of the "toolbar"
         Return this widget.
         Use name of the action to find icon file
@@ -591,6 +592,7 @@ class QubRectangleSelection(QubToggleImageAction):
 
         self.__rectCoord = qt.QRect(0, 0, 1, 1)
 
+        self.__squareFlag = keys.get("square", False)
         if self._name == "default":
             self._name = "rectangle"
     
@@ -614,6 +616,12 @@ class QubRectangleSelection(QubToggleImageAction):
         self.__rectangle.setPen(qt.QPen(color))
         self.__rectangle.update()
        
+    def initSelection(self,ox,oy,width,height) :
+        self.__rectCoord.setRect(ox,oy,width,height)
+        self.emit(qt.PYSIGNAL("RectangleSelected"), 
+                  (self.__rectCoord.x(), self.__rectCoord.y(), 
+                   self.__rectCoord.width(), self.__rectCoord.height()))
+        
     def _setState(self, bool):
         """
         Draw or Hide rectangle canvas item
@@ -636,7 +644,7 @@ class QubRectangleSelection(QubToggleImageAction):
         Update upper-left corner position of the rectangle and sets its
         width and height to 1
         """
-        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
         self.__rectCoord.setRect(x, y, 1, 1)
         self.viewportUpdate()
     
@@ -646,10 +654,14 @@ class QubRectangleSelection(QubToggleImageAction):
         Updates now the width and height to follow the mouse position
         """
         if event.state() == qt.Qt.LeftButton:
-            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), 
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
                                                            event.y())
             w = x - self.__rectCoord.x()
             h = y - self.__rectCoord.y()
+            if self.__squareFlag :
+                w = max(w,h)
+                h = w
+                
             self.__rectCoord.setSize(qt.QSize(w, h))
                 
             self.viewportUpdate()
@@ -659,11 +671,16 @@ class QubRectangleSelection(QubToggleImageAction):
         Rectangle selection is finished, send corresponding signal
         with coordinates
         """
-        (x, y)=self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        (x, y)=self._qubImage.matrix().invert()[0].map(event.x(), event.y())
         w = x - self.__rectCoord.x()
         h = y - self.__rectCoord.y()
+
+        if self.__squareFlag :
+            w = max(w,h)
+            h = w
+
         self.__rectCoord.setSize(qt.QSize(w, h))
-        
+
         self.emit(qt.PYSIGNAL("RectangleSelected"), 
                   (self.__rectCoord.x(), self.__rectCoord.y(), 
                    self.__rectCoord.width(), self.__rectCoord.height()))
@@ -675,7 +692,7 @@ class QubRectangleSelection(QubToggleImageAction):
         Draw rectangle either if qubImage pixmap has been updated or
         rectangle coordinates have been changed by the user
         """
-        rect = self._qubImage.matrix.map(self.__rectCoord)
+        rect = self._qubImage.matrix().map(self.__rectCoord)
 
         self.__rectangle.setSize(rect.width(), rect.height())
         self.__rectangle.move(rect.x(), rect.y())
@@ -764,7 +781,7 @@ class QubLineSelection(QubToggleImageAction):
         Update start and end point of the line to be the same on the mouse
         position
         """ 
-        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
         self.__startPt.setX(x)
         self.__startPt.setY(y)
         self.__endPt.setX(x)
@@ -778,7 +795,7 @@ class QubLineSelection(QubToggleImageAction):
         the mouse
         """
         if event.state() == qt.Qt.LeftButton:
-            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(),
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(),
                                                            event.y())
             self.__endPt.setX(x)
             self.__endPt.setY(y)
@@ -791,7 +808,7 @@ class QubLineSelection(QubToggleImageAction):
         with PYSIGNAL("LineSelected")
         """
         try:
-            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(),
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(),
                                                            event.y())
             
             self.__endPt.setX(x)
@@ -813,8 +830,8 @@ class QubLineSelection(QubToggleImageAction):
         line coordinates have been changed by the user
         """
         try:
-            startPt = self._qubImage.matrix.map(self.__startPt)
-            endPt = self._qubImage.matrix.map(self.__endPt)
+            startPt = self._qubImage.matrix().map(self.__startPt)
+            endPt = self._qubImage.matrix().map(self.__endPt)
 
             self.__line.setPoints(startPt.x(),startPt.y(), endPt.x(), endPt.y())
 
@@ -924,7 +941,7 @@ class QubVLineSelection(QubToggleImageAction):
         Update start and end point of the line to be the same on the mouse
         position
         """ 
-        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
         self.__startPt.setX(x)
         self.__startPt.setY(0)
         self.__endPt.setX(x)
@@ -942,7 +959,7 @@ class QubVLineSelection(QubToggleImageAction):
         """
         Move the VLine cursor.
         """
-        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(),
+        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(),
                                                        event.y())
         self.__cursorPos = x
         self.viewportUpdate()
@@ -958,8 +975,8 @@ class QubVLineSelection(QubToggleImageAction):
         line coordinates have been changed by the user
         """
         try:
-            startPt = self._qubImage.matrix.map(self.__startPt)
-            endPt = self._qubImage.matrix.map(self.__endPt)
+            startPt = self._qubImage.matrix().map(self.__startPt)
+            endPt = self._qubImage.matrix().map(self.__endPt)
 
             self.__line.setPoints(startPt.x(),startPt.y(), endPt.x(), endPt.y())
             self.__VLineCursor.setPoints(self.__cursorPos, 0,
@@ -1076,7 +1093,7 @@ class QubHLineSelection(QubToggleImageAction):
         Update start and end point of the line to be the same on the mouse
         position
         """ 
-        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
         self.__startPt.setX(0)
         self.__startPt.setY(y)
         self.__endPt.setX(self._qubImage.visibleWidth())
@@ -1094,7 +1111,7 @@ class QubHLineSelection(QubToggleImageAction):
         """
         Move the VLine cursor.
         """
-        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(),
+        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(),
                                                        event.y())
         self.__cursorPos = y
         
@@ -1111,8 +1128,8 @@ class QubHLineSelection(QubToggleImageAction):
         line coordinates have been changed by the user
         """
         try:
-            startPt = self._qubImage.matrix.map(self.__startPt)
-            endPt = self._qubImage.matrix.map(self.__endPt)
+            startPt = self._qubImage.matrix().map(self.__startPt)
+            endPt = self._qubImage.matrix().map(self.__endPt)
 
             self.__line.setPoints(startPt.x(),startPt.y(), endPt.x(), endPt.y())
             self.__HLineCursor.setPoints(0, self.__cursorPos,
@@ -1208,7 +1225,7 @@ class QubCircleSelection(QubToggleImageAction):
         Update upper-left corner position of the rectangle and sets its
         width and height to 1
         """ 
-        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
         self.__x0 = x
         self.__y0 = y
         self.__rectCoord.setRect(x, y, 1, 1)
@@ -1220,7 +1237,7 @@ class QubCircleSelection(QubToggleImageAction):
         Updates now the width and height to follow the mouse position
         """
         if event.state() == qt.Qt.LeftButton:
-            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), 
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
                                                            event.y())
             
             dx = x - self.__x0
@@ -1249,8 +1266,8 @@ class QubCircleSelection(QubToggleImageAction):
         Draw Circle either if qubImage pixmap has been updated or
         rectangle coordinates have been changed by the user
         """
-        rect = self._qubImage.matrix.map(self.__rectCoord)
-        (x,y) = self._qubImage.matrix.map(self.__x0, self.__y0)
+        rect = self._qubImage.matrix().map(self.__rectCoord)
+        (x,y) = self._qubImage.matrix().map(self.__x0, self.__y0)
 
         self.__circle.setSize(rect.width(), rect.height())
         self.__circle.move(x, y)
@@ -1342,8 +1359,9 @@ class QubDiscSelection(QubToggleImageAction):
         """
         Update upper-left corner position of the rectangle and sets its
         width and height to 1
-        """ 
-        (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), event.y())
+        """
+        print "mousePress %d,%d" % (event.x(), event.y())
+        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
         self.__x0 = x
         self.__y0 = y
         self.__rectCoord.setRect(x, y, 1, 1)
@@ -1355,7 +1373,7 @@ class QubDiscSelection(QubToggleImageAction):
         Updates now the width and height to follow the mouse position
         """
         if event.state() == qt.Qt.LeftButton:
-            (x, y) = self._qubImage.matrix.invert()[0].map(event.x(), 
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
                                                            event.y())
             
             dx = x - self.__x0
@@ -1384,8 +1402,8 @@ class QubDiscSelection(QubToggleImageAction):
         Draw Disc either if qubImage pixmap has been updated or
         rectangle coordinates have been changed by the user
         """
-        rect = self._qubImage.matrix.map(self.__rectCoord)
-        (x,y) = self._qubImage.matrix.map(self.__x0, self.__y0)
+        rect = self._qubImage.matrix().map(self.__rectCoord)
+        (x,y) = self._qubImage.matrix().map(self.__x0, self.__y0)
 
         self.__disc.setSize(rect.width(), rect.height())
         self.__disc.move(x, y)
@@ -1400,7 +1418,9 @@ class QubDiscSelection(QubToggleImageAction):
 class QubZoomListAction(QubAction):
     """
     This class add a zoom facility for QubImageView as a list of zoom factor:
-        10, 25, 50, 75, 100, 200, 300, 400, 500%
+    keepROI .. : keep the ROI of the zoom
+    zoomValList : list of zoom , be default zoom list is [0.1, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5]
+    initZoom : zoom value at init
     """
     def __init__(self, *args, **keys):
         """
@@ -1408,10 +1428,11 @@ class QubZoomListAction(QubAction):
         Initialyse variables
         """
         QubAction.__init__(self, *args, **keys)
+
+        self._zoomValList = keys.get("zoomValList",[0.1, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5])
+        self._initZoom = keys.get('initZoom',1)
         
-        self._zoomStrList = ["10%", "25%", "50%", "75%", "100%", "200%",
-                             "300%", "400%", "500%"] 
-        self._zoomValList = [0.1, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5]
+        self._keepROI = keys.get("keepROI",False)
 
         self._zoomVal = 1
 
@@ -1419,12 +1440,32 @@ class QubZoomListAction(QubAction):
         
         self._qubImage = None
 
+        self._listPopupMenu = None
+        
     def viewConnect(self, qubImage):
         """
         connect actio0n with the QubImage object on which it will be applied
         """
         self._qubImage = qubImage
               
+    def changeZoomList(self,zoomValList,defaultzoom) :
+        """
+        zoomValList : list of zoom
+        initZoom : zoom vlaue at init
+        """
+        self._zoomValList = zoomValList[:]
+        self._initZoom = defaultzoom
+        if self._listPopupMenu is not None :
+            self._listPopupMenu,idDefaultZoom = self._createPopMenu(self._listPopupMenu.parentWidget())
+            self._widget.setPopup(self._listPopupMenu)
+            self._widget.setText(qt.QString('%d%%' % int(self._zoomValList[idDefaultZoom] * 100)))
+            
+    def setZoomOnFullImage(self,flag) :
+        if self._keepROI == flag :
+            self._keepROI = not flag
+            if self._qubImage is not None :
+                self._qubImage.setZoom(self._zoomVal, self._zoomVal,self._keepROI)
+
     def addToolWidget(self, parent):
         """
         Creates widgets to be added in the toolbar
@@ -1433,12 +1474,7 @@ class QubZoomListAction(QubAction):
         """
         menu to select zoom value
         """
-        self._listPopupMenu = qt.QPopupMenu(parent)
-        for i in range(len(self._zoomStrList)):
-            self._listPopupMenu.insertItem(self._zoomStrList[i], i)
-        self.connect(self._listPopupMenu, qt.SIGNAL("activated(int )"),
-                        self._applyZoomFromList)
-                                                          
+        self._listPopupMenu,idDefaultZoom = self._createPopMenu(parent)
         """
         tool button to use selected zoom value
         """
@@ -1446,7 +1482,7 @@ class QubZoomListAction(QubAction):
         self._widget.setAutoRaise(True)
         self._widget.setPopup(self._listPopupMenu)
         self._widget.setPopupDelay(0)
-        self._widget.setText(qt.QString(self._zoomStrList[4]))
+        self._widget.setText(qt.QString('%d%%' % int(self._zoomValList[idDefaultZoom] * 100)))
         
         qt.QToolTip.add(self._widget, "Zoom List")
                                      
@@ -1460,13 +1496,25 @@ class QubZoomListAction(QubAction):
             self._item = menu.insertItem(qstr, self._listPopupMenu)
             menu.connectItem(self._item, self._listPopupMenu.exec_loop)
 
+    def _createPopMenu(self,parent) :
+        popMenu = qt.QPopupMenu(parent)
+        idDefaultZoom = 0
+        for i,zoomVal in enumerate(self._zoomValList) :
+            popMenu.insertItem('%d%%' % int(zoomVal * 100), i)
+            if zoomVal == self._initZoom :
+                idDefaultZoom = i
+        self.connect(popMenu, qt.SIGNAL("activated(int )"),
+                     self._applyZoomFromList)
+        return (popMenu,idDefaultZoom)
+ 
     def _applyZoomFromList(self, index):
             """
             Calculate zoom value from array
             """        
-            zoomVal = self._zoomValList[index]
-            
-            self._applyZoom(zoomVal)
+            try:
+                self._applyZoom(self._zoomValList[index])
+            except :
+                traceback.print_exc()
     
     def _applyZoom(self, zoomVal):
         if self._qubImage is not None:
@@ -1476,9 +1524,9 @@ class QubZoomListAction(QubAction):
             self._qubImage.setCursor(qt.QCursor(qt.Qt.WaitCursor))
 
             """
-            check zoom value
+             zoom value
             """
-            self._zoomVal = self._checkZoomVal(zoomVal)
+            self._zoomVal = zoomVal
 
             """
             update zoom value as percentage in toolbar and menu widget
@@ -1488,8 +1536,7 @@ class QubZoomListAction(QubAction):
             """
             calculate and display new pixmap not centered
             """
-            self._qubImage.setZoom(self._zoomVal, self._zoomVal)
-
+            self._qubImage.setZoom(self._zoomVal, self._zoomVal,self._keepROI)
             """
             restore cursor
             """
@@ -1503,23 +1550,6 @@ class QubZoomListAction(QubAction):
             self._widget.setText(qstr)
             if self._item is not None:
                 self._menu.changeItem(self._item, qstr)
-                
-    def _checkZoomVal(self, zoom):
-        maxVal = 3000
-        
-        newzoom = zoom
-        
-        w = self._qubImage.dataPixmap.width()  * zoom
-        h = self._qubImage.dataPixmap.height() * zoom
-        
-        if w > maxVal or h > maxVal:
-            if w > h:
-                newzoom = float(maxVal)/float(self._qubImage.dataPixmap.width())
-            else:
-                newzoom = float(maxVal)/float(self._qubImage.dataPixmap.height())
-                
-        return newzoom
-
 
 ###############################################################################
 ####################              QubZoomAction            ####################
