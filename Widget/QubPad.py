@@ -262,7 +262,7 @@ class QubPad(qt.QWidget):
         self.__rStepCombo.clear()
         for step in step_list :
             self.__rStepCombo.insertItem(str(step))
-    
+        
 class QubPadPlug :
     def __init__(self) :
         self._padButton = None
@@ -879,9 +879,6 @@ class _pad_button(qt.QPushButton) :
 
             self.needRebuildImage = True
             self.__rebuildImageIfNeeded()
-            self.setPixmap(qt.QPixmap(self.__currentimg))
-
-
                 
     def keyPressEvent(self,aKeyEvent) :
         if(aKeyEvent.key() == qt.Qt.Key_Shift) :
@@ -911,7 +908,11 @@ class _pad_button(qt.QPushButton) :
         if not self.__idle.isActive() :
             self.__idle.start(0)
         self.__multiplyStep(False)
-        
+
+    def paintEvent(self,event) :
+        if not self.__idle.isActive() :
+            self.__idle.start(0)
+
     def __moveMotor(self):
         if(self.__under == self.STOP) :
             self.hstate.end_move(True)
@@ -967,9 +968,12 @@ class _pad_button(qt.QPushButton) :
             if onArrow :
                 self.__highlightImage(image,*self.__getBBoxFromColumnNLine(columid,lineid))
         self.__under = under
-        self.setPixmap(qt.QPixmap(image))
+        paint = qt.QPainter(self)
+        paint.drawPixmap(im_ox,im_oy,qt.QPixmap(image))
+        paint.end()
+        
 
-            
+        
     def __getArrowAtColumNLine(self,columid,lineid) :
         onArraw = False
         state = self.UNDEF

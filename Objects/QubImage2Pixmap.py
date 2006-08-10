@@ -7,9 +7,9 @@ from Qub.Tools.QubThread import QubThreadProcess
 from opencv import cv
 from QubOpenCv import qtTools
 
-class QubImage2Pixmap :
+class QubImage2Pixmap(qt.QObject) :
     class _Idle(qt.QTimer) :
-        def __init__(self,skipSmooth) :
+        def __init__(self,cnt,skipSmooth) :
             qt.QTimer.__init__(self)
             self.connect(self,qt.SIGNAL('timeout()'),self.__idleCopy)
             self.__plugsNimagesPending = []
@@ -18,6 +18,8 @@ class QubImage2Pixmap :
             self.__mutex = qt.QMutex()
             self.__PrevImageNeedZoom = None
             self.__imageZoomProcess = _ImageZoomProcess(self)
+            self.__cnt = cnt
+            
         def plug(self,aPlug) :
             if isinstance(aPlug,QubImage2PixmapPlug) :
                 aLock = QubLock(self.__mutex)
@@ -49,13 +51,12 @@ class QubImage2Pixmap :
             aLock = QubLock(self.__mutex,aLock)
             self.__plugsNimagesPending.append(aList)
             aLock.unLock()
-            aQtLock = QubLock(qt.qApp)
-            try :
-                qt.qApp.lock()
-                if not self.isActive() :
-                    self.start(0)
-            finally:
-                qt.qApp.unlock()
+            if not self.isActive() :
+                #send event
+                event = qt.QCustomEvent(qt.QEvent.User)
+                event.event_name = "_startTimer"
+                qt.qApp.postEvent(self.__cnt,event)
+
                     
         def refresh(self) :
             aLock = QubLock(self.__mutex)
@@ -89,15 +90,11 @@ class QubImage2Pixmap :
                 aLock.unLock()
                 for plug,image,fullSizeImage in plugsNimages :
                     if not plug.isEnd() :
-                        try:
-                            qt.qApp.lock()
-                            pixmap = plug.zoom().getPixmapFrom(image)
-                            if plug.setPixmap(pixmap,fullSizeImage) :
-                                aLock.lock()
-                                self.__plugs.remove(plug)
-                                aLock.unLock()
-                        finally:
-                            qt.qApp.unlock()
+                        pixmap = plug.zoom().getPixmapFrom(image)
+                        if plug.setPixmap(pixmap,fullSizeImage) :
+                            aLock.lock()
+                            self.__plugs.remove(plug)
+                            aLock.unLock()
                     else :
                         aLock.lock()
                         try:
@@ -105,6 +102,7 @@ class QubImage2Pixmap :
                         except:
                             pass
                         aLock.unLock()
+                            
         def decim(self,l) :
             lenght = len(l)
             if self.__skipSmooth  and lenght < 25 : # (<25 -> stream is up to 4x)
@@ -118,7 +116,8 @@ class QubImage2Pixmap :
     This class manage the copy between QImage and QPixmap
     """
     def __init__(self,skipSmooth = True) :
-        self.__idle = QubImage2Pixmap._Idle(skipSmooth)
+        qt.QObject.__init__(self)
+        self.__idle = QubImage2Pixmap._Idle(self,skipSmooth)
         
     def putImage(self,aQImage) :
         """
@@ -129,6 +128,9 @@ class QubImage2Pixmap :
     def plug(self,aQubImage2PixmapPlug) :
         self.__idle.plug(aQubImage2PixmapPlug)
 
+    def customEvent(self,event) :
+        if event.event_name == "_startTimer" and not self.__idle.isActive():
+            self.__idle.start(0)
                     
 class QubImage2PixmapPlug :
     class Zoom :

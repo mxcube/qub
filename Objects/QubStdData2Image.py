@@ -3,7 +3,7 @@ import traceback
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
 
-class QubStdData2Image(QubThreadProcess) :
+class QubStdData2Image(QubThreadProcess,qt.QObject) :
     class _data_struct :
         PATH_TYPE,DATA_TYPE = range(2)
         def __init__(self) :
@@ -29,12 +29,13 @@ class QubStdData2Image(QubThreadProcess) :
     """
     def __init__(self) :
         QubThreadProcess.__init__(self)
+        qt.QObject.__init__(self)
         self.__plug = None
         self.__mutex = qt.QMutex()
         self.__cond = qt.QWaitCondition()
         self.__dataPending = []
         self.__actif = False
-        self.__inSetImageFlag = False
+        self.__postSetImage = []
         
     def plug(self,plug):
         if isinstance(plug,QubStdData2ImagePlug) :
@@ -47,9 +48,7 @@ class QubStdData2Image(QubThreadProcess) :
         """
         insert a data array in the decompress queues
         """
-        self.__actif = True             # TODO REMOVE
         self.__append(data,None)
-        self.__decompress()             # TODO REMOVE
         
     def putImagePath(self,path) :
         """
@@ -57,6 +56,7 @@ class QubStdData2Image(QubThreadProcess) :
         """
         self.__append(None,path)
         
+    
     def __append(self,arrayData,path) :
         aLock = QubLock(self.__mutex)
         if self.__plug is not None and not self.__plug.isEnd() :
@@ -102,34 +102,36 @@ class QubStdData2Image(QubThreadProcess) :
                     aWorkingStruct.image.load(aWorkingStruct.path)
                 aLock.lock()
                 aWorkingStruct.end = True
-                plug = self.__plug
-                images = []
-                if plug is not None and not plug.isEnd() :
+                if self.__plug is not None and not self.__plug.isEnd() :
                     for i,dataStruct in enumerate(self.__dataPending) :
                         if dataStruct.end :
-                            images.append(dataStruct.image)
+                            self.__postSetImage.append(dataStruct.image)
                         else :
                             break
                     self.__dataPending[0:i + 1] = []
                 else :
                     self.__dataPending = []
-                while self.__inSetImageFlag :
-                    self.__cond.wait(self.__mutex)
-                self.__inSetImageFlag = True
-                aLock.unLock()
-                for image in images :
-                    if plug.setImage(image) :
-                        plug.setEnd()
-                        break
-                aLock.lock()
             except :
                 traceback.print_exc()
-                aLock.lock()
                 self.__dataPending.remove(aWorkingStruct)
-            self.__inSetImageFlag = False
             self.__cond.wakeOne()
-        
-        
+            aLock.unLock()
+            #send event
+            event = qt.QCustomEvent(qt.QEvent.User)
+            event.event_name = "_postSetImage"
+            qt.qApp.postEvent(self,event)
+            
+    def customEvent(self,event) :
+        if event.event_name == "_postSetImage" :
+            aLock = QubLock(self.__mutex)
+            if self.__plug is not None and not self.__plug.isEnd() :
+                for image in self.__postSetImage :
+                    if self.__plug.setImage(image) :
+                        self.__plug = None
+                        break
+            else :
+                self.__plug = None
+            self.__postSetImage = []
 class QubStdData2ImagePlug :
     def __init__(self) :
         self.__endFlag = False
