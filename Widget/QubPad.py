@@ -801,7 +801,8 @@ class _pad_button(qt.QPushButton) :
 
         self.__axisType = 0
         self.setAxis(QubPad.HORIZONTAL_AXIS|QubPad.VERTICAL_AXIS|QubPad.ROTATION_AXIS)
-
+        self.setMinimumSize(self.__currentimg.size())
+        
     def setAxis(self,axisOring) :
         if self.__axisType != axisOring :
             self.__axisType = axisOring
