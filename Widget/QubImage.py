@@ -77,8 +77,8 @@ class QubImage(qtcanvas.QCanvasView):
         self.bckPixmap = None
         self.__zoomx = 1
         self.__zoomy = 1
-        self.matrix = qt.QWMatrix(self.__zoomx, 0, 0, self.__zoomy, 0, 0)
-        self.matrix.setTransformationMode(qt.QWMatrix.Areas)
+        self.__matrix = qt.QWMatrix(self.__zoomx, 0, 0, self.__zoomy, 0, 0)
+        self.__matrix.setTransformationMode(qt.QWMatrix.Areas)
         
         """
         create canvas for canvas view. It will hold the backPixmap as 
@@ -135,8 +135,8 @@ class QubImage(qtcanvas.QCanvasView):
         """
         update = 0   
         if self.dataPixmap is not None:
-            neww = self.matrix.m11() * self.dataPixmap.width()
-            newh = self.matrix.m22() * self.dataPixmap.height()
+            neww = self.__matrix.m11() * self.dataPixmap.width()
+            newh = self.__matrix.m22() * self.dataPixmap.height()
             
             if self.__bckSize != (neww, newh):
                 if self.bckPixmap is not None:
@@ -153,7 +153,7 @@ class QubImage(qtcanvas.QCanvasView):
         if update:
             painter  = qt.QPainter()
             painter.begin(self.bckPixmap)
-            painter.setWorldMatrix(self.matrix)
+            painter.setWorldMatrix(self.__matrix)
             painter.drawPixmap(0, 0, self.dataPixmap)
             painter.end()
 
@@ -265,7 +265,10 @@ class QubImage(qtcanvas.QCanvasView):
         
     ##################################################
     ## PUBLIC METHOD    
-    ##################################################    
+    ################################################## 
+    def matrix(self):
+        return self.__matrix
+          
     def setContextMenu(self, menu):
         """
         set the QPopupMenu to be used as context menu
@@ -306,7 +309,7 @@ class QubImage(qtcanvas.QCanvasView):
             send update signal for actions
             """
             if self.__zoomx != zoomx or self.__zoomy != zoomy:
-                self.matrix.setMatrix(zoomx, 0, 0, zoomy, 0, 0)
+                self.__matrix.setMatrix(zoomx, 0, 0, zoomy, 0, 0)
                 self.__zoomx = zoomx
                 self.__zoomy = zoomy
 
@@ -330,7 +333,7 @@ class QubImage(qtcanvas.QCanvasView):
         "center"=False: the (x,y) point of the pixmap is moved to the upper
         left corner of the visible part of th QubImage object
         """            
-        (px, py) = self.matrix.map(x, y)
+        (px, py) = self.__matrix.map(x, y)
         
         if center:
             self.center(px, py)
