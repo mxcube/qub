@@ -1796,6 +1796,21 @@ class QubForegroundColorAction(QubAction):
         if self._item is not None:
             self._menu.changeItem(self._item, self._colorMenu.iconSet,
                                   qt.QString("Color"))
+                                  
+    def setColor(self, color="Black"):
+        try:
+            qcolor = qt.QColor(color)
+        except:
+            print "Color %s does not exist"%color
+        else:
+            if self._widget is not None:
+                self._widget.setColor(qcolor)
+            
+            if self._item is not None:
+                self._colorMenu.setColor(qcolor)
+                
+            if self._view is not None:
+                self._view.setForegroundColor(qcolor)
                                                   
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
