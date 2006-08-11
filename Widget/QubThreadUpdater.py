@@ -137,9 +137,9 @@ class QubPixmap2Canvas(QubThreadUpdater):
 
             if self.receiver.dataPixmap is not None:
                 AppProfiler.interStart("t14", "    Resize bckPixmap")
-                neww = self.receiver.matrix.m11() * \
+                neww = self.receiver.matrix().m11() * \
                        self.receiver.dataPixmap.width()
-                newh = self.receiver.matrix.m22() * \
+                newh = self.receiver.matrix().m22() * \
                        self.receiver.dataPixmap.height()
 
                 if self.bckSize != (neww, newh):
@@ -162,7 +162,7 @@ class QubPixmap2Canvas(QubThreadUpdater):
                 qt.qApp.lock()
                 painter  = qt.QPainter()
                 painter.begin(self.receiver.bckPixmap)
-                painter.setWorldMatrix(self.receiver.matrix)
+                painter.setWorldMatrix(self.receiver.matrix())
                 painter.drawPixmap(0, 0, self.receiver.dataPixmap)
                 painter.end()
                 qt.qApp.unlock()
