@@ -181,6 +181,14 @@ class QubColorToolButton(qt.QToolButton):
         
         self.popupMenu.hide()
     
+    def setColor(self, color):
+        try:
+            self.setIconColor(color)
+        except:
+            self.setIconColor(self.selectedColor)
+        else:
+            self.selectedColor = color
+            
     def setIconColor(self, color):
         """
         internal method to change the color of the icon
@@ -239,6 +247,14 @@ class QubColorToolMenu(qt.QPopupMenu):
             self.emit(qt.PYSIGNAL("colorSelected"), (self.selectedColor,))
         
         self.hide()
+    
+    def setColor(self, color):
+        try:
+            self.setIconColor(color)
+        except:
+            self.setIconColor(self.selectedColor)
+        else:
+            self.selectedColor = color
     
     def setIconColor(self, color):
         """
