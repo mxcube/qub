@@ -125,13 +125,18 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
         if event.event_name == "_postSetImage" :
             aLock = QubLock(self.__mutex)
             if self.__plug is not None and not self.__plug.isEnd() :
-                for image in self.__postSetImage :
-                    if self.__plug.setImage(image) :
+                plug = self.__plug
+                images = self.__postSetImage[:]
+                self.__postSetImage = []
+                aLock.unLock()
+                for image in images :
+                    if plug.setImage(image) :
+                        aLock.lock()
                         self.__plug = None
                         break
             else :
                 self.__plug = None
-            self.__postSetImage = []
+                self.__postSetImage = []
 class QubStdData2ImagePlug :
     def __init__(self) :
         self.__endFlag = False
