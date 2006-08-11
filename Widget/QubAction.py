@@ -338,8 +338,9 @@ class QubImageAction(QubAction):
         group = keys.get("group","")
         index = keys.get("index",-1)
         
-        QubAction.__init__(self, name, place, show, group, index)
-        
+        #QubAction.__init__(self, name, place, show, group, index)
+        QubAction.__init__(self, *args, **keys)
+       
         self._qubImage = None
         self._sigConnected = False
         self._autoConnect = autoConnect
