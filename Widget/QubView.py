@@ -124,6 +124,7 @@ class QubView(qt.QWidget):
             remove action from list if exists and type, group or index are
             different
             """
+
             if action.name() in self.__actionList.keys():
                 oldAction = self.__actionList[action.name()]
                 if oldAction.place() != action.place() or \
@@ -387,8 +388,9 @@ class QubViewToolbar(qt.QDockArea):
         Create action widgets belonging to the toolbar widget
         """
         widget = action.addToolWidget(self.__groupList[actionGroup]["toolbar"])
-        self.__groupList[actionGroup]["toolbar"].boxLayout().addWidget(widget)
-        widget.show()
+        if widget is not None:
+            self.__groupList[actionGroup]["toolbar"].boxLayout().addWidget(widget)
+            widget.show()
 
         """
         Show group as specified (toolbar or contextmenu) by the action
