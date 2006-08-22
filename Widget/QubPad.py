@@ -34,6 +34,12 @@ class QubPad(qt.QWidget):
         hlayout.addWidget(self.__hAxisPos)
         self.__hSpacer = qt.QSpacerItem(40,20,qt.QSizePolicy.Expanding,qt.QSizePolicy.Minimum)
         hlayout.addItem(self.__hSpacer)
+        self.__hUndo = qt.QPushButton(self.__hFrame)
+        self.__hUndo.setPixmap(qt.QPixmap(QubIcons.getIconPath('undo.png')))
+        hlayout.addWidget(self.__hUndo)
+        self.__hRedo = qt.QPushButton(self.__hFrame)
+        self.__hRedo.setPixmap(qt.QPixmap(QubIcons.getIconPath('redo.png')))
+        hlayout.addWidget(self.__hRedo)
         self.__hStepCombo = _combo_box(True,self.__hFrame,"__hStepCombobox")
         self.__hStepCombo.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed,0,0,
                                                     self.__hStepCombo.sizePolicy().hasHeightForWidth()))
@@ -62,6 +68,12 @@ class QubPad(qt.QWidget):
         vlayout.addWidget(self.__vAxisPos)
         self.__vSpacer = qt.QSpacerItem(40,20,qt.QSizePolicy.Expanding,qt.QSizePolicy.Minimum)
         vlayout.addItem(self.__vSpacer)
+        self.__vUndo = qt.QPushButton(self.__vFrame)
+        self.__vUndo.setPixmap(qt.QPixmap(QubIcons.getIconPath('undo.png')))
+        vlayout.addWidget(self.__vUndo)
+        self.__vRedo = qt.QPushButton(self.__vFrame)
+        self.__vRedo.setPixmap(qt.QPixmap(QubIcons.getIconPath('redo.png')))
+        vlayout.addWidget(self.__vRedo)
         self.__vStepCombo = _combo_box(True,self.__vFrame,"__vStepCombo")
         self.__vStepCombo.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed,0,0,
                                                     self.__vStepCombo.sizePolicy().hasHeightForWidth()))
@@ -89,6 +101,12 @@ class QubPad(qt.QWidget):
         rlayout.addWidget(self.__rAxisPos)
         self.__rSpacer = qt.QSpacerItem(40,20,qt.QSizePolicy.Expanding,qt.QSizePolicy.Minimum)
         rlayout.addItem(self.__rSpacer)
+        self.__rUndo = qt.QPushButton(self.__rFrame)
+        self.__rUndo.setPixmap(qt.QPixmap(QubIcons.getIconPath('undo.png')))
+        rlayout.addWidget(self.__rUndo)
+        self.__rRedo = qt.QPushButton(self.__rFrame)
+        self.__rRedo.setPixmap(qt.QPixmap(QubIcons.getIconPath('redo.png')))
+        rlayout.addWidget(self.__rRedo)
         self.__rStepCombo = _combo_box(True,self.__rFrame,"__rStepCombo")
         self.__rStepCombo.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed,0,0,
                                                     self.__rStepCombo.sizePolicy().hasHeightForWidth()))
@@ -102,7 +120,9 @@ class QubPad(qt.QWidget):
         padLayout.addWidget(self.__rFrame)
 
                          ####### PAD #######
-        self.__padButton = _pad_button(self.__hAxisPos,self.__vAxisPos,self.__rAxisPos,self,"__padButton")
+        self.__padButton = _pad_button(self.__hAxisPos,self.__vAxisPos,self.__rAxisPos,
+                                       self.__hUndo,self.__hRedo,self.__vUndo,self.__vRedo,self.__rUndo,self.__rRedo,
+                                       self,"__padButton")
         self.__padButton.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.MinimumExpanding,
                                                       0,0,self.__padButton.sizePolicy().hasHeightForWidth()))
         self.__padButton.setFlat(1)
@@ -172,7 +192,9 @@ class QubPad(qt.QWidget):
         """
         self.__hPos = pos
         self.__refreshHLabel()
-        
+    def getHPos(self) :
+        return self.__hPos
+    
     def __refreshHLabel(self) :
         self.__hAxisName.setText('%s : ' % self.__hName)
         self.__hAxisPos.setText(self.__hFormat % self.__hPos)
@@ -196,6 +218,9 @@ class QubPad(qt.QWidget):
         self.__vPos = pos
         self.__refreshVLabel()
 
+    def getVPos(self) :
+        return self.__vPos
+    
     def __refreshVLabel(self) :
         self.__vAxisName.setText('%s : ' % self.__vName)
         self.__vAxisPos.setText(self.__vFormat % self.__vPos)
@@ -218,7 +243,9 @@ class QubPad(qt.QWidget):
         """
         self.__rPos = pos
         self.__refreshRLabel()
-
+    def getRPos(self) :
+        return self.__rPos
+    
     def __refreshRLabel(self) :
         self.__rAxisName.setText('%s : ' % self.__rName)
         self.__rAxisPos.setText(self.__rFormat % self.__rPos)
@@ -271,6 +298,8 @@ class QubPadPlug :
         print "Should redefine Vertical Stop"
     def stopHorizontal(self) :
         print "Should redefine Horizontal Stop"
+    def stopRotation(self) :
+        print "Should redefine Rotation Stop"
     def up(self,step) :
         print "Should move %f step up" % step
     def down(self,step) :
@@ -286,12 +315,46 @@ class QubPadPlug :
     def setPad(self,aPad) :
         self._padButton = aPad
 
-
+                      ####### Undo/Rdeo #######
+class _undo_redo :
+    def __init__(self,parent) :
+        self.__undos = []
+        self.__redos = []
+        self.__tooltip = qt.QToolTip(parent)
+        
+    def undo(self) :
+        prevPos = self.__undos.pop()
+        self.__redos.append(prevPos)
+        return prevPos
+    def redo(self) :
+        prevPos = self.__redos.pop()
+        self.__undos.append(prevPos)
+        return prevPos
+    def addPos(self,pos) :
+        self.__redos = []
+        self.__undos.append(pos)
+        if len(self.__undos) > 50 :
+            self.__undos.pop(0)
+    def setButtonState(self,undo,redo) :
+        if len(self.__undos) :
+            undo.setEnabled(True)
+            self.__tooltip.add(undo,'pos : %d' % self.__undos[-1])
+        else :
+            undo.setEnabled(False)
+            self.__tooltip.remove(undo)
+        if len(self.__redos) :
+            redo.setEnabled(True)
+            self.__tooltip.add(redo,'pos : %d' % self.__redos[-1])
+        else :
+            redo.setEnabled(False)
+            self.__tooltip.remove(redo)
+   
                    ####### Motor Move State #######
 class _MoveMotorState :
     def __init__(self,manager) :
         self._mgr = manager
         manager.moveState = self
+        
     def move(self) :
         pass
     def endMove(self) :
@@ -364,11 +427,19 @@ class _hMotorState :
         pass
     def move_right(self) :
         pass
+    def undo(self) :
+        pass
+    def redo(self) :
+        pass
     def end_move(self,aCbkFlag = False) :
         pass
     
     def setYourStateOnImage(self,image) :
         pass
+
+    def setUndoRedoState(self,undoButton,redoButton) :
+        undoButton.setEnabled(False)
+        redoButton.setEnabled(False)
 
     def setBackgroundLabel(self,label) :
         bck_color = self._mgr.paletteBackgroundColor() 
@@ -409,6 +480,15 @@ class _hConnected(_hMotorState) :
     def move_right(self) :
         self._mgr.needRebuildImage = True
         _hMoveRight(self._mgr,self._plug)
+    def undo(self) :
+        self._mgr.needRebuildImage = True
+        _hUndoRedo(self._mgr,self._plug,True)
+    def redo(self) :
+        self._mgr.needRebuildImage = True
+        _hUndoRedo(self._mgr,self._plug,False)
+        
+    def setUndoRedoState(self,undoButton,redoButton) :
+        self._mgr.hundoredo.setButtonState(undoButton,redoButton)
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('green'))
 
@@ -434,6 +514,7 @@ class _hExternalMove(_hMotorState) :
 class _hMoveLeft(_hMotorState) :
     def __init__(self,manager,plug) :
         _hMotorState.__init__(self,manager,plug)
+        self._mgr.hundoredo.addPos(self._mgr.getHPos())
         if(self._plug) :
             self._plug.left(self._mgr.getHStep())
         self._mgr.moveState.move()
@@ -456,6 +537,7 @@ class _hMoveLeft(_hMotorState) :
 class _hMoveRight(_hMotorState) :
     def __init__(self,manager,plug) :
         _hMotorState.__init__(self,manager,plug)
+        self._mgr.hundoredo.addPos(self._mgr.getHPos())
         if(self._plug) :
             self._plug.right(self._mgr.getHStep())
         self._mgr.moveState.move()
@@ -471,6 +553,40 @@ class _hMoveRight(_hMotorState) :
     def setYourStateOnImage(self,image) :
         self._mgr.setYellowOn(image,self._mgr.RIGHT)
         self._mgr.setGrayOn(image,self._mgr.LEFT)
+
+    def setBackgroundLabel(self,label) :
+        label.setPaletteBackgroundColor(qt.QColor('yellow'))
+
+class _hUndoRedo(_hMotorState) :
+    def __init__(self,manager,plug,aUndoFlag) :
+        _hMotorState.__init__(self,manager,plug)
+        self.__step = 0
+        if aUndoFlag :
+            self.__step = self._mgr.hundoredo.undo() - self._mgr.getHPos()
+        else :
+            self.__step = self._mgr.hundoredo.redo() - self._mgr.getHPos()
+        if(self._plug) :
+            if self.__step > 0 :
+                self._plug.right(self.__step)
+            else :
+                self._plug.left(-self.__step)
+        self._mgr.moveState.move()
+
+    def __del__(self) :
+        self._mgr.moveState.endMove()
+
+    def end_move(self,aCbkFlag = False) :
+        _hConnected(self._mgr,self._plug)
+        if(aCbkFlag and self._plug) :
+            self._plug.stopHorizontal()
+        
+    def setYourStateOnImage(self,image) :
+        if self.__step > 0 :
+            self._mgr.setYellowOn(image,self._mgr.RIGHT)
+            self._mgr.setGrayOn(image,self._mgr.LEFT)
+        else :
+            self._mgr.setYellowOn(image,self._mgr.LEFT)
+            self._mgr.setGrayOn(image,self._mgr.RIGHT)
 
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('yellow'))
@@ -508,11 +624,19 @@ class _vMotorState :
         pass
     def move_down(self) :
         pass
+    def undo(self) :
+        pass
+    def redo(self) :
+        pass
     def end_move(self,aCbkFlag = False) :
         pass
     
     def setYourStateOnImage(self,image) :
         pass
+
+    def setUndoRedoState(self,undoButton,redoButton) :
+        undoButton.setEnabled(False)
+        redoButton.setEnabled(False)
 
     def setBackgroundLabel(self,label) :
         bck_color = self._mgr.paletteBackgroundColor() 
@@ -551,6 +675,15 @@ class _vConnected(_vMotorState) :
     def move_down(self) :
         self._mgr.needRebuildImage = True
         _vMoveDown(self._mgr,self._plug)
+    def undo(self) :
+        self._mgr.needRebuildImage = True
+        _vUndoRedo(self._mgr,self._plug,True)
+    def redo(self) :
+        self._mgr.needRebuildImage = True
+        _vUndoRedo(self._mgr,self._plug,False)
+
+    def setUndoRedoState(self,undoButton,redoButton) :
+        self._mgr.vundoredo.setButtonState(undoButton,redoButton)
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('green'))
 
@@ -575,6 +708,7 @@ class _vExternalMove(_vMotorState) :
 class _vMoveUp(_vMotorState) :
     def __init__(self,manager,plug) :
         _vMotorState.__init__(self,manager,plug)
+        self._mgr.vundoredo.addPos(self._mgr.getVPos())
         if(self._plug) :
             self._plug.up(self._mgr.getVStep())
         self._mgr.moveState.move()
@@ -597,6 +731,7 @@ class _vMoveUp(_vMotorState) :
 class _vMoveDown(_vMotorState) :
     def __init__(self,manager,plug) :
         _vMotorState.__init__(self,manager,plug)
+        self._mgr.vundoredo.addPos(self._mgr.getVPos())
         if(self._plug) :
             self._plug.down(self._mgr.getVStep())
         self._mgr.moveState.move()
@@ -612,6 +747,40 @@ class _vMoveDown(_vMotorState) :
     def setYourStateOnImage(self,image) :
         self._mgr.setYellowOn(image,self._mgr.DOWN)
         self._mgr.setGrayOn(image,self._mgr.UP)
+
+    def setBackgroundLabel(self,label) :
+        label.setPaletteBackgroundColor(qt.QColor('yellow'))
+
+class _vUndoRedo(_vMotorState) :
+    def __init__(self,manager,plug,aUndoFlag) :
+        _vMotorState.__init__(self,manager,plug)
+        self.__step = 0
+        if aUndoFlag :
+            self.__step = self._mgr.vundoredo.undo() - self._mgr.getVPos()
+        else :
+            self.__step = self._mgr.vundoredo.redo() - self._mgr.getVPos()
+        if(self._plug) :
+            if self.__step > 0 :
+                self._plug.up(self.__step)
+            else :
+                self._plug.down(-self.__step)
+        self._mgr.moveState.move()
+    def __del__(self) :
+        self._mgr.moveState.endMove()
+    
+    def end_move(self,aCbkFlag = False) :
+        self._mgr.needRebuildImage = True
+        _vConnected(self._mgr,self._plug)
+        if(aCbkFlag and self._plug) :
+            self._plug.stopVertical()
+
+    def setYourStateOnImage(self,image) :
+        if self.__step > 0 :
+            self._mgr.setYellowOn(image,self._mgr.UP)
+            self._mgr.setGrayOn(image,self._mgr.DOWN)
+        else :
+            self._mgr.setYellowOn(image,self._mgr.DOWN)
+            self._mgr.setGrayOn(image,self._mgr.UP)
 
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('yellow'))
@@ -649,11 +818,19 @@ class _rMotorState :
         pass
     def move_unclockwise(self) :
         pass
+    def undo(self) :
+        pass
+    def redo(self) :
+        pass
     def end_move(self,aCbkFlag = False) :
         pass
     
     def setYourStateOnImage(self,image) :
         pass
+
+    def setUndoRedoState(self,undoButton,redoButton) :
+        undoButton.setEnabled(False)
+        redoButton.setEnabled(False)
 
     def setBackgroundLabel(self,label) :
         bck_color = self._mgr.paletteBackgroundColor() 
@@ -692,6 +869,17 @@ class _rConnected(_rMotorState) :
     def move_unclockwise(self) :
         self._mgr.needRebuildImage = True
         _rMoveUnclockwise(self._mgr,self._plug)
+
+    def undo(self) :
+        self._mgr.needRebuildImage = True
+        _rUndoRedo(self._mgr,self._plug,True)
+    def redo(self) :
+        self._mgr.needRebuildImage = True
+        _rUndoRedo(self._mgr,self._plug,False)
+
+    def setUndoRedoState(self,undoButton,redoButton) :
+        self._mgr.rundoredo.setButtonState(undoButton,redoButton)
+
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('green'))
 
@@ -716,6 +904,7 @@ class _rExternalMove(_rMotorState) :
 class _rMoveClockwise(_rMotorState) :
     def __init__(self,manager,plug) :
         _rMotorState.__init__(self,manager,plug)
+        self._mgr.rundoredo.addPos(self._mgr.getRPos())
         if(self._plug) :
             self._plug.clockwise(self._mgr.getRStep())
         self._mgr.moveState.move()
@@ -738,6 +927,7 @@ class _rMoveClockwise(_rMotorState) :
 class _rMoveUnclockwise(_rMotorState) :
     def __init__(self,manager,plug) :
         _rMotorState.__init__(self,manager,plug)
+        self._mgr.rundoredo.addPos(self._mgr.getRPos())
         if(self._plug) :
             self._plug.unclockwise(self._mgr.getRStep())
         self._mgr.moveState.move()
@@ -753,6 +943,40 @@ class _rMoveUnclockwise(_rMotorState) :
     def setYourStateOnImage(self,image) :
         self._mgr.setYellowOn(image,self._mgr.UNCLOCKWISE)
         self._mgr.setGrayOn(image,self._mgr.CLOCKWISE)
+
+    def setBackgroundLabel(self,label) :
+        label.setPaletteBackgroundColor(qt.QColor('yellow'))
+
+class _rUndoRedo(_rMotorState) :
+    def __init__(self,manager,plug,aUndoFlag) :
+        _rMotorState.__init__(self,manager,plug)
+        self.__step = 0
+        if aUndoFlag :
+            self.__step = self._mgr.rundoredo.undo() - self._mgr.getRPos()
+        else :
+            self.__step = self._mgr.rundoredo.redo() - self._mgr.getRPos()
+        if(self._plug) :
+            if self.__step > 0 :
+                self._plug.clockwise(self.__step)
+            else :
+                self._plug.unclockwise(-self.__step)
+        self._mgr.moveState.move()
+    def __del__(self) :
+        self._mgr.moveState.endMove()
+    
+    def end_move(self,aCbkFlag = False) :
+        self._mgr.needRebuildImage = True
+        _rConnected(self._mgr,self._plug)
+        if(aCbkFlag and self._plug) :
+            self._plug.stopRotation()
+
+    def setYourStateOnImage(self,image) :
+        if self.__step > 0 :
+            self._mgr.setYellowOn(image,self._mgr.CLOCKWISE)
+            self._mgr.setGrayOn(image,self._mgr.UNCLOCKWISE)
+        else:
+            self._mgr.setYellowOn(image,self._mgr.UNCLOCKWISE)
+            self._mgr.setGrayOn(image,self._mgr.CLOCKWISE)
 
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('yellow'))
@@ -775,9 +999,10 @@ class _drawIdle(qt.QTimer) :
         self.stop()
         
 class _pad_button(qt.QPushButton) :
-    def __init__(self,hLabel,vLabel,rLabel,parent,name) :
+    def __init__(self,hLabel,vLabel,rLabel,hUndo,hRedo,vUndo,vRedo,rUndo,rRedo,parent,name) :
         qt.QPushButton.__init__(self,parent,name)
-        self.__hLabel,self.__vLabel,self.__rLabel = hLabel,vLabel,rLabel
+        self.hLabel,self.vLabel,self.rLabel = hLabel,vLabel,rLabel
+        self.__hUndo,self.__hRedo,self.__vUndo,self.__vRedo,self.__rUndo,self.__rRedo = hUndo,hRedo,vUndo,vRedo,rUndo,rRedo
         self.__pad = parent
         self.setMouseTracking(True)
         self.__multiplymode = False
@@ -794,11 +1019,22 @@ class _pad_button(qt.QPushButton) :
         
         self.__currentimg = None
         self.moveState = _Stop(self)
+
+        self.hundoredo = _undo_redo(self)
+        self.vundoredo = _undo_redo(self)
+        self.rundoredo = _undo_redo(self)
+
         self.hstate = _hNConnected(self,None)
         self.vstate = _vNConnected(self,None)
         self.rstate = _rNConnected(self,None)
         self.connect(self,qt.SIGNAL("clicked()"),self.__moveMotor)
-
+        qt.QObject.connect(hUndo,qt.SIGNAL("clicked()"),self.__hstate_undo)
+        qt.QObject.connect(hRedo,qt.SIGNAL("clicked()"),self.__hstate_redo)
+        qt.QObject.connect(vUndo,qt.SIGNAL("clicked()"),self.__vstate_undo)
+        qt.QObject.connect(vRedo,qt.SIGNAL("clicked()"),self.__vstate_redo)
+        qt.QObject.connect(rUndo,qt.SIGNAL("clicked()"),self.__rstate_undo)
+        qt.QObject.connect(rRedo,qt.SIGNAL("clicked()"),self.__rstate_redo)
+        
         self.__axisType = 0
         self.setAxis(QubPad.HORIZONTAL_AXIS|QubPad.VERTICAL_AXIS|QubPad.ROTATION_AXIS)
         self.setMinimumSize(self.__currentimg.size())
@@ -935,6 +1171,13 @@ class _pad_button(qt.QPushButton) :
         if self.needRebuildImage and not self.__idle.isActive() :
             self.__idle.start(0)
 
+    def __hstate_undo(self) : self.hstate.undo()
+    def __hstate_redo(self) : self.hstate.redo()
+    def __vstate_undo(self) : self.vstate.undo()
+    def __vstate_redo(self) : self.vstate.redo()
+    def __rstate_undo(self) : self.rstate.undo()
+    def __rstate_redo(self) : self.rstate.redo()
+
     def __rebuildImageIfNeeded(self) :
         if(self.needRebuildImage) :
             self.needRebuildImage = False
@@ -942,13 +1185,16 @@ class _pad_button(qt.QPushButton) :
             self.moveState.setYourStateOnImage(tmpimg)
             if self.__axisType & QubPad.HORIZONTAL_AXIS :
                 self.hstate.setYourStateOnImage(tmpimg)
-                self.hstate.setBackgroundLabel(self.__hLabel)
+                self.hstate.setBackgroundLabel(self.hLabel)
+                self.hstate.setUndoRedoState(self.__hUndo,self.__hRedo)
             if self.__axisType & QubPad.VERTICAL_AXIS :
                 self.vstate.setYourStateOnImage(tmpimg)
-                self.vstate.setBackgroundLabel(self.__vLabel)
+                self.vstate.setBackgroundLabel(self.vLabel)
+                self.vstate.setUndoRedoState(self.__vUndo,self.__vRedo)
             if self.__axisType & QubPad.ROTATION_AXIS :
                 self.rstate.setYourStateOnImage(tmpimg)
-                self.rstate.setBackgroundLabel(self.__rLabel)
+                self.rstate.setBackgroundLabel(self.rLabel)
+                self.rstate.setUndoRedoState(self.__rUndo,self.__rRedo)
             self.__currentimg = tmpimg
 
 
@@ -1080,6 +1326,16 @@ class _pad_button(qt.QPushButton) :
     def getRStep(self) :
         return self.__pad.getRStep()
    
+    def getHPos(self) :
+        return self.__pad.getHPos()
+
+    def getVPos(self) :
+        return self.__pad.getVPos()
+
+    def getRPos(self) :
+        return self.__pad.getRPos()
+
+
     def setGrayOn(self,image,type_arrow) :
         columid,lineid = self.__getColumNLineFromTypeArrow(type_arrow)
         self.__setGray(image,*self.__getBBoxFromColumnNLine(columid,lineid))
