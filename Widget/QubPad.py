@@ -139,6 +139,8 @@ class QubPad(qt.QWidget):
         self.__refreshHLabel()
         self.__refreshVLabel()
         self.__refreshRLabel()
+        #Pixmap Step
+        self.__stepPixmap = qt.QPixmap(QubIcons.getIconPath('step.png'))
     def languageChange(self):
         self.setCaption(self.__tr("Pad"))
         self.__padButton.setText(qt.QString.null)
@@ -278,17 +280,17 @@ class QubPad(qt.QWidget):
     def setHSteps(self,step_list) :
         self.__hStepCombo.clear()
         for step in step_list :
-            self.__hStepCombo.insertItem(str(step))
+            self.__hStepCombo.insertItem(self.__stepPixmap,str(step))
 
     def setVSteps(self,step_list) :
         self.__vStepCombo.clear()
         for step in step_list :
-            self.__vStepCombo.insertItem(str(step))
+            self.__vStepCombo.insertItem(self.__stepPixmap,str(step))
 
     def setRSteps(self,step_list) :
         self.__rStepCombo.clear()
         for step in step_list :
-            self.__rStepCombo.insertItem(str(step))
+            self.__rStepCombo.insertItem(self.__stepPixmap,str(step))
         
 class QubPadPlug :
     def __init__(self) :
@@ -322,14 +324,12 @@ class _undo_redo :
         self.__redos = []
         self.__tooltip = qt.QToolTip(parent)
         
-    def undo(self) :
-        prevPos = self.__undos.pop()
-        self.__redos.append(prevPos)
-        return prevPos
-    def redo(self) :
-        prevPos = self.__redos.pop()
-        self.__undos.append(prevPos)
-        return prevPos
+    def undo(self,currentPos) :
+        self.__redos.append(currentPos)
+        return self.__undos.pop()
+    def redo(self,currentPos) :
+        self.__undos.append(currentPos)
+        return self.__redos.pop()
     def addPos(self,pos) :
         self.__redos = []
         self.__undos.append(pos)
@@ -338,13 +338,13 @@ class _undo_redo :
     def setButtonState(self,undo,redo) :
         if len(self.__undos) :
             undo.setEnabled(True)
-            self.__tooltip.add(undo,'pos : %d' % self.__undos[-1])
+            self.__tooltip.add(undo,'pos : %f' % float(self.__undos[-1]))
         else :
             undo.setEnabled(False)
             self.__tooltip.remove(undo)
         if len(self.__redos) :
             redo.setEnabled(True)
-            self.__tooltip.add(redo,'pos : %d' % self.__redos[-1])
+            self.__tooltip.add(redo,'pos : %f' % float(self.__redos[-1]))
         else :
             redo.setEnabled(False)
             self.__tooltip.remove(redo)
@@ -561,10 +561,11 @@ class _hUndoRedo(_hMotorState) :
     def __init__(self,manager,plug,aUndoFlag) :
         _hMotorState.__init__(self,manager,plug)
         self.__step = 0
+        currentPos = self._mgr.getHPos()
         if aUndoFlag :
-            self.__step = self._mgr.hundoredo.undo() - self._mgr.getHPos()
+            self.__step = self._mgr.hundoredo.undo(currentPos) - currentPos
         else :
-            self.__step = self._mgr.hundoredo.redo() - self._mgr.getHPos()
+            self.__step = self._mgr.hundoredo.redo(currentPos) - currentPos
         if(self._plug) :
             if self.__step > 0 :
                 self._plug.right(self.__step)
@@ -755,10 +756,11 @@ class _vUndoRedo(_vMotorState) :
     def __init__(self,manager,plug,aUndoFlag) :
         _vMotorState.__init__(self,manager,plug)
         self.__step = 0
+        currentPos = self._mgr.getVPos()
         if aUndoFlag :
-            self.__step = self._mgr.vundoredo.undo() - self._mgr.getVPos()
+            self.__step = self._mgr.vundoredo.undo(currentPos) - currentPos
         else :
-            self.__step = self._mgr.vundoredo.redo() - self._mgr.getVPos()
+            self.__step = self._mgr.vundoredo.redo(currentPos) - currentPos
         if(self._plug) :
             if self.__step > 0 :
                 self._plug.up(self.__step)
@@ -951,10 +953,11 @@ class _rUndoRedo(_rMotorState) :
     def __init__(self,manager,plug,aUndoFlag) :
         _rMotorState.__init__(self,manager,plug)
         self.__step = 0
+        currentPos = self._mgr.getRPos()
         if aUndoFlag :
-            self.__step = self._mgr.rundoredo.undo() - self._mgr.getRPos()
+            self.__step = self._mgr.rundoredo.undo(currentPos) - currentPos
         else :
-            self.__step = self._mgr.rundoredo.redo() - self._mgr.getRPos()
+            self.__step = self._mgr.rundoredo.redo(currentPos) - currentPos
         if(self._plug) :
             if self.__step > 0 :
                 self._plug.clockwise(self.__step)
