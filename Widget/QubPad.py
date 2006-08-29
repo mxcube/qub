@@ -322,7 +322,6 @@ class _undo_redo :
     def __init__(self,parent) :
         self.__undos = []
         self.__redos = []
-        self.__tooltip = qt.QToolTip(parent)
         
     def undo(self,currentPos) :
         self.__redos.append(currentPos)
@@ -338,16 +337,16 @@ class _undo_redo :
     def setButtonState(self,undo,redo) :
         if len(self.__undos) :
             undo.setEnabled(True)
-            self.__tooltip.add(undo,'pos : %f' % float(self.__undos[-1]))
+            qt.QToolTip.add(undo,'pos : %f' % float(self.__undos[-1]))
         else :
             undo.setEnabled(False)
-            self.__tooltip.remove(undo)
+            qt.QToolTip.remove(undo)
         if len(self.__redos) :
             redo.setEnabled(True)
-            self.__tooltip.add(redo,'pos : %f' % float(self.__redos[-1]))
+            qt.QToolTip.add(redo,'pos : %f' % float(self.__redos[-1]))
         else :
             redo.setEnabled(False)
-            self.__tooltip.remove(redo)
+            qt.QToolTip.remove(redo)
    
                    ####### Motor Move State #######
 class _MoveMotorState :
