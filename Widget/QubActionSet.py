@@ -308,7 +308,8 @@ class QubColormapAction(QubAction):
         create colormap pushbutton in the toolbar of the view
         create the colormap dialog if not already done
         """
-                
+        from Qub.Widget.QubColormap import QubColormapDialog
+      
         """
         create colormap dialog
         """
@@ -595,6 +596,11 @@ class QubRectangleSelection(QubToggleImageAction):
         self.__squareFlag = keys.get("square", False)
         if self._name == "default":
             self._name = "rectangle"
+    
+    def setRectanglePosition(self, x, y, w, h):
+        self.__rectCoord.setRect(x, y, w, h)
+        
+        self.viewportUpdate()
     
     def viewConnect(self, qubImage):
         """
