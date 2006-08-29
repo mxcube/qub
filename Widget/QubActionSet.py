@@ -704,8 +704,119 @@ class QubRectangleSelection(QubToggleImageAction):
         self.__rectangle.move(rect.x(), rect.y())
 
         self.__rectangle.update()            
+###############################################################################
+#                          QubZoomRectangle                                   #
+###############################################################################
+class QubZoomRectangle(QubToggleImageAction) :
+    UNDEF,DRAG,MOVE = range(3)
+    
+    def __init__(self,*args,**keys) :
+        QubToggleImageAction.__init__(self,*args,**keys)
+        self.__rectCoord = qt.QRect(0,0,1,1)
 
+        self.__squareFlag = keys.get('square',False)
+        if self._name == 'default' :
+            self._name = 'rectangle'
 
+        self.__mode = QubZoomRectangle.UNDEF
+
+    def viewConnect(self,qubImage) :
+        QubToggleImageAction.viewConnect(self, qubImage)
+
+        self.__rectangle = qtcanvas.QCanvasRectangle(self.__rectCoord,
+                                                     self._qubImage.canvas())
+        self.setColor(self._qubImage.foregroundColor())
+
+    def setColor(self,color) :
+        """   
+        Slot connected to "ForegroundColorChanged" "qubImage" signal
+        """
+        self.__rectangle.setPen(qt.QPen(color,2))
+        self.__rectangle.update()
+
+    def initSelection(self,ox,oy,width,height) :
+        self.__rectCoord.setRect(ox,oy,width,height)
+        rect = self.__rectCoord.normalize()
+        self.emit(qt.PYSIGNAL("RectangleSelected"), 
+                  (rect.x(), rect.y(), 
+                   rect.width(),rect.height()))
+        self.viewportUpdate()
+        
+    def _setState(self,aFlag) :
+        if aFlag :
+            self.signalConnect(self._qubImage)
+            self.setColor(self._qubImage.foregroundColor())
+            self.__rectangle.show()
+        else:
+            self.signalDisconnect(self._qubImage)
+            self.__rectangle.hide()
+        self.emit(qt.PYSIGNAL("Actif"),(aFlag,))
+        
+        self.viewportUpdate()
+
+    def mousePress(self,event) :
+        if event.button() == qt.Qt.LeftButton :
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
+            if self.__rectCoord.contains(x,y) :
+                self.__mode = QubZoomRectangle.MOVE
+            else :
+                self.__mode = QubZoomRectangle.DRAG
+                self.__rectCoord.setRect(x, y, 1, 1)
+                self.viewportUpdate()
+            
+    def mouseMove(self,event) :
+        try :
+            if self.__mode == QubZoomRectangle.DRAG :
+                (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
+                                                                 event.y())
+                w = x - self.__rectCoord.x()
+                h = y - self.__rectCoord.y()
+                if self.__squareFlag :
+                    w = max(w,h)
+                    h = w
+                self.__rectCoord.setSize(qt.QSize(w, h))
+                self.viewportUpdate()
+            elif self.__mode == QubZoomRectangle.MOVE :
+                (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
+                                                                 event.y())
+                canvasRect = self._qubImage.matrix().invert()[0].map(self._qubImage.canvas().rect())
+                rect = self.__rectCoord.normalize()
+                if x > canvasRect.width() - rect.width() / 2 :
+                    x = canvasRect.width() - rect.width() / 2
+                elif x < rect.width() / 2 :
+                    x = rect.width() / 2
+
+                if y > (canvasRect.height() - rect.height() / 2) :
+                    y = canvasRect.height() - rect.height() / 2
+                elif y < rect.height() / 2 :
+                    y = rect.height() / 2
+
+                self.__rectCoord.moveCenter(qt.QPoint(x,y))
+
+                rect = self.__rectCoord.normalize()
+                self.emit(qt.PYSIGNAL("RectangleSelected"), 
+                          (rect.x(), rect.y(), 
+                           rect.width(),rect.height()))
+                self.viewportUpdate()
+        except:
+            import traceback
+            traceback.print_exc()
+            
+    def mouseRelease(self, event):
+        if self.__mode == QubZoomRectangle.DRAG :
+            rect = self.__rectCoord.normalize()
+            self.emit(qt.PYSIGNAL("RectangleSelected"), 
+                      (rect.x(), rect.y(), 
+                       rect.width(),rect.height()))
+        self.__mode = QubZoomRectangle.UNDEF
+
+    def viewportUpdate(self) :
+
+        rect = self._qubImage.matrix().map(self.__rectCoord)
+
+        self.__rectangle.setSize(rect.width(), rect.height())
+        self.__rectangle.move(rect.x(), rect.y())
+        self.__rectangle.update()
 
 ###############################################################################
 ####################            QubLineSelection           ####################
@@ -1818,6 +1929,348 @@ class QubForegroundColorAction(QubAction):
             if self._view is not None:
                 self._view.setForegroundColor(qcolor)
                                                   
+####################################################################
+##########                                                ##########
+##########                 QubPositionAction               ##########
+##########                                                ##########
+####################################################################
+class QubPositionAction(QubImageAction):
+    def __init__(self, *args, **keys):
+        QubImageAction.__init__(self, autoConnect=True, *args, **keys)
+        
+    def addStatusWidget(self, parent):
+        if self._widget is None:
+            self._widget = qt.QWidget(parent)
+            
+            hlayout = qt.QHBoxLayout(self._widget)
+
+            xlabel = qt.QLabel("X:", self._widget)
+            hlayout.addWidget(xlabel)
+            
+            self.xLabel = qt.QLabel("xxxx.xx", self._widget)
+            font = self.xLabel.font()
+            font.setBold(True)
+            self.xLabel.setFont(font)
+            minsize = self.xLabel.sizeHint()
+            self.xLabel.setMinimumSize(minsize)
+            hlayout.addWidget(self.xLabel)
+            
+            hlayout.addSpacing(5)
+                   
+            ylabel = qt.QLabel("Y:", self._widget)
+            hlayout.addWidget(ylabel)
+            
+            self.yLabel = qt.QLabel(" ", self._widget)
+            self.yLabel.setFont(font)
+            self.yLabel.setMinimumSize(minsize)
+            hlayout.addWidget(self.yLabel)
+                        
+        return self._widget
+        
+    def mouseMove(self, event):
+        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
+                                                         event.y())
+    
+        self.xLabel.setText(str(x))
+        self.yLabel.setText(str(y))
+        
+        
+####################################################################
+##########                                                ##########
+##########                 QubBeamAction                  ##########
+##########                                                ##########
+####################################################################
+class QubBeamAction(QubToggleImageAction):
+    def __init__(self, *args, **keys):
+        QubToggleImageAction.__init__(self, *args, **keys)
+
+        self.__center = qt.QPoint(0,0)
+
+        self._name = "beam"
+        
+    def viewConnect(self, qubImage):
+        """
+        Once the qubImage is connected, create QCanvas Item
+        """
+        QubToggleImageAction.viewConnect(self, qubImage)
+
+        self.__centerE = QubCanvasEllipse(7,7,0,5760,self._qubImage.canvas())
+        self.__roundE = QubCanvasEllipse(29,19,0,5760, self._qubImage.canvas())
+
+        self.setColor(self._qubImage.foregroundColor())
+        self.signalConnect(self._qubImage)
+
+    def setColor(self, color):
+        """   
+        Slot connected to "ForegroundColorChanged" "qubImage" signal
+        """
+        self.__centerE.setPen(qt.QPen(color))
+        self.__roundE.setPen(qt.QPen(color))
+        
+        self.__centerE.update()
+        self.__roundE.update()
+       
+    def _setState(self, bool):
+        """
+        Draw or Hide the 2 ellipse canvas items
+        """
+        self.__state = bool
+
+        if self.__centerE is not None and self.__roundE is not None:
+            if self.__state:
+                self.setColor(self._qubImage.foregroundColor())
+                self.__centerE.show()
+                self.__roundE.show()
+            else:
+                self.__centerE.hide()
+                self.__roundE.hide()
+            
+            self.__centerE.update()
+            self.__roundE.update()
+
+    def setBeamPosition(self, y, z):
+        self.__center.setX(y)
+        self.__center.setY(z)
+        self.viewportUpdate()
+        
+    def mousePress(self, event):
+        """
+        Update upper-left corner position of the rectangle and sets its
+        width and height to 1
+        """
+        if self.__state and event.button() == qt.Qt.LeftButton:
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
+
+            if self.inBeam(x, y):
+                self.__center.setX(x)
+                self.__center.setY(y)
+
+                self.viewportUpdate()
+    
+    def mouseMove(self, event):
+        if self.__state and event.state() == qt.Qt.LeftButton :
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
+                                                           event.y())
+            self.__center.setX(x)
+            self.__center.setY(y)
+        
+            self.viewportUpdate()
+    
+    def mouseRelease(self, event):
+        if self.__state and event.state() == qt.Qt.LeftButton :
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
+                                                           event.y())
+            self.__center.setX(x)
+            self.__center.setY(y)
+
+            self.emit(qt.PYSIGNAL("BeamSelected"), (x, y))
+
+            self.viewportUpdate()
+
+    def viewportUpdate(self):
+        point = self._qubImage.matrix().map(self.__center)
+                
+        self.__centerE.move(point.x(), point.y())  
+        self.__roundE.move(point.x(), point.y())  
+
+    def inBeam(self, x, y):
+        cenx = self.__center.x()
+        ceny = self.__center.y()
+        
+        if (x >= cenx - 14 and x <= cenx + 14) and \
+           (y >= ceny - 9  and y <= ceny + 9):
+           return True
+           
+        return False
+        
+####################################################################
+##########                                                ##########
+##########            QubHidePointSelection               ##########
+##########                                                ##########
+####################################################################
+class QubHidePointSelection(QubPointSelection):
+    def __init__(self, *args, **keys):
+        QubPointSelection.__init__(self, *args, **keys)
+        
+    def addToolWidget(self, parent):        
+        return None
+        
+    def addMenuWidget(self, menu):
+        pass
+        
+    def addStatusWidget(self, parent):
+        return None
+       
+    def menuChecked(self):
+        pass        
+            
+    def setState(self, state):        
+        self._setState(state)
+        
+####################################################################
+##########                                                ##########
+##########          QubHideRectangleSelection             ##########
+##########                                                ##########
+####################################################################
+class QubHideRectangleSelection(QubRectangleSelection):
+    def __init__(self, *args, **keys):
+        QubRectangleSelection.__init__(self, *args, **keys)
+   
+    def addToolWidget(self, parent):
+        return None
+        
+    def addMenuWidget(self, menu):
+        pass
+        
+    def addStatusWidget(self, parent):
+        return None
+       
+    def menuChecked(self):
+        pass        
+            
+    def setState(self, state):        
+        self._setState(state)
+                   
+#####################################################################
+##########                  QubScaleAction                 ##########
+#####################################################################
+class QubScaleAction(QubToggleImageAction) :
+    HORIZONTAL,VERTICAL,BOTH = (0x1,0x2,0x3)
+    def __init__(self,*args,**keys) :
+        QubToggleImageAction.__init__(self,*args,**keys)
+        self.__xPixelSize = 0
+        self.__yPixelSize = 0
+        self.__mode = keys.get("mode",QubScaleAction.BOTH)
+        self.__unit = [(1e-3,'m'),(1e-6,'u'),(1e-9,'n')]
+        self.__autorizeValues = keys.get('authorized_values',[1,2,5,10,20,50,100,200,500])
+
+        self.__hLine = None
+        self.__hText = None
+        self.__vLine = None
+        self.__vText = None
+        self.__state = False
+        
+    def viewConnect(self, qubImage):
+        QubToggleImageAction.viewConnect(self,qubImage)
+        color = qt.QColor('green')
+        self.__hLine = qtcanvas.QCanvasLine(qubImage.canvas())
+        self.__hLine.setPen(qt.QPen(color,4))
+        self.__hText = qtcanvas.QCanvasText(qubImage.canvas())
+        self.__hText.setColor(color)
+        
+        self.__vLine = qtcanvas.QCanvasLine(qubImage.canvas())
+        self.__vLine.setPen(qt.QPen(color,4))
+        self.__vText = qtcanvas.QCanvasText(qubImage.canvas())
+        self.__vText.setColor(color)
+
+        self.viewportUpdate()
+        
+    def setXPixelSize(self,size) :
+        self.__xPixelSize = abs(size)
+        self.viewportUpdate()
+    def setYPixelSize(self,size) :
+        self.__yPixelSize = abs(size)
+        self.viewportUpdate()
+        
+    def viewportUpdate(self) :
+        if self.__state and self._qubImage is not None :
+            (canvasX,canvasY) = (self._qubImage.canvas().width(),self._qubImage.canvas().height())
+            (viewSizeX,viewSizeY) = (self._qubImage.visibleWidth(),self._qubImage.visibleHeight())
+            (nbXPixel,nbYPixel) =  min(canvasX,viewSizeX),min(canvasY,viewSizeY)
+            (widthUse,heightUse) = (nbXPixel,nbYPixel)
+            (xOriCrop,yOriCrop) = self._qubImage.matrix().invert()[0].map(0,0)
+            (xOri,yOri) = (self._qubImage.contentsX(),self._qubImage.contentsY())
+                
+            if self.__mode & QubScaleAction.HORIZONTAL :
+                nbXPixel /= 4 # 1/4 of image display
+                dummy,y1 = self._qubImage.matrix().invert()[0].map(0,0)
+                dummy,y2 = self._qubImage.matrix().invert()[0].map(0,nbXPixel)
+                unit,XSize = self.__getUnitNAuthValue((y2 - y1) * self.__xPixelSize)
+                try:
+                    nbXPixel = int(XSize * unit[0] / self.__xPixelSize)
+                    (nbXPixel,dummy) = self._qubImage.matrix().map(nbXPixel + xOriCrop,0)
+                    y0 = heightUse - 10 + yOri
+                    self.__hLine.setPoints (14 + xOri,y0,nbXPixel + 14 + xOri,y0)
+                    self.__hText.setText('%d %s' % (XSize,unit[1]))
+                    rect = self.__hText.boundingRect()
+                    xTextPos = nbXPixel + 14 - rect.width()
+                    if xTextPos < 14 :
+                        self.__hText.move(nbXPixel + 16 + xOri,y0 - rect.height() / 2)
+                    else:
+                        self.__hText.move(xTextPos + xOri,y0 - 20)
+                except:
+                    pass
+                
+            if self.__mode & QubScaleAction.VERTICAL :
+                nbYPixel /= 4
+                dummy,y1 = self._qubImage.matrix().invert()[0].map(0,0)
+                dummy,y2 = self._qubImage.matrix().invert()[0].map(0,nbYPixel)
+                unit,YSize = self.__getUnitNAuthValue((y2 - y1) * self.__yPixelSize)
+                try:
+                    nbYPixel = int(YSize * unit[0] / self.__yPixelSize)
+                    (dummy,nbYPixel) = self._qubImage.matrix().map(0,nbYPixel + yOriCrop)
+                    y0 = heightUse - 14 + yOri
+                    self.__vLine.setPoints(10 + xOri,y0,10 + xOri,y0 - nbYPixel)
+                    self.__vText.move(15 + xOri,y0 - nbYPixel)
+                    self.__vText.setText('%d %s' % (YSize,unit[1]))
+                except :
+                    pass
+
+            if self.__mode & QubScaleAction.BOTH :
+                hRect = self.__hText.boundingRect()
+                vRect = self.__vText.boundingRect()
+                
+                vPoint = vRect.bottomRight()
+                hPoint = hRect.topLeft()
+                if hPoint.y() - vPoint.y() < 5 :
+                    hLinePoint = self.__hLine.endPoint()
+                    self.__hText.move(hLinePoint.x() + 2,hLinePoint.y() - hRect.height() / 2)
+
+                    vLinePoint = self.__vLine.endPoint()
+                    vTextRect = self.__vText.boundingRect()
+                    self.__vText.move(vLinePoint.x() - 4,vLinePoint.y() - vTextRect.height())
+            
+                    
+    def _setState(self,aFlag) :
+        self.__state = aFlag
+        if aFlag :
+            self.viewportUpdate()
+            self.signalConnect(self._qubImage)
+            if self.__mode & QubScaleAction.HORIZONTAL :
+                self.__hText.show()
+                self.__hLine.show()
+            if self.__mode & QubScaleAction.VERTICAL :
+                self.__vText.show()
+                self.__vLine.show()
+        else :
+            self.signalDisconnect(self._qubImage)
+            self.__hText.hide()
+            self.__hLine.hide()
+            self.__vText.hide()
+            self.__vLine.hide()
+    
+    def __getUnitNAuthValue(self,size) :
+        for unit in self.__unit :
+                tmpSize = size / unit[0]
+                if 1. < tmpSize < 1000. :
+                    size = int(tmpSize)
+                    aFindFlag = False
+                    for i,autValue in enumerate(self.__autorizeValues) :
+                        if size < autValue :
+                            if i > 0 :
+                                size = self.__autorizeValues[i - 1]
+                            else :
+                                size = autValue
+                            aFindFlag = True
+                            break
+                        elif size == autValue:
+                            aFindFlag = True
+                            break
+                    if not aFindFlag :
+                        size = autValue
+                    break
+        return (unit,size)
+        
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################

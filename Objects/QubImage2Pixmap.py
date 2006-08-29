@@ -93,7 +93,10 @@ class QubImage2Pixmap(qt.QObject) :
                         pixmap = plug.zoom().getPixmapFrom(image)
                         if plug.setPixmap(pixmap,fullSizeImage) :
                             aLock.lock()
-                            self.__plugs.remove(plug)
+                            try:
+                                self.__plugs.remove(plug)
+                            except:
+                                pass
                             aLock.unLock()
                     else :
                         aLock.lock()

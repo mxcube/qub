@@ -456,7 +456,6 @@ class QubViewStatusbar(qt.QWidget):
         
         widget = action.addStatusWidget(self.__container)
         
-        print "action index", action.index()
         self.__hlayout.insertWidget(action.index(), widget)
         self.__hlayout.insertStretch(-1)
         self.__actionList.append(action)

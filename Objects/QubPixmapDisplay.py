@@ -56,7 +56,12 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
 
         self.setSizePolicy(qt.QSizePolicy.Ignored,
                            qt.QSizePolicy.Ignored)
-     
+
+        self.connect(self,qt.SIGNAL('contentsMoving (int, int)'),self.__startIdle)
+
+        self.__idle = qt.QTimer(self)
+        self.connect(self.__idle,qt.SIGNAL('timeout()'),self.__emitViewPortUpdate)
+
     ##################################################
     ## EVENTS    
     ##################################################          
@@ -95,6 +100,14 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
         if self.__contextMenu is not None:
             if event.reason() == qt.QContextMenuEvent.Mouse:
                 self.__contextMenu.exec_loop(qt.QCursor.pos())
+
+    def __startIdle(self,x,y) :
+        if not self.__idle.isActive() :
+            self.__idle.start(0)
+            
+    def __emitViewPortUpdate(self) :
+        self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
+        self.__idle.stop()
         
     ##################################################
     ## PUBLIC METHOD    
@@ -154,6 +167,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
         if self.__scrollMode in ["Auto", "AlwaysOff"]:
             if (cvs_w, cvs_h) != (pix_w, pix_h):
                 self.__cvs.resize(pix_w, pix_h)
+                self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
             self.__cvs.setBackgroundPixmap(pixmap)
         else:
             zoom = zoomClass.zoom()
@@ -166,6 +180,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
                (w == view_w and h <= view_h or w <= view_w and h == view_h)) :
                 if (cvs_w, cvs_h) != (pix_w, pix_h):
                     self.__cvs.resize(pix_w, pix_h)
+                    self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
                 self.__cvs.setBackgroundPixmap(pixmap)
             else:
                 zoom_w = float(view_w) / im_w
@@ -175,12 +190,16 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
                     self.__plug.zoom().setZoom(zoom_val, zoom_val)
                 else:
                     self.__plug.zoom().setZoom(zoom_w, zoom_h)
+                self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
         offx,offy = (0,0)
         zoomx,zoomy = zoomClass.zoom()
+        lastoffx,lastoffy = self.__matrix.dx(),self.__matrix.dy()
         self.__matrix.setMatrix(zoomx, 0, 0, zoomy,0,0)
         if zoomClass.isRoiZoom() :
             offx,offy,width,height = zoomClass.roi()
             self.__matrix = self.__matrix.translate(-offx,-offy)
+            if (offx,offy) != (lastoffx,lastoffy) :
+                self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
 
     def setScrollbarMode(self, mode):
         """

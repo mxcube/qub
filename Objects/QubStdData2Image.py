@@ -36,6 +36,7 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
         self.__dataPending = []
         self.__actif = False
         self.__postSetImage = []
+        self.__swap = False
         
     def plug(self,plug):
         if isinstance(plug,QubStdData2ImagePlug) :
@@ -93,6 +94,7 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
                 aWorkingStruct = dataStruct
                 dataStruct.inProcess = True
                 break
+        swapFlag = self.__swap
         aLock.unLock()
         if aWorkingStruct is not None :
             try :
@@ -100,6 +102,8 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
                     aWorkingStruct.image.loadFromData(aWorkingStruct.data)
                 else :
                     aWorkingStruct.image.load(aWorkingStruct.path)
+                if swapFlag :
+                    aWorkingStruct.image = aWorkingStruct.image.swapRGB()
                 aLock.lock()
                 aWorkingStruct.end = True
                 if self.__plug is not None and not self.__plug.isEnd() :
@@ -137,6 +141,11 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
             else :
                 self.__plug = None
                 self.__postSetImage = []
+
+    def setSwapRGB(self,aFlag) :
+        aLock = QubLock(self.__mutex)
+        self.__swap = aFlag
+        
 class QubStdData2ImagePlug :
     def __init__(self) :
         self.__endFlag = False
