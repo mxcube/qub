@@ -176,16 +176,16 @@ class QubMdi(qt.QWorkspace):
         self.winToolBar.setLabel("MDI")
         
         icon = qt.QIconSet(loadIcon("fullscreen.png"))
-        self.fullscreen = qt.QToolButton(icon, "Full Screen",
-                                None, 
-                                self.windowFullScreen,
+        self.fullscreen = qt.QToolButton(icon, "Full Screen", "Full Screen",
+                                self, 
+                                qt.SLOT("windowFullScreen()"),
                                 self.winToolBar,
                                 "fullscreen")
                                 
         icon = qt.QIconSet(loadIcon("nofullscreen.png"))
-        self.winToolButton = qt.QToolButton(icon, "Tile",
-                                        None,
-                                        self.onWinToolAction,
+        self.winToolButton = qt.QToolButton(icon, "Tile", "Tile",
+                                        self,
+                                        qt.SLOT("onWinToolAction()"),
                                         self.winToolBar,
                                         "wintile")
         self.winToolMenu= qt.QPopupMenu(self.winToolButton)
@@ -234,7 +234,11 @@ class QubMdiChild(qt.QWidget):
         qt.QWidget.__init__(self, parent, name, flags)
         self.parentWindow = parent
         self.masterWindow = master
+        
         self.name = name
+        if name == None:
+            self.name = ""
+            
         self.setTitle()
         self.resize(0.5*self.parentWindow.width(), 
                     0.5*self.parentWindow.height())
