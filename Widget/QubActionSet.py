@@ -1987,6 +1987,7 @@ class QubBeamAction(QubToggleImageAction):
         self.__center = qt.QPoint(0,0)
 
         self._name = "beam"
+        self.__state = False
         
     def viewConnect(self, qubImage):
         """
@@ -2010,11 +2011,11 @@ class QubBeamAction(QubToggleImageAction):
         self.__centerE.update()
         self.__roundE.update()
        
-    def _setState(self, bool):
+    def _setState(self, aFlag):
         """
         Draw or Hide the 2 ellipse canvas items
         """
-        self.__state = bool
+        self.__state = aFlag
 
         if self.__centerE is not None and self.__roundE is not None:
             if self.__state:
