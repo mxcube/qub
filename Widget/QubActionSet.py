@@ -2171,10 +2171,26 @@ class QubScaleAction(QubToggleImageAction) :
         
     def setXPixelSize(self,size) :
         self.__xPixelSize = abs(size)
-        self.viewportUpdate()
+        if(self.__state and self.__mode & QubScaleAction.HORIZONTAL and
+           self.__xPixelSize is not None and self.__xPixelSize) :
+            self.viewportUpdate()
+            self.__hText.show()
+            self.__hLine.show()
+        else:
+            self.__hText.hide()
+            self.__hLine.hide()
+            
     def setYPixelSize(self,size) :
         self.__yPixelSize = abs(size)
-        self.viewportUpdate()
+        if (self.__state and self.__mode & QubScaleAction.VERTICAL and
+            self.__yPixelSize is not None and self.__yPixelSize) :
+            self.__vText.show()
+            self.__vLine.show()
+            self.viewportUpdate()
+        else :
+            self.__vText.hide()
+            self.__vLine.hide()
+ 
         
     def viewportUpdate(self) :
         if self.__state and self._qubImage is not None :
@@ -2240,10 +2256,10 @@ class QubScaleAction(QubToggleImageAction) :
         if aFlag :
             self.viewportUpdate()
             self.signalConnect(self._qubImage)
-            if self.__mode & QubScaleAction.HORIZONTAL :
+            if self.__mode & QubScaleAction.HORIZONTAL and self.__xPixelSize is not None and self.__xPixelSize :
                 self.__hText.show()
                 self.__hLine.show()
-            if self.__mode & QubScaleAction.VERTICAL :
+            if self.__mode & QubScaleAction.VERTICAL and self.__yPixelSize is not None and self.__yPixelSize :
                 self.__vText.show()
                 self.__vLine.show()
         else :
@@ -2277,10 +2293,10 @@ class QubScaleAction(QubToggleImageAction) :
 
 ####################################################################
 ##########                                                ##########
-##########                QubFalconSaveAction             ##########
+##########              QubOpenSaveDialogAction           ##########
 ##########                                                ##########
 ####################################################################
-class QubOpenSaveDialogAction(QubAction):
+class QubOpenDialogAction(QubAction):
     """
     This action will allow to open the FalconSaveDialog to get one falcon
     image and to save it
@@ -2301,9 +2317,9 @@ class QubOpenSaveDialogAction(QubAction):
         """
         QubAction.__init__(self, *args, **keys)
 
-        self._item       = None
-        self.__dialogPlug = None
-        self._parent     = keys.get('parent',None)
+        self.__dialog = None
+        self._label = keys.get('label',self._name)
+        self.__iconName = keys.get('iconName','fileopen')
         
     def addToolWidget(self, parent):
         """
@@ -2317,9 +2333,9 @@ class QubOpenSaveDialogAction(QubAction):
         if self._widget is None:
             self._widget = qt.QToolButton(parent,self._name)
             self._widget.setAutoRaise(True)
-            self._widget.setIconSet(qt.QIconSet(loadIcon("fileopen.png")))
+            self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png" % self.__iconName)))
             self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
-                            self.showSaveDialog)
+                            self.__showSaveDialog)
             qt.QToolTip.add(self._widget,self._label)
 
         return self._widget
@@ -2329,13 +2345,23 @@ class QubOpenSaveDialogAction(QubAction):
         Create context menu item pushbutton
         """
         self._menu = menu
-        iconSet = qt.QIconSet(loadIcon("fileopen.png"))
-        self._item = menu.insertItem(iconSet, qt.QString("Save falcon image"),
-                                      self.showSaveDialog)
+        iconSet = qt.QIconSet(loadIcon("%s.png" % self.__iconName))
+        self._item = menu.insertItem(iconSet, qt.QString(self._label),
+                                      self.__showSaveDialog)
         
-    def showSaveDialog(self):
-        self._saveDialog.show()
-        self._saveDialog.getPixmap()
+    def setDialog(self,dialog) :
+        """ Interface to manage the dialogue window.
+        this interface must have the methode :
+             -> show()
+             -> refresh()
+        """
+        self.__dialog = dialog
+        
+    def __showSaveDialog(self):
+        if self.__dialog is not None :
+            self.__dialog.show()
+            self.__dialog.raiseW()
+            self.__dialog.refresh()
         
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################

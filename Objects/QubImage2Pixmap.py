@@ -94,6 +94,10 @@ class QubImage2Pixmap(qt.QObject) :
                         if plug.setPixmap(pixmap,fullSizeImage) :
                             aLock.lock()
                             try:
+                                for pni in self.__plugsNimagesPending :
+                                    for tmpplug,ti,fi in pni :
+                                        if tmpplug == plug :
+                                            pni.remove((tmpplug,ti,fi))
                                 self.__plugs.remove(plug)
                             except:
                                 pass
@@ -101,6 +105,10 @@ class QubImage2Pixmap(qt.QObject) :
                     else :
                         aLock.lock()
                         try:
+                            for pni in self.__plugsNimagesPending :
+                                for tmpplug,ti,fi in pni :
+                                    if tmpplug == plug :
+                                        pni.remove((tmpplug,ti,fi))
                             self.__plugs.remove(plug)
                         except:
                             pass

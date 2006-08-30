@@ -62,6 +62,8 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
         self.__idle = qt.QTimer(self)
         self.connect(self.__idle,qt.SIGNAL('timeout()'),self.__emitViewPortUpdate)
 
+        self.__foregroundColor = qtcanvas.QCanvasView.foregroundColor(self)
+        
     ##################################################
     ## EVENTS    
     ##################################################          
@@ -234,7 +236,12 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
                     self.__plug.refresh()
     def matrix(self) :
         return self.__matrix
-    
+    def foregroundColor(self) :
+        return self.__foregroundColor
+    def setForegroundColor(self,color) :
+        self.__foregroundColor = color
+        self.emit(qt.PYSIGNAL("ForegroundColorChanged"), 
+                  (self.__foregroundColor,))
 class QubPixmapZoomPlug(QubImage2PixmapPlug):
     def __init__(self, receiver) :
         QubImage2PixmapPlug.__init__(self)
