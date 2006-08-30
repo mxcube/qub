@@ -27,7 +27,7 @@ class QubToolButtonAction(QubAction):
     This action send a signal "ButtonPressed" when user hit the button
     It creates a pushbutton in the toolbar/contextmenu or statusbar
     """
-    def __init__(self, label="", *args, **keys):
+    def __init__(self,*args, **keys):
         """
         Constructor method
         label .. :  label is used as tooltip and as string in contextmenu
@@ -48,7 +48,7 @@ class QubToolButtonAction(QubAction):
         QubAction.__init__(self, *args, **keys)
         
         self._item  = None
-        self._label = label
+        self._label = keys.get('label','')
         
     def addToolWidget(self, parent):
         """
@@ -101,7 +101,7 @@ class QubButtonAction(QubAction):
     This action send a signal "ButtonPressed" when user hit the button
     It creates a pushbutton in the toolbar/contextmenu or statusbar
     """
-    def __init__(self, label="", *args, **keys):
+    def __init__(self,*args, **keys):
         """
         Constructor method
         name ... :  string name of the action.
@@ -120,7 +120,6 @@ class QubButtonAction(QubAction):
         QubAction.__init__(self, *args, **keys)
         
         self._item  = None
-        self._label = label
         
     def addToolWidget(self, parent):
         """
@@ -1988,6 +1987,7 @@ class QubBeamAction(QubToggleImageAction):
 
         self._name = "beam"
         self.__state = False
+        self.__onMove = False
         
     def viewConnect(self, qubImage):
         """
@@ -2043,13 +2043,14 @@ class QubBeamAction(QubToggleImageAction):
             (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
 
             if self.inBeam(x, y):
+                self.__onMove = True
                 self.__center.setX(x)
                 self.__center.setY(y)
 
                 self.viewportUpdate()
     
     def mouseMove(self, event):
-        if self.__state and event.state() == qt.Qt.LeftButton :
+        if self.__state and self.__onMove and event.state() == qt.Qt.LeftButton :
             (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
                                                            event.y())
             self.__center.setX(x)
@@ -2059,15 +2060,17 @@ class QubBeamAction(QubToggleImageAction):
     
     def mouseRelease(self, event):
         if self.__state and event.state() == qt.Qt.LeftButton :
-            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
-                                                           event.y())
-            self.__center.setX(x)
-            self.__center.setY(y)
+            if self.__onMove :
+                (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
+                                                               event.y())
+                self.__center.setX(x)
+                self.__center.setY(y)
 
-            self.emit(qt.PYSIGNAL("BeamSelected"), (x, y))
+                self.emit(qt.PYSIGNAL("BeamSelected"), (x, y))
 
-            self.viewportUpdate()
-
+                self.viewportUpdate()
+            self.__onMove = False
+            
     def viewportUpdate(self):
         point = self._qubImage.matrix().map(self.__center)
                 
@@ -2271,6 +2274,68 @@ class QubScaleAction(QubToggleImageAction) :
                         size = autValue
                     break
         return (unit,size)
+
+####################################################################
+##########                                                ##########
+##########                QubFalconSaveAction             ##########
+##########                                                ##########
+####################################################################
+class QubOpenSaveDialogAction(QubAction):
+    """
+    This action will allow to open the FalconSaveDialog to get one falcon
+    image and to save it
+    """
+    def __init__(self,*args, **keys):
+        """
+        Constructor method
+        name ... :  string name of the action.
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None).
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu.
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it.
+        index .. :  Position of the selection widget of the action in its
+                    group.
+        """
+        QubAction.__init__(self, *args, **keys)
+
+        self._item       = None
+        self.__dialogPlug = None
+        self._parent     = keys.get('parent',None)
+        
+    def addToolWidget(self, parent):
+        """
+        create save pushbutton in the toolbar of the view
+        create the save dialog if not already done
+        """
+        
+        """
+        create widget for the view toolbar
+        """   
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent,self._name)
+            self._widget.setAutoRaise(True)
+            self._widget.setIconSet(qt.QIconSet(loadIcon("fileopen.png")))
+            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
+                            self.showSaveDialog)
+            qt.QToolTip.add(self._widget,self._label)
+
+        return self._widget
+        
+    def addMenuWidget(self, menu):
+        """
+        Create context menu item pushbutton
+        """
+        self._menu = menu
+        iconSet = qt.QIconSet(loadIcon("fileopen.png"))
+        self._item = menu.insertItem(iconSet, qt.QString("Save falcon image"),
+                                      self.showSaveDialog)
+        
+    def showSaveDialog(self):
+        self._saveDialog.show()
+        self._saveDialog.getPixmap()
         
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
