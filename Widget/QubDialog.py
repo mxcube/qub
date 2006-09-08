@@ -9,6 +9,7 @@ import qt
 import os.path
 from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 from Qub.Objects.QubPixmapDisplay import QubPixmapZoomPlug
+from Qub.Widget.QubWidgetSet import QubSlider
 from Qub.Icons.QubIcons import loadIcon
 
 ####################################################################
@@ -105,3 +106,129 @@ class QubSaveImageDialog(qt.QDialog):
 
     def refresh(self) :
         self.__imagePlug.refresh()
+
+
+####################################################################
+##########                                                ##########
+##########        QubBrightnessContrastDialog             ##########
+##########                                                ##########
+####################################################################        
+class QubBrightnessContrastDialog(qt.QDialog):
+    def __init__(self, parent):
+        qt.QDialog.__init__(self, parent)
+        
+        """
+        variables
+        """
+        self.__camera = None
+        
+        self.__contrast = 0
+        self.__contrastMin = 0
+        self.__contrastMax = 200
+        
+        self.__brightness = 0
+        self.__brightnessMin = 0
+        self.__brightnessMax = 255
+        
+        """
+        widget
+        """        
+        vlayout = qt.QVBoxLayout(self)
+        vlayout.setMargin(10)
+        
+        """
+        contrast updater
+        """
+        self.contrastLabel = qt.QLabel("Contrast:", self)
+        vlayout.addWidget(self.contrastLabel)
+       
+        self.contrastSlider = QubSlider(self.__contrastMin,
+                                        self.__contrastMax,
+                                        10, self.__contrast,
+                                        qt.Qt.Horizontal,self)
+        self.connect(self.contrastSlider, qt.PYSIGNAL("sliderChanged"),
+                     self.setContrast)
+        vlayout.addWidget(self.contrastSlider)
+        
+        vlayout.addSpacing(10)
+                 
+        """
+        brightness updater
+        """
+        self.brightLabel = qt.QLabel("Brightness:", self)
+        vlayout.addWidget(self.brightLabel)
+        
+        self.brightnessSlider = QubSlider(self.__brightnessMin,
+                                           self.__brightnessMax, 
+                                           10, self.__brightness,
+                                           qt.Qt.Horizontal, self)
+        self.connect(self.brightnessSlider, qt.PYSIGNAL("sliderChanged"),
+                     self.setBrightness)
+        vlayout.addWidget(self.brightnessSlider)
+
+    def setContrastLimits(self, contrastMin, contrastMax):
+        self.__contrastMin = contrastMin
+        self.__contrastMax = contrastMax
+        
+        self.setContrast(self.__contrast)
+        self.contrastChanged(self.__contrast)
+        
+    def setContrast(self, contrast):
+        self.__contrast = contrast
+        if contrast < self.__contrastMin:
+            self.__contrast = self.__contrastMin
+        if contrast > self.__contrastMax:
+            self.__contrast = self.__contrastMax
+            
+        if self.__camera is not None:
+            self.__camera.setContrast(self.__contrast)
+                    
+    def contrastChanged(self, contrast):
+        self.__contrast = contrast
+        if contrast < self.__contrastMin:
+            self.__contrast = self.__contrastMin
+        if contrast > self.__contrastMax:
+            self.__contrast = self.__contrastMax
+
+        self.contrastSlider.setValue(self.__contrast)
+
+    def setBrightnessLimits(self, brightnessMin, brightnessMax):
+        self.__brightnessMin = brightnessMin
+        self.__brightnessMax = brightnessMax
+        
+        self.setBrightness(self.__brightness)
+        self.BrightnessChanged(self.__brightness)
+
+    def setBrightness(self, brightness):
+        self.__brightness = brightness
+        if brightness < self.__brightnessMin:
+            self.__brightness = self.__brightnessMin
+        if brightness > self.__brightnessMax:
+            self.__brightness = self.__brightnessMax
+            
+        if self.__camera is not None:
+            self.__camera.setBrightness(self.__brightness)
+        
+    def brightnessChanged(self, brightness):
+        self.__brightness = brightness
+        if brightness < self.__brightnessMin:
+            self.__brightness = self.__brightnessMin
+        if brightness > self.__brightnessMax:
+            self.__brightness = self.__brightnessMax
+            
+        self.brightnessSlider.setValue(self.__brightness)
+            
+    def setCamera(self, camera):
+        self.__camera = camera
+        
+        if self.__camera is not None:
+            self.contrastChanged(self.__camera.getContrast())
+            self.brightnessChanged(self.__camera.getBrightness())
+    
+    def show(self):
+        if self.__camera is not None:
+            self.contrastChanged(self.__camera.getContrast())
+            self.brightnessChanged(self.__camera.getBrightness())
+        
+        qt.QDialog.show(self)
+        
