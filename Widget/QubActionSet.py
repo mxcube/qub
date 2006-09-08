@@ -2298,8 +2298,7 @@ class QubScaleAction(QubToggleImageAction) :
 ####################################################################
 class QubOpenDialogAction(QubAction):
     """
-    This action will allow to open the FalconSaveDialog to get one falcon
-    image and to save it
+    This action will allow to open a dialog 
     """
     def __init__(self,*args, **keys):
         """
@@ -2361,8 +2360,76 @@ class QubOpenDialogAction(QubAction):
         if self.__dialog is not None :
             self.__dialog.show()
             self.__dialog.raiseW()
-            self.__dialog.refresh()
+            if hasattr(self.__dialog, "refresh"):
+                self.__dialog.refresh()
+
+####################################################################
+##########                                                ##########
+##########            QubBrightnessContrastAction         ##########
+##########                                                ##########
+####################################################################
+class QubBrightnessContrastAction(QubAction):
+    """
+    This action will allow to open a dialog 
+    """
+    def __init__(self,*args, **keys):
+        from Qub.Widget.QubDialog import QubBrightnessContrastDialog
         
+        """
+        Constructor method
+        name ... :  string name of the action.
+        place .. :  where to put in the view widget, the selection widget
+                    of the action ("toolbar", "statusbar", None).
+        show ... :  If in view toolbar, tells to put it in the toolbar
+                    itself or in the context menu.
+        group .. :  actions may grouped. Tells the name of the group the
+                    action belongs to. If not present, a "misc." group is
+                    automatically created and the action is added to it.
+        index .. :  Position of the selection widget of the action in its
+                    group.
+        """
+        QubAction.__init__(self, *args, **keys)
+
+        self.__dialog = QubBrightnessContrastDialog(None)
+        self._label = keys.get('label',self._name)
+        self.__iconName = keys.get('iconName','bright-cont')
+        
+    def addToolWidget(self, parent):
+        """
+        create save pushbutton in the toolbar of the view
+        create the save dialog if not already done
+        """
+        
+        """
+        create widget for the view toolbar
+        """   
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent,self._name)
+            self._widget.setAutoRaise(True)
+            self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png" % self.__iconName)))
+            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
+                            self.__showDialog)
+            qt.QToolTip.add(self._widget,self._label)
+
+        return self._widget
+        
+    def addMenuWidget(self, menu):
+        """
+        Create context menu item pushbutton
+        """
+        self._menu = menu
+        iconSet = qt.QIconSet(loadIcon("%s.png" % self.__iconName))
+        self._item = menu.insertItem(iconSet, qt.QString(self._label),
+                                      self.__showSaveDialog)
+                
+    def __showDialog(self):
+        if self.__dialog is not None :
+            self.__dialog.show()
+            self.__dialog.raiseW()
+
+    def setCamera(self, camera):
+        self.__dialog.setCamera(camera)
+                
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
