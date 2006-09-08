@@ -266,6 +266,37 @@ class QubColorToolMenu(qt.QPopupMenu):
         self.iconSet = qt.QIconSet(qt.QPixmap(paintbrush_xpm))
       
 
+################################################################################
+####################                                          ##################
+####################           QubCheckedText                 ##################
+####################                                          ##################
+################################################################################
+class QubSlider(qt.QSlider):
+    """
+    add "sliderChanged" signal to the QSlider widet.
+    send like the "valueChanged" callback but not during the drag
+    of the slider cursor
+    """
+    def __init__(self, *args):
+        qt.QSlider.__init__(self, *args)
+        
+        self.__sliderState = "Released"
+
+        self.connect(self, qt.SIGNAL("sliderPressed()"), self.__sliderPressed)
+        self.connect(self, qt.SIGNAL("valueChanged(int)"), self.__valueChanged)
+        self.connect(self, qt.SIGNAL("sliderReleased()"), self.__sliderReleased)
+        
+    def __sliderPressed(self):
+        self.__sliderState = "Pressed"
+    
+    def __valueChanged(self, val):
+        if self.__sliderState != "Pressed":
+            self.emit(qt.PYSIGNAL("sliderChanged"), (val,))
+            
+    def __sliderReleased(self):
+        self.__sliderState = "Released"
+        val = self.value()
+        self.emit(qt.PYSIGNAL("sliderChanged"), (val,))
 
 ################################################################################
 ####################           QubCheckedText                 ##################
