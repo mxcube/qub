@@ -5,7 +5,7 @@ import math
 
 from Qub.Widget.QubAction import QubAction, QubImageAction, QubToggleImageAction
 from Qub.Widget.QubWidgetSet import QubColorToolButton, QubColorToolMenu
-from Qub.Widget.QubWidgetSet import QubCanvasEllipse
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasEllipse
 from Qub.Icons.QubIcons import loadIcon
 
 
@@ -707,7 +707,7 @@ class QubRectangleSelection(QubToggleImageAction):
 #                          QubZoomRectangle                                   #
 ###############################################################################
 class QubZoomRectangle(QubToggleImageAction) :
-    UNDEF,DRAG,MOVE = range(3)
+    UNDEF,DRAG,MOVE,UNDER_TOP_LEFT,UNDER_BOTTOM_RIGHT,UNDER_TOP_RIGHT,UNDER_BOTTOM_LEFT,MOVE_TOP_LEFT,MOVE_BOTTOM_RIGHT,MOVE_TOP_RIGHT,MOVE_BOTTOM_LEFT = range(11)
     
     def __init__(self,*args,**keys) :
         QubToggleImageAction.__init__(self,*args,**keys)
@@ -715,12 +715,15 @@ class QubZoomRectangle(QubToggleImageAction) :
 
         self.__squareFlag = keys.get('square',False)
         if self._name == 'default' :
-            self._name = 'rectangle'
+            self._name = 'zoomrect'
 
         self.__mode = QubZoomRectangle.UNDEF
-
+        self.__oldCursor = None
+        
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self, qubImage)
+
+        self.__oldCursor = self._qubImage.cursor()
 
         self.__rectangle = qtcanvas.QCanvasRectangle(self.__rectCoord,
                                                      self._qubImage.canvas())
@@ -755,19 +758,29 @@ class QubZoomRectangle(QubToggleImageAction) :
 
     def mousePress(self,event) :
         if event.button() == qt.Qt.LeftButton :
+            if self.__mode == QubZoomRectangle.UNDER_TOP_LEFT :
+                self.__mode = QubZoomRectangle.MOVE_TOP_LEFT
+            elif self.__mode == QubZoomRectangle.UNDER_BOTTOM_RIGHT :
+                self.__mode = QubZoomRectangle.MOVE_BOTTOM_RIGHT
+            elif self.__mode == QubZoomRectangle.UNDER_TOP_RIGHT :
+                self.__mode = QubZoomRectangle.MOVE_TOP_RIGHT
+            elif self.__mode == QubZoomRectangle.UNDER_BOTTOM_LEFT :
+                self.__mode = QubZoomRectangle.MOVE_BOTTOM_LEFT
+            else:
+                self.__mode = QubZoomRectangle.DRAG
+                (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
+                self.__rectCoord.setRect(x, y, 1, 1)
+            self.viewportUpdate()
+        elif event.button() == qt.Qt.MidButton :
             (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
             if self.__rectCoord.contains(x,y) :
                 self.__mode = QubZoomRectangle.MOVE
-            else :
-                self.__mode = QubZoomRectangle.DRAG
-                self.__rectCoord.setRect(x, y, 1, 1)
-                self.viewportUpdate()
             
     def mouseMove(self,event) :
         try :
-            if self.__mode == QubZoomRectangle.DRAG :
-                (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
+            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
                                                                  event.y())
+            if self.__mode == QubZoomRectangle.DRAG :
                 w = x - self.__rectCoord.x()
                 h = y - self.__rectCoord.y()
                 if self.__squareFlag :
@@ -776,8 +789,6 @@ class QubZoomRectangle(QubToggleImageAction) :
                 self.__rectCoord.setSize(qt.QSize(w, h))
                 self.viewportUpdate()
             elif self.__mode == QubZoomRectangle.MOVE :
-                (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
-                                                                 event.y())
                 canvasRect = self._qubImage.matrix().invert()[0].map(self._qubImage.canvas().rect())
                 rect = self.__rectCoord.normalize()
                 if x > canvasRect.width() - rect.width() / 2 :
@@ -797,17 +808,60 @@ class QubZoomRectangle(QubToggleImageAction) :
                           (rect.x(), rect.y(), 
                            rect.width(),rect.height()))
                 self.viewportUpdate()
+            elif self.__mode == QubZoomRectangle.MOVE_TOP_LEFT :
+                self.__rectCoord.setTopLeft(qt.QPoint(x,y))
+                self.viewportUpdate()
+            elif self.__mode == QubZoomRectangle.MOVE_BOTTOM_RIGHT :
+                self.__rectCoord.setBottomRight(qt.QPoint(x,y))
+                self.viewportUpdate()
+            elif self.__mode == QubZoomRectangle.MOVE_TOP_RIGHT :
+                self.__rectCoord.setTopRight(qt.QPoint(x,y))
+                self.viewportUpdate()
+            elif self.__mode == QubZoomRectangle.MOVE_BOTTOM_LEFT :
+                self.__rectCoord.setBottomLeft(qt.QPoint(x,y))
+                self.viewportUpdate()
+            else :
+                if self.__rectCoord.contains(x,y) :
+                    topLeft = self._qubImage.matrix().map(self.__rectCoord.topLeft())
+                    bottomRight = self._qubImage.matrix().map(self.__rectCoord.bottomRight())
+                    topRight = self._qubImage.matrix().map(self.__rectCoord.topRight())
+                    bottomLeft = self._qubImage.matrix().map(self.__rectCoord.bottomLeft())
+                    (x, y) = event.x(),event.y()
+                    
+                    if x - topLeft.x() <= 10 and y - topLeft.y() <= 10 :
+                        self.__mode = QubZoomRectangle.UNDER_TOP_LEFT
+                        if self._qubImage.cursor() != qt.QCursor(qt.Qt.SizeFDiagCursor) :
+                            self._qubImage.setCursor(qt.QCursor(qt.Qt.SizeFDiagCursor))
+                    elif bottomRight.x() - x <= 10 and bottomRight.y() -y <= 10:
+                        self.__mode = QubZoomRectangle.UNDER_BOTTOM_RIGHT
+                        if self._qubImage.cursor() != qt.QCursor(qt.Qt.SizeFDiagCursor) :
+                            self._qubImage.setCursor(qt.QCursor(qt.Qt.SizeFDiagCursor))
+                    elif topRight.x() - x <= 10 and y - topRight.y() <= 10 :
+                        self.__mode = QubZoomRectangle.UNDER_TOP_RIGHT
+                        if self._qubImage.cursor() != qt.QCursor(qt.Qt.SizeBDiagCursor) :
+                            self._qubImage.setCursor(qt.QCursor(qt.Qt.SizeBDiagCursor))
+                    elif x - bottomLeft.x() <= 10 and bottomLeft.y() - y <= 10 :
+                        self.__mode = QubZoomRectangle.UNDER_BOTTOM_LEFT
+                        if self._qubImage.cursor() != qt.QCursor(qt.Qt.SizeBDiagCursor) :
+                            self._qubImage.setCursor(qt.QCursor(qt.Qt.SizeBDiagCursor))
+                    else :
+                        self.__mode = QubZoomRectangle.UNDEF
+                        self._qubImage.setCursor(self.__oldCursor)
+                elif self.__mode != QubZoomRectangle.UNDEF :
+                    self.__mode = QubZoomRectangle.UNDEF
+                    self._qubImage.setCursor(self.__oldCursor)
         except:
             import traceback
             traceback.print_exc()
             
     def mouseRelease(self, event):
-        if self.__mode == QubZoomRectangle.DRAG :
+        if self.__mode != QubZoomRectangle.MOVE :
             rect = self.__rectCoord.normalize()
             self.emit(qt.PYSIGNAL("RectangleSelected"), 
                       (rect.x(), rect.y(), 
                        rect.width(),rect.height()))
         self.__mode = QubZoomRectangle.UNDEF
+        self._qubImage.setCursor(self.__oldCursor)
 
     def viewportUpdate(self) :
 
@@ -2145,7 +2199,7 @@ class QubScaleAction(QubToggleImageAction) :
         self.__xPixelSize = 0
         self.__yPixelSize = 0
         self.__mode = keys.get("mode",QubScaleAction.BOTH)
-        self.__unit = [(1e-3,'m'),(1e-6,'u'),(1e-9,'n')]
+        self.__unit = [(1e-3,'mm'),(1e-6,'\xb5m'),(1e-9,'nm')]
         self.__autorizeValues = keys.get('authorized_values',[1,2,5,10,20,50,100,200,500])
 
         self.__hLine = None
@@ -2171,26 +2225,33 @@ class QubScaleAction(QubToggleImageAction) :
         
     def setXPixelSize(self,size) :
         self.__xPixelSize = abs(size)
-        if(self.__state and self.__mode & QubScaleAction.HORIZONTAL and
-           self.__xPixelSize is not None and self.__xPixelSize) :
-            self.viewportUpdate()
-            self.__hText.show()
-            self.__hLine.show()
-        else:
-            self.__hText.hide()
-            self.__hLine.hide()
-            
+        if self.__hText is not None :
+            if(self.__state and self.__mode & QubScaleAction.HORIZONTAL and
+               self.__xPixelSize is not None and self.__xPixelSize) :
+                self.viewportUpdate()
+                self.__hText.show()
+                self.__hLine.show()
+            else:
+                self.__hText.hide()
+                self.__hLine.hide()
+
+    def xPixelSize(self) :
+        return self.__xPixelSize
+    
     def setYPixelSize(self,size) :
         self.__yPixelSize = abs(size)
-        if (self.__state and self.__mode & QubScaleAction.VERTICAL and
-            self.__yPixelSize is not None and self.__yPixelSize) :
-            self.__vText.show()
-            self.__vLine.show()
-            self.viewportUpdate()
-        else :
-            self.__vText.hide()
-            self.__vLine.hide()
- 
+        if self.__vText is not None :
+            if (self.__state and self.__mode & QubScaleAction.VERTICAL and
+                self.__yPixelSize is not None and self.__yPixelSize) :
+                self.__vText.show()
+                self.__vLine.show()
+                self.viewportUpdate()
+            else :
+                self.__vText.hide()
+                self.__vLine.hide()
+
+    def yPixelSize(self) :
+        return self.__yPixelSize
         
     def viewportUpdate(self) :
         if self.__state and self._qubImage is not None :
@@ -2217,7 +2278,7 @@ class QubScaleAction(QubToggleImageAction) :
                     if xTextPos < 14 :
                         self.__hText.move(nbXPixel + 16 + xOri,y0 - rect.height() / 2)
                     else:
-                        self.__hText.move(xTextPos + xOri,y0 - 20)
+                        self.__hText.move(xTextPos + xOri,y0 - rect.height() - 2)
                 except:
                     pass
                 
@@ -2293,7 +2354,7 @@ class QubScaleAction(QubToggleImageAction) :
 
 ####################################################################
 ##########                                                ##########
-##########              QubOpenSaveDialogAction           ##########
+##########                QubOpenDialogAction             ##########
 ##########                                                ##########
 ####################################################################
 class QubOpenDialogAction(QubAction):
@@ -2317,6 +2378,7 @@ class QubOpenDialogAction(QubAction):
         QubAction.__init__(self, *args, **keys)
 
         self.__dialog = None
+        self.__connectCBK = None
         self._label = keys.get('label',self._name)
         self.__iconName = keys.get('iconName','fileopen')
         
@@ -2352,14 +2414,26 @@ class QubOpenDialogAction(QubAction):
         """ Interface to manage the dialogue window.
         this interface must have the methode :
              -> show()
-             -> refresh()
+             -> raiseW()
         """
         self.__dialog = dialog
+        
+    def setConnectCallBack(self,cbk) :
+        self.__connectCBK = cbk
         
     def __showSaveDialog(self):
         if self.__dialog is not None :
             self.__dialog.show()
             self.__dialog.raiseW()
+
+    def viewConnect(self,parent) :
+        if self.__connectCBK is not None:
+            try:
+                self.__connectCBK(self,parent)
+            except :
+                import traceback
+                traceback.print_exc()
+            
             if hasattr(self.__dialog, "refresh"):
                 self.__dialog.refresh()
 

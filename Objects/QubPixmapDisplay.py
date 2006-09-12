@@ -2,12 +2,14 @@ import qt
 import qtcanvas
 import sys
 from Qub.Objects.QubImage2Pixmap import QubImage2PixmapPlug
+from Qub.Objects.QubEventMgr import QubEventMgr
 
-class QubPixmapDisplay(qtcanvas.QCanvasView):
+class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
     def __init__(self, parent=None, name=None):
         qtcanvas.QCanvasView.__init__(self, parent, name, 
-                                      qt.Qt.WNoAutoErase|qt.Qt.WStaticContents ) 
+                                      qt.Qt.WNoAutoErase|qt.Qt.WStaticContents) 
                                            
+        QubEventMgr.__init__(self)
         """
         parent widget
         """
@@ -74,7 +76,9 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
         """
         if event.button() != qt.Qt.RightButton:
             self.emit(qt.PYSIGNAL("MouseMoved"), (event,))
-            self.canvas().update()        
+            self.canvas().update()
+            
+        self._mouseMove(event)
 
     def contentsMousePressEvent(self, event):
         """
@@ -85,7 +89,8 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
             self.emit(qt.PYSIGNAL("MousePressed"), (event,))
             self.canvas().update()        
 
-
+        self._mousePressed(event)
+        
     def contentsMouseReleaseEvent(self, event):
         """
         Mouse has been pressed, tells the actions
@@ -94,6 +99,8 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
         if event.button() != qt.Qt.RightButton:   
             self.emit(qt.PYSIGNAL("MouseReleased"), (event,))
             self.canvas().update()
+            
+        self._mouseRelease(event)
 
     def contentsContextMenuEvent(self, event):
         """
@@ -103,12 +110,13 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
             if event.reason() == qt.QContextMenuEvent.Mouse:
                 self.__contextMenu.exec_loop(qt.QCursor.pos())
 
-    def __startIdle(self,x,y) :
+    def __startIdle(self,x = 0,y = 0) :
         if not self.__idle.isActive() :
             self.__idle.start(0)
             
     def __emitViewPortUpdate(self) :
         self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
+        self._update()
         self.__idle.stop()
         
     ##################################################
@@ -169,7 +177,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
         if self.__scrollMode in ["Auto", "AlwaysOff"]:
             if (cvs_w, cvs_h) != (pix_w, pix_h):
                 self.__cvs.resize(pix_w, pix_h)
-                self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
+                self.__startIdle()
             self.__cvs.setBackgroundPixmap(pixmap)
         else:
             zoom = zoomClass.zoom()
@@ -182,7 +190,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
                (w == view_w and h <= view_h or w <= view_w and h == view_h)) :
                 if (cvs_w, cvs_h) != (pix_w, pix_h):
                     self.__cvs.resize(pix_w, pix_h)
-                    self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
+                    self.__startIdle()
                 self.__cvs.setBackgroundPixmap(pixmap)
             else:
                 zoom_w = float(view_w) / im_w
@@ -192,7 +200,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
                     self.__plug.zoom().setZoom(zoom_val, zoom_val)
                 else:
                     self.__plug.zoom().setZoom(zoom_w, zoom_h)
-                self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
+                self.__startIdle()
         offx,offy = (0,0)
         zoomx,zoomy = zoomClass.zoom()
         lastoffx,lastoffy = self.__matrix.dx(),self.__matrix.dy()
@@ -201,7 +209,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView):
             offx,offy,width,height = zoomClass.roi()
             self.__matrix = self.__matrix.translate(-offx,-offy)
             if (offx,offy) != (lastoffx,lastoffy) :
-                self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
+                self.__startIdle()
 
     def setScrollbarMode(self, mode):
         """

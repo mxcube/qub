@@ -6,12 +6,209 @@
 ###############################################################################
 ###############################################################################
 import qt
+import qtcanvas
+import math
 import os.path
 from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 from Qub.Objects.QubPixmapDisplay import QubPixmapZoomPlug
+<<<<<<< QubDialog.py
+from Qub.Objects.QubDrawingManager import QubPointDrawingMgr,QubLineDrawingManager,Qub2PointSurfaceDrawingManager
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget,QubCanvasEllipse
+=======
 from Qub.Widget.QubWidgetSet import QubSlider
+>>>>>>> 1.2
 from Qub.Icons.QubIcons import loadIcon
 
+####################################################################
+##########                                                ##########
+##########             QubMeasureListDialog               ##########
+##########                                                ##########
+####################################################################
+class QubMeasureListDialog(qt.QDialog):
+    class _ItemList(qt.QListViewItem) :
+        def __init__(self,aListView,aDrawingMgr) :
+            qt.QListViewItem.__init__(self,aListView)
+            self.__drawingMgr = aDrawingMgr
+
+        def drawingMgr(self) :
+            return self.__drawingMgr
+        
+    def __init__(self,*args,**keys) :
+        """
+        *args = Dialog Param
+        1 -> parent
+        2 -> name
+        3 -> modal
+        4 -> fl
+        """
+        qt.QDialog.__init__(self,*args)
+
+        self.__canvas = keys.get('canvas',None)
+        self.__matrix = keys.get('matrix',None)
+        self.__eventMgr = keys.get('eventMgr',None)
+        
+        self.__tools = [('point',QubPointDrawingMgr,QubCanvasTarget,self.__endPointDrawing),
+                        ('distance',QubLineDrawingManager,qtcanvas.QCanvasLine,self.__endDistanceDrawing),
+                        ('rectangle',Qub2PointSurfaceDrawingManager,qtcanvas.QCanvasRectangle,self.__endSurfaceDrawing)]
+        
+        self.__ToolIdSelected = 0
+        self.__lastdrawingMgr = None
+        self.__mesID = 0
+        
+        if len(args) < 2:
+            self.setName("MeasureWindow")
+
+
+        MeasureWindowLayout = qt.QVBoxLayout(self,11,6,"MeasureWindowLayout")
+
+        layout2 = qt.QHBoxLayout(None,0,6,"layout2")
+        spacer1 = qt.QSpacerItem(210,20,qt.QSizePolicy.Expanding,qt.QSizePolicy.Minimum)
+        layout2.addItem(spacer1)
+
+        self.__measureTool = qt.QToolButton(self,"__measureTool")
+        listPopupMenu = self.__createPopMenu(self.__measureTool)
+        self.__measureTool.setAutoRaise(True)
+        self.__measureTool.setPopup(listPopupMenu)
+        self.__measureTool.setPopupDelay(0)
+        self.__toolSelect(0)
+        layout2.addWidget(self.__measureTool)
+
+        self.__activeButton = qt.QPushButton(self,"__activeButton")
+        self.__activeButton.setText('Start')
+        self.connect(self.__activeButton,qt.SIGNAL('clicked()'),
+                     self.__startMeasure)
+        
+        layout2.addWidget(self.__activeButton)
+        MeasureWindowLayout.addLayout(layout2)
+
+        self.__measureList = qt.QListView(self,"__measureList")
+        self.__measureList.addColumn(self.__tr("name"))
+        self.__measureList.addColumn(self.__tr("measure"))
+        self.__measureList.setSelectionMode(qt.QListView.Extended)
+        self.__measurePopUp = qt.QPopupMenu(self.__measureList)
+        self.__measurePopUp.insertItem('remove',self.__deleteCBK)
+        self.connect(self.__measureList,qt.SIGNAL('rightButtonPressed(QListViewItem*,const QPoint &,int)'),
+                     self.__measurePopUpDisplay)
+        MeasureWindowLayout.addWidget(self.__measureList)
+
+        self.resize(qt.QSize(347,251).expandedTo(self.minimumSizeHint()))
+        self.clearWState(qt.Qt.WState_Polished)
+        
+        self.__xPixelSize = 0
+        self.__yPixelSize = 0
+        
+    def setXPixelSize(self,size) :
+        self.__xPixelSize = abs(size)
+                
+    def setYPixelSize(self,size) :
+        self.__yPixelSize = abs(size)
+    
+    def __tr(self,s,c = None):
+        return qt.qApp.translate("MeasureWindow",s,c)
+
+    def __createPopMenu(self,parent) :
+        popMenu = qt.QPopupMenu(parent)
+
+        for i,tool in enumerate(self.__tools) :
+            popMenu.insertItem(tool[0],i)
+        
+        self.connect(popMenu, qt.SIGNAL("activated(int )"),
+                     self.__toolSelect)
+        return popMenu
+
+    def __toolSelect(self,idTool) :
+        self.__ToolIdSelected = idTool
+        self.__measureTool.setText(self.__tools[self.__ToolIdSelected][0])
+        
+    def __startMeasure(self) :
+        try :
+            if self.__lastdrawingMgr is not None :
+                self.__lastdrawingMgr.stopDrawing()
+            self.__lastdrawingMgr = self.__tools[self.__ToolIdSelected][1](self.__canvas,self.__matrix)
+            drawingobject = self.__tools[self.__ToolIdSelected][2](self.__canvas)
+            self.__lastdrawingMgr.addDrawingObject(drawingobject)
+            self.__eventMgr.addDrawingMgr(self.__lastdrawingMgr)
+            self.__lastdrawingMgr.startDrawing()
+            self.__lastdrawingMgr.setEndDrawCallBack(self.__tools[self.__ToolIdSelected][3])
+            anItemList = QubMeasureListDialog._ItemList(self.__measureList,self.__lastdrawingMgr)
+            anItemList.setText(0,'Mes %d' % self.__mesID)
+            self.__mesID += 1
+        except:
+            import traceback
+            traceback.print_exc()
+
+    def __endPointDrawing(self,drawingMgr) :
+        anItem = self.__getItemWithDrawingObject(drawingMgr)
+        if self.__lastdrawingMgr == drawingMgr :
+            self.__lastdrawingMgr = None
+        if anItem is not None :
+            anItem.setText(1,"Pos (%d,%d)" % drawingMgr.point())
+
+    def __endDistanceDrawing(self,drawingMgr) :
+        anItem = self.__getItemWithDrawingObject(drawingMgr)
+        if self.__lastdrawingMgr == drawingMgr :
+            self.__lastdrawingMgr == None
+        if anItem is not None :
+            x1,y1,x2,y2 = anItem.drawingMgr().points()
+            width = abs(x1 - x2)
+            height = abs(y1 - y2)
+            if(self.__xPixelSize is not None and self.__xPixelSize and
+               self.__yPixelSize is not None and self.__yPixelSize) :
+                dist = self.__getDistanceString(math.sqrt(((width * self.__xPixelSize) ** 2) +
+                                                          ((height * self.__yPixelSize) ** 2)))
+                
+                anItem.setText(1,"distance -> %sm" % dist)
+            else :
+                anItem.setText(1,'distance -> %d pixel' % math.sqrt(width ** 2 + height ** 2))
+            
+    def __endSurfaceDrawing(self,drawingMgr) :
+        anItem = self.__getItemWithDrawingObject(drawingMgr)
+        if self.__lastdrawingMgr == drawingMgr :
+            self.__lastdrawingMgr == None
+        if anItem is not None :
+            width = anItem.drawingMgr().width()
+            height = anItem.drawingMgr().height()
+            if(self.__xPixelSize is not None and self.__xPixelSize and
+               self.__yPixelSize is not None and self.__yPixelSize) :
+                distwidth = self.__getDistanceString(width * self.__xPixelSize)
+                distheight = self.__getDistanceString(height * self.__yPixelSize)
+                surface = self.__getDistanceString(width * self.__xPixelSize * height * self.__yPixelSize)
+                anItem.setText(1,"distance (x,y) -> (%sm,%sm), surface %sm2" % (distwidth,distheight,surface))
+            else :
+                anItem.setText(1,'distance (x,y) -> (%d,%d) pixel' % (width,height))
+
+    def __getDistanceString(self,dist) :
+        for unit,unitString in [(1e-3,'m'),(1e-6,'\xb5'),(1e-9,'n'),(1e-12,'p')] :
+            tmpDist = dist / unit
+            if 1. < tmpDist < 1000. :
+                return "%.2f %s" % (tmpDist,unitString)
+        return "%.2f" % dist
+    
+    def __getItemWithDrawingObject(self,drawingMgr) :
+        Item = self.__measureList.firstChild()
+        while Item :
+            if Item.drawingMgr() == drawingMgr :
+                break
+            Item = Item.nextSibling()
+        return Item
+
+    def __deleteCBK(self,item) :
+        selectedList = self.__getSelectedItems()
+        for item in selectedList :
+            item.drawingMgr().hide()
+            self.__measureList.takeItem(item)
+           
+    def __getSelectedItems(self) :
+        selectedItems = []
+        Item = self.__measureList.firstChild()
+        while Item :
+            if Item.isSelected() :
+                selectedItems.append(Item)
+            Item = Item.nextSibling()
+        return selectedItems
+
+    def __measurePopUpDisplay(self,item,point,columnid) :
+        self.__measurePopUp.exec_loop(point)
 ####################################################################
 ##########                                                ##########
 ##########               QubSaveImageDialog               ##########

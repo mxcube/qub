@@ -69,7 +69,9 @@ class _ThreadMgr :
                         func()
                         aLock.lock()
                     except :
-                        queue.pop(0)
+                        aLock.lock()
+                        if len(queue) and process == queue[0] :
+                            queue.pop(0)
 
         def __waitCondTest(self) :
             aFlag = True

@@ -408,53 +408,6 @@ class QubCheckedText(qt.QWidget):
         self.label.setText(text)
         
 
-################################################################################
-####################           QubCanvasEllipse               ##################
-################################################################################
-class QubCanvasEllipse(qtcanvas.QCanvasEllipse):      
-    def drawShape(self, p):
-        p.drawArc(int(self.x()-self.width()/2+0.5), 
-                  int(self.y()-self.height()/2+0.5), 
-                  self.width(), self.height(), 
-                  self.angleStart(), self.angleLength())       
-
-################################################################################
-####################           QubCanvasDonut                 ##################
-################################################################################
-class QubCanvasDonut(qtcanvas.QCanvasEllipse):
-    """
-    """
-    def setClip(self, w, h):
-        self.win = w
-        self.hin = h
-             
-    def drawShape(self, p):
-        try:
-            xout = int(self.x() - self.width()/2+0.5)
-            yout = int(self.y() - self.height()/2+0.5)
-            
-            xin  = int(self.x() - self.win/2+0.5)
-            yin  = int(self.y() - self.hin/2+0.5)
-            
-            self.regionout = QRegion(xout, yout,
-                                     self.width() + 2,
-                                     self.height()+2, 
-                                     QRegion.Ellipse)
-            
-            self.regionin  = QRegion(xin, yin, self.win, self.hin,
-                                     QRegion.Ellipse)
-            self.region = self.regionout.subtract(self.regionin)
-            
-            p.setClipRegion(self.region, QPainter.CoordPainter)
-            p.setPen(Qt.NoPen)
-            p.drawEllipse(xout, yout, self.width(), self.height())
-            
-            p.setClipping(0)       
-        except:
-            sys.excepthook(sys.exc_info()[0],
-                       sys.exc_info()[1],
-                       sys.exc_info()[2])
- 
  
    
 ###############################################################################
