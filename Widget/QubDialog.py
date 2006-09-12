@@ -11,12 +11,9 @@ import math
 import os.path
 from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 from Qub.Objects.QubPixmapDisplay import QubPixmapZoomPlug
-<<<<<<< QubDialog.py
 from Qub.Objects.QubDrawingManager import QubPointDrawingMgr,QubLineDrawingManager,Qub2PointSurfaceDrawingManager
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget,QubCanvasEllipse
-=======
 from Qub.Widget.QubWidgetSet import QubSlider
->>>>>>> 1.2
 from Qub.Icons.QubIcons import loadIcon
 
 ####################################################################
