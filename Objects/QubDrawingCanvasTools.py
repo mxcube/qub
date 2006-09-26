@@ -88,3 +88,33 @@ class QubCanvasTarget(QubCanvasEllipse) :
         self.__hLine.setCanvas(None)
         self.__vLine.setCanvas(None)
 
+    def setPen(self,pen) :
+        QubCanvasEllipse.setPen(self,pen)
+        self.__hLine.setPen(pen)
+        self.__vLine.setPen(pen)
+
+################################################################################
+####################              QubVLine                    ##################
+################################################################################
+
+class QubVLine(qtcanvas.QCanvasLine) :
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasLine.__init__(self,canvas)
+
+    def move(self,x,y) :
+        height = self.canvas().height()
+        self.setPoints(x,0,x,height)
+
+################################################################################
+####################              QubHLine                    ##################
+################################################################################
+
+class QubHLine(qtcanvas.QCanvasLine) :
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasLine.__init__(self,canvas)
+
+    def move(self,x,y) :
+        width = self.canvas().width()
+        self.setPoints(0,y,width,y)
+
+

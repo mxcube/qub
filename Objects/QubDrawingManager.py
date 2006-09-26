@@ -1,6 +1,6 @@
 import qt
 from Qub.Objects.QubDrawingEvent import QubPressedNDrag1Point,QubPressedNDrag2Point
-
+from Qub.Objects.QubDrawingEvent import QubModifyAction
 class QubDrawingMgr :
     def __init__(self,aCanvas,aMatrix) :
         self._matrix = aMatrix
@@ -8,7 +8,12 @@ class QubDrawingMgr :
         self._drawingObjects = []
         self._eventMgr = None
         self._lastEvent = None
-
+        self._oneShot = False
+        self._drawingEvent = None
+        self.__exclusive = True
+        self.__exceptList = []          # event Name with is not exclusive
+        self.__eventName = ''
+        
     def __del__(self) :
         for drawingObject in self._drawingObjects :
             if hasattr(drawingObject,'removeInCanvas') :
@@ -32,7 +37,9 @@ class QubDrawingMgr :
         for drawingObject in self._drawingObjects :
             drawingObject.show()
 
-
+    def setAutoDisconnectEvent(self,aFlag) :
+        self._oneShot = aFlag
+        
     def boundingRect(self) :
         returnRect = None
         for drawingObject in self._drawingObjects :
@@ -43,29 +50,46 @@ class QubDrawingMgr :
                 returnRect = objectRect
         return returnRect
         
-    def getResizeClass(self,x,y) :
-        return None
-
-    def getMoveClass(self,x,y) :
+    def getModifyClass(self,x,y) :
         return None
 
     def update(self) :
         raise StandardError('update has to be redifined')
 
+    def setExclusive(self,aFlag) :
+        self.__exclusive = bool(aFlag)
+        
+    def setExceptExclusiveListName(self,names) :
+        self.__exceptList = names
+
+    def setEventName(self,name) :
+        self.__eventName = name
+        
+    def setColor(self,color) :
+        for drawingObject in self._drawingObjects :
+            pen = drawingObject.pen()
+            pen.setColor(color)
+            drawingObject.setPen(pen)
+            
     def startDrawing(self) :
         if self._eventMgr is not None :
             self._lastEvent = self._getDrawingEvent()
+            self._lastEvent.setExceptExclusiveListName(self.__exceptList)
+            self._lastEvent.setExclusive(self.__exclusive)
+            self._lastEvent.setName(self.__eventName)
             self._eventMgr.addDrawingEvent(self._lastEvent)
 
     def stopDrawing(self) :
-        if self._lastEvent is not None :
-            self._lastEvent.disconnected()
-            
+        self._lastEvent = None
+                    
     def setEventMgr(self,anEventMgr) :
         self._eventMgr = anEventMgr
 
     def setEndDrawCallBack(self,cbk) :
         self._endDrawCbk = cbk
+
+    def setDrawingEvent(self,event) :
+        self._drawingEvent = event
         
     def endDraw(self) :
         """
@@ -73,7 +97,6 @@ class QubDrawingMgr :
         """
         if self._endDrawCbk is not None :
             self._endDrawCbk(self)
-        self._lastEvent = None
         
     def _getDrawingEvent(self) :
         raise StandardError('_getDrawingEvent has to be redifined')
@@ -82,6 +105,7 @@ class QubPointDrawingMgr(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
         self._x,self._y = 0,0
+        self._drawingEvent = QubPressedNDrag1Point
         
     def move(self,x,y) :
         if self._matrix is not None :
@@ -109,14 +133,20 @@ class QubPointDrawingMgr(QubDrawingMgr) :
         for drawingObject in self._drawingObjects :
             drawingObject.move(x,y)
 
+    def getModifyClass(self,x,y) :
+        rect = self.boundingRect()
+        if rect.contains(x,y) : 
+            return QubModifyAction(self,self._eventMgr,self.move)
+
     def _getDrawingEvent(self) :
-        return QubPressedNDrag1Point(self)
+        return self._drawingEvent(self,self._oneShot)
 
 class QubLineDrawingManager(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
         self._x1,self._y1 = 0,0
         self._x2,self._y2 = 0,0
+        self._drawingEvent = QubPressedNDrag2Point
 
     def moveFirstPoint(self,x,y) :
         if self._matrix is not None :
@@ -160,13 +190,25 @@ class QubLineDrawingManager(QubDrawingMgr) :
             drawingObject.setPoints(x1,y1,x2,y2)
 
     def _getDrawingEvent(self) :
-        return QubPressedNDrag2Point(self)
+        return self._drawingEvent(self,self._oneShot)
             
+    def getModifyClass(self,x,y) :
+        (x1,y1,x2,y2) = self._x1,self._y1,self._x2,self._y2
+        if self._matrix is not None :
+            x1,y1 = self._matrix.map(x1,y1)
+            x2,y2 = self._matrix.map(x2,y2)
+            
+        if(abs(x - x1) < 5 and abs(y - y1) < 5) :
+            return QubModifyAction(self,self._eventMgr,self.moveFirstPoint)
+        elif(abs(x - x2) < 5 and abs(y - y2) < 5) :
+            return QubModifyAction(self,self._eventMgr,self.moveSecondPoint)
+        
 class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
         self._rect = qt.QRect(0,0,1,1)
-
+        self._drawingEvent = QubPressedNDrag2Point
+        
     def moveFirstPoint(self,x,y) :
         if self._matrix is not None :
             xNew,yNew = self._matrix.invert()[0].map(x,y)
@@ -185,6 +227,24 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
         self._rect.setCoords(x1,y1,xNew,yNew)
         self.update()
 
+    def moveTopRight(self,x,y) :
+        if self._matrix is not None :
+            xNew,yNew = self._matrix.invert()[0].map(x,y)
+        else :
+            xNew,yNew = x,y
+        (x1,y1,x2,y2) = self._rect.coords()
+        self._rect.setCoords(x1,yNew,xNew,y2)
+        self.update()
+
+    def moveBottomLeft(self,x,y) :
+        if self._matrix is not None :
+            xNew,yNew = self._matrix.invert()[0].map(x,y)
+        else :
+            xNew,yNew = x,y
+        (x1,y1,x2,y2) = self._rect.coords()
+        self._rect.setCoords(xNew,y1,x2,yNew)
+        self.update()
+        
     def setPoints(self,x1,y1,x2,y2) :
         self._rect.setCoords(x1,y1,x2,y2);
         self.update()
@@ -225,4 +285,21 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
             drawingObject.setSize(width,height)
                 
     def _getDrawingEvent(self) :
-        return QubPressedNDrag2Point(self)
+        return self._drawingEvent(self,self._oneShot)
+
+    def getModifyClass(self,x,y) :
+        rect = self._rect.normalize()
+        self._rect = rect
+        if self._matrix is not None :
+            rect = self._matrix.map(rect)
+        (x1,y1,x2,y2) = rect.coords()
+        if(abs(x - x1) < 5) :           # TOP LEFT OR BOTTOM LEFT
+            if(abs(y - y1) < 5) :       # TOP LEFT
+                return QubModifyAction(self,self._eventMgr,self.moveFirstPoint)
+            elif(abs(y - y2) < 5) :     # BOTTOM LEFT
+                return QubModifyAction(self,self._eventMgr,self.moveBottomLeft)
+        elif(abs(x - x2) < 5) :         # TOP RIGHT OR BOTTOM RIGHT
+            if(abs(y - y1) < 5) :       # TOP RIGHT
+                return QubModifyAction(self,self._eventMgr,self.moveTopRight)
+            elif(abs(y - y2) < 5) :
+                return QubModifyAction(self,self._eventMgr,self.moveSecondPoint)

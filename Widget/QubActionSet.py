@@ -1948,7 +1948,6 @@ class QubForegroundColorAction(QubAction):
         Creates item in contextmenu "menu" for the action.
         """
         self._menu = menu
-        
         if self._item is None:
             if self._colorMenu is None:
                 self._colorMenu = QubColorToolMenu(menu)
@@ -2084,6 +2083,9 @@ class QubBeamAction(QubToggleImageAction):
             self.__roundE.update()
 
     def setBeamPosition(self, y, z):
+        if y is None or z is None:
+            y,z = 0,0
+
         self.__center.setX(y)
         self.__center.setY(z)
         self.viewportUpdate()
@@ -2224,7 +2226,10 @@ class QubScaleAction(QubToggleImageAction) :
         self.viewportUpdate()
         
     def setXPixelSize(self,size) :
-        self.__xPixelSize = abs(size)
+        try:
+            self.__xPixelSize = abs(size)
+        except:
+            self.__xPixelSize = 0
         if self.__hText is not None :
             if(self.__state and self.__mode & QubScaleAction.HORIZONTAL and
                self.__xPixelSize is not None and self.__xPixelSize) :
@@ -2239,7 +2244,10 @@ class QubScaleAction(QubToggleImageAction) :
         return self.__xPixelSize
     
     def setYPixelSize(self,size) :
-        self.__yPixelSize = abs(size)
+        try:
+            self.__yPixelSize = abs(size)
+        except:
+            self.__yPixelSize = 0
         if self.__vText is not None :
             if (self.__state and self.__mode & QubScaleAction.VERTICAL and
                 self.__yPixelSize is not None and self.__yPixelSize) :

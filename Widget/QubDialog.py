@@ -13,7 +13,7 @@ from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 from Qub.Objects.QubPixmapDisplay import QubPixmapZoomPlug
 from Qub.Objects.QubDrawingManager import QubPointDrawingMgr,QubLineDrawingManager,Qub2PointSurfaceDrawingManager
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget,QubCanvasEllipse
-from Qub.Widget.QubWidgetSet import QubSlider
+from Qub.Widget.QubWidgetSet import QubSlider,QubColorToolMenu
 from Qub.Icons.QubIcons import loadIcon
 
 ####################################################################
@@ -84,6 +84,12 @@ class QubMeasureListDialog(qt.QDialog):
         self.__measureList.setSelectionMode(qt.QListView.Extended)
         self.__measurePopUp = qt.QPopupMenu(self.__measureList)
         self.__measurePopUp.insertItem('remove',self.__deleteCBK)
+
+        colormenu = QubColorToolMenu(self.__measureList)
+        self.connect(colormenu, qt.PYSIGNAL("colorSelected"),
+                     self.__colorChanged)
+        self.__measurePopUp.insertItem('colors',colormenu)
+            
         self.connect(self.__measureList,qt.SIGNAL('rightButtonPressed(QListViewItem*,const QPoint &,int)'),
                      self.__measurePopUpDisplay)
         MeasureWindowLayout.addWidget(self.__measureList)
@@ -93,13 +99,23 @@ class QubMeasureListDialog(qt.QDialog):
         
         self.__xPixelSize = 0
         self.__yPixelSize = 0
+        self.__defaultColor = qt.Qt.black
         
     def setXPixelSize(self,size) :
-        self.__xPixelSize = abs(size)
+        try:
+            self.__xPixelSize = abs(size)
+        except:
+            self.__xPixelSize = 0
                 
     def setYPixelSize(self,size) :
-        self.__yPixelSize = abs(size)
-    
+        try:
+            self.__yPixelSize = abs(size)
+        except:
+            self.__yPixelSize = 0
+            
+    def setDefaultColor(self,color) :
+        self.__defaultColor = color
+        
     def __tr(self,s,c = None):
         return qt.qApp.translate("MeasureWindow",s,c)
 
@@ -122,6 +138,7 @@ class QubMeasureListDialog(qt.QDialog):
             if self.__lastdrawingMgr is not None :
                 self.__lastdrawingMgr.stopDrawing()
             self.__lastdrawingMgr = self.__tools[self.__ToolIdSelected][1](self.__canvas,self.__matrix)
+            self.__lastdrawingMgr.setAutoDisconnectEvent(True)
             drawingobject = self.__tools[self.__ToolIdSelected][2](self.__canvas)
             self.__lastdrawingMgr.addDrawingObject(drawingobject)
             self.__eventMgr.addDrawingMgr(self.__lastdrawingMgr)
@@ -129,6 +146,7 @@ class QubMeasureListDialog(qt.QDialog):
             self.__lastdrawingMgr.setEndDrawCallBack(self.__tools[self.__ToolIdSelected][3])
             anItemList = QubMeasureListDialog._ItemList(self.__measureList,self.__lastdrawingMgr)
             anItemList.setText(0,'Mes %d' % self.__mesID)
+            self.__lastdrawingMgr.setColor(self.__defaultColor)
             self.__mesID += 1
         except:
             import traceback
@@ -144,7 +162,7 @@ class QubMeasureListDialog(qt.QDialog):
     def __endDistanceDrawing(self,drawingMgr) :
         anItem = self.__getItemWithDrawingObject(drawingMgr)
         if self.__lastdrawingMgr == drawingMgr :
-            self.__lastdrawingMgr == None
+            self.__lastdrawingMgr = None
         if anItem is not None :
             x1,y1,x2,y2 = anItem.drawingMgr().points()
             width = abs(x1 - x2)
@@ -161,7 +179,7 @@ class QubMeasureListDialog(qt.QDialog):
     def __endSurfaceDrawing(self,drawingMgr) :
         anItem = self.__getItemWithDrawingObject(drawingMgr)
         if self.__lastdrawingMgr == drawingMgr :
-            self.__lastdrawingMgr == None
+            self.__lastdrawingMgr = None
         if anItem is not None :
             width = anItem.drawingMgr().width()
             height = anItem.drawingMgr().height()
@@ -190,22 +208,29 @@ class QubMeasureListDialog(qt.QDialog):
         return Item
 
     def __deleteCBK(self,item) :
-        selectedList = self.__getSelectedItems()
-        for item in selectedList :
-            item.drawingMgr().hide()
+        for item in self.__getSelectedIterator() :
             self.__measureList.takeItem(item)
-           
-    def __getSelectedItems(self) :
-        selectedItems = []
+    def __colorChanged(self,color) :
+        for item in self.__getSelectedIterator() :
+            item.drawingMgr().setColor(color)
+        
+    def __getSelectedIterator(self) :
         Item = self.__measureList.firstChild()
         while Item :
+            NextItem = Item.nextSibling()
             if Item.isSelected() :
-                selectedItems.append(Item)
-            Item = Item.nextSibling()
-        return selectedItems
-
+                yield Item
+            Item = NextItem
+            
+        
     def __measurePopUpDisplay(self,item,point,columnid) :
         self.__measurePopUp.exec_loop(point)
+
+    def closeEvent(self,closeEvent)  :
+        self.hide()
+        self.__measureList.clear()
+        self.__lastdrawingMgr = None
+        
 ####################################################################
 ##########                                                ##########
 ##########               QubSaveImageDialog               ##########

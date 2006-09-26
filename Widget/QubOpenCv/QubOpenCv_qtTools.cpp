@@ -104,7 +104,7 @@ IplImage* qtTools::getImageOpencvFromQImage(const QImage *aQImage)
 					IPL_DEPTH_8U,1);
 	      for(line = 0,aPt = aIplImage->imageData;
 		  line < aIplImage->height;++line,aPt += aIplImage->widthStep)
-		memcpy(aPt,aQImage->scanLine(line),aIplImage->width);
+		memcpy(aPt,aQImage->scanLine(line),aQImage->width());
 	    }
 	  else
 	    {

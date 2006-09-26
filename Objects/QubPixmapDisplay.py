@@ -110,6 +110,17 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
             if event.reason() == qt.QContextMenuEvent.Mouse:
                 self.__contextMenu.exec_loop(qt.QCursor.pos())
 
+    def keyPressEvent(self,keyevent) :
+        self._keyPressed(keyevent)
+
+    def keyReleaseEvent (self,keyevent) :
+        self._keyReleased(keyevent)
+
+    def enterEvent(self,event) :
+        self.setFocus()
+    def leaveEvent(self,event) :
+        self._leaveEvent(event)
+        
     def __startIdle(self,x = 0,y = 0) :
         if not self.__idle.isActive() :
             self.__idle.start(0)
