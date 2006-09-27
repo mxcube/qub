@@ -97,7 +97,7 @@ class QubCanvasTarget(QubCanvasEllipse) :
 ####################              QubVLine                    ##################
 ################################################################################
 
-class QubVLine(qtcanvas.QCanvasLine) :
+class QubCanvasVLine(qtcanvas.QCanvasLine) :
     def __init__(self,canvas) :
         qtcanvas.QCanvasLine.__init__(self,canvas)
 
@@ -109,7 +109,7 @@ class QubVLine(qtcanvas.QCanvasLine) :
 ####################              QubHLine                    ##################
 ################################################################################
 
-class QubHLine(qtcanvas.QCanvasLine) :
+class QubCanvasHLine(qtcanvas.QCanvasLine) :
     def __init__(self,canvas) :
         qtcanvas.QCanvasLine.__init__(self,canvas)
 
