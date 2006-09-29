@@ -76,6 +76,11 @@ class QubCanvasBeam(QubCanvasEllipse):
         self.setCanvas(None)
         self.__centerE.removeInCanvas()
 
+    def setPen(self,pen) :
+        QubCanvasEllipse.setPen(self,pen)
+        self.__centerE.setPen(pen)
+
+
 ################################################################################
 ####################           QubCanvasTarget                ##################
 ################################################################################
