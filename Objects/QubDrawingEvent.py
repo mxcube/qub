@@ -143,7 +143,28 @@ class Qub2PointClick(_DrawingEventNDrawingMgr) :
                 self._drawingMgr().moveSecondPoint(x,y)
         return False
                      ####### MODIFY EVENT #######
-class QubModifyAction(_DrawingEventNDrawingMgr) :
+class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
+    def __init__(self,aDrawingMgr,aEventmgr,modifyCBK,
+                 cursor = qt.QCursor(qt.Qt.SizeAllCursor)) :
+        _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,False)
+        self._eventmgr = aEventmgr
+        aEventmgr.setCursor(cursor)
+        self._modify = modifyCBK
+                
+    def mousePressed(self, x, y):
+        self._modify(x,y)
+                
+    def mouseMove(self, x, y):
+        pass
+                
+    def mouseMovePressed(self, x, y):
+        self._modify(x, y)
+        
+    def mouseRelease(self, x, y):
+        self._modify(x, y)
+        self._drawingMgr().endDraw()
+
+class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,aEventmgr,modifyCBK,
                  cursor = qt.QCursor(qt.Qt.SizeAllCursor)) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,False)
@@ -151,6 +172,18 @@ class QubModifyAction(_DrawingEventNDrawingMgr) :
         aEventmgr.setCursor(cursor)
         self._modify = modifyCBK
         
-    def modify(self,x,y) :
-        self._modify(x,y)
+    def mousePressed(self, x, y):
+        self.__oldX = x
+        self.__oldY = y
+                
+    def mouseMove(self, x, y):
+        pass
+
+    def mouseMovePressed(self, x, y):
+        self._modify(x - self.__oldX, y - self.__oldY)
+        self.__oldX = x
+        self.__oldY = y        
+        
+    def mouseRelease(self, x, y):
+        self._modify(x - self.__startX, y - self.__startY)
         self._drawingMgr().endDraw()
