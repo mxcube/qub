@@ -36,7 +36,8 @@ class QubEventMgr:
     def _mousePressed(self,event) :
         try:
             if event.button() == qt.Qt.LeftButton and event.state() == qt.Qt.ShiftButton :
-                self.__checkObjectModify(event.x(),event.y())
+                if self.__curentModifierMgr is not None :
+                    self.__curentModifierMgr.mousePressed(event.x(),event.y())
             elif event.button() == qt.Qt.LeftButton :
                 for drawingEventRef in self.__pendingEvents[:] :
                     if(drawingEventRef().mousePressed(event.x(),event.y())) :
@@ -55,7 +56,7 @@ class QubEventMgr:
 
             if(self.__curentModifierMgr is not None and
                event.state() == (qt.Qt.LeftButton + qt.Qt.ShiftButton)) :
-                self.__curentModifierMgr.modify(event.x(),event.y())
+                self.__curentModifierMgr.mouseMovePressed(event.x(),event.y())
             elif event.state() == qt.Qt.ShiftButton : # FIND MOVE CLASS
                 self.__checkObjectModify(event.x(),event.y())
             else :
@@ -71,7 +72,7 @@ class QubEventMgr:
         try:
             if event.state() & qt.Qt.LeftButton :
                 if self.__curentModifierMgr is not None :
-                    self.__curentModifierMgr.modify(event.x(),event.y())
+                    self.__curentModifierMgr.mouseReleased(event.x(),event.y())
                 else :
                     for drawingEventRef in self.__pendingEvents[:] :
                         if(drawingEventRef().mouseReleased(event.x(),event.y())) :
