@@ -722,6 +722,7 @@ class QubZoomRectangle(QubToggleImageAction) :
 
         self.__drawingMgr = Qub2PointSurfaceDrawingManager(qubImage.canvas(),
                                                            qubImage.matrix())
+        self.__drawingMgr.setAutoDisconnectEvent(True)
         zoomrect = qtcanvas.QCanvasRectangle(qubImage.canvas())
         self.__drawingMgr.addDrawingObject(zoomrect)
         qubImage.addDrawingMgr(self.__drawingMgr)
@@ -748,7 +749,6 @@ class QubZoomRectangle(QubToggleImageAction) :
     def _setState(self,aFlag) :
         if aFlag :
             self.__drawingMgr.show()
-            self.__drawingMgr.startDrawing()
             """
             keep this connection to allow color changed by action
             QubForegroundColorAction
@@ -758,7 +758,6 @@ class QubZoomRectangle(QubToggleImageAction) :
         else:
             self.signalDisconnect(self._qubImage)
             self.__drawingMgr.hide()
-            self.__drawingMgr.stopDrawing()
 
         self.emit(qt.PYSIGNAL("Actif"),(aFlag,))
         
