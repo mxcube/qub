@@ -12,6 +12,7 @@ class QubCanvasEllipse(qtcanvas.QCanvasEllipse):
 
     def removeInCanvas(self) :
         self.setCanvas(None)
+        
 ################################################################################
 ####################           QubCanvasDonut                 ##################
 ################################################################################
@@ -49,6 +50,31 @@ class QubCanvasDonut(qtcanvas.QCanvasEllipse):
                        sys.exc_info()[1],
                        sys.exc_info()[2])
  
+
+################################################################################
+####################           QubCanvasEllipse               ##################
+################################################################################
+class QubCanvasBeam(QubCanvasEllipse):
+    def __init__(self,canvas) :
+        QubCanvasEllipse.__init__(self, 29,19,0,5760, canvas)
+        
+        self.__centerE = QubCanvasEllipse(7,7,0,5760, canvas)
+
+    def move(self,x,y) :
+        QubCanvasEllipse.move(self,x,y)
+        self.__centerE.move(x, y)
+
+    def show(self) :
+        QubCanvasEllipse.show(self)
+        self.__centerE.show()
+
+    def hide(self) :
+        QubCanvasEllipse.hide(self)
+        self.__centerE.hide()
+
+    def removeInCanvas(self) :
+        self.setCanvas(None)
+        self.__centerE.removeInCanvas()
 
 ################################################################################
 ####################           QubCanvasTarget                ##################

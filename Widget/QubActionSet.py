@@ -7,7 +7,9 @@ from Qub.Widget.QubAction import QubAction, QubImageAction, QubToggleImageAction
 from Qub.Widget.QubWidgetSet import QubColorToolButton, QubColorToolMenu
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasEllipse
 from Qub.Icons.QubIcons import loadIcon
-
+from Qub.Objects.QubDrawingManager import QubPointDrawingMgr
+from Qub.Objects.QubDrawingManager import Qub2PointSurfaceDrawingManager
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasBeam
 
   
 ###############################################################################
@@ -706,170 +708,60 @@ class QubRectangleSelection(QubToggleImageAction):
 ###############################################################################
 #                          QubZoomRectangle                                   #
 ###############################################################################
-class QubZoomRectangle(QubToggleImageAction) :
-    UNDEF,DRAG,MOVE,UNDER_TOP_LEFT,UNDER_BOTTOM_RIGHT,UNDER_TOP_RIGHT,UNDER_BOTTOM_LEFT,MOVE_TOP_LEFT,MOVE_BOTTOM_RIGHT,MOVE_TOP_RIGHT,MOVE_BOTTOM_LEFT = range(11)
-    
+class QubZoomRectangle(QubToggleImageAction) :    
     def __init__(self,*args,**keys) :
         QubToggleImageAction.__init__(self,*args,**keys)
-        self.__rectCoord = qt.QRect(0,0,1,1)
+        
+        self.__drawingMgr = None
 
-        self.__squareFlag = keys.get('square',False)
         if self._name == 'default' :
             self._name = 'zoomrect'
-
-        self.__mode = QubZoomRectangle.UNDEF
-        self.__oldCursor = None
         
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self, qubImage)
 
-        self.__oldCursor = self._qubImage.cursor()
+        self.__drawingMgr = Qub2PointSurfaceDrawingManager(qubImage.canvas(),
+                                                           qubImage.matrix())
+        zoomrect = qtcanvas.QCanvasRectangle(qubImage.canvas())
+        self.__drawingMgr.addDrawingObject(zoomrect)
+        qubImage.addDrawingMgr(self.__drawingMgr)
 
-        self.__rectangle = qtcanvas.QCanvasRectangle(self.__rectCoord,
-                                                     self._qubImage.canvas())
-        self.setColor(self._qubImage.foregroundColor())
+        self.__drawingMgr.setColor(self._qubImage.foregroundColor())
+        
+        self.__drawingMgr.setEndDrawCallBack(self.rectangleChanged)
 
     def setColor(self,color) :
         """   
         Slot connected to "ForegroundColorChanged" "qubImage" signal
         """
-        self.__rectangle.setPen(qt.QPen(color,2))
-        self.__rectangle.update()
+        self.__drawingMgr.setColor(color)
 
     def initSelection(self,ox,oy,width,height) :
-        self.__rectCoord.setRect(ox,oy,width,height)
-        rect = self.__rectCoord.normalize()
+        self.__drawingMgr.setRect(ox,oy,width,height)
+
+    def rectangleChanged(self, drawingMgr):
+        rect =  drawingMgr.rect()     
         self.emit(qt.PYSIGNAL("RectangleSelected"), 
                   (rect.x(), rect.y(), 
                    rect.width(),rect.height()))
-        self.viewportUpdate()
-        
+
     def _setState(self,aFlag) :
         if aFlag :
+            self.__drawingMgr.show()
+            self.__drawingMgr.startDrawing()
+            """
+            keep this connection to allow color changed by action
+            QubForegroundColorAction
+            """
             self.signalConnect(self._qubImage)
-            self.setColor(self._qubImage.foregroundColor())
-            self.__rectangle.show()
+            self.__drawingMgr.setColor(self._qubImage.foregroundColor())
         else:
             self.signalDisconnect(self._qubImage)
-            self.__rectangle.hide()
+            self.__drawingMgr.hide()
+            self.__drawingMgr.stopDrawing()
+
         self.emit(qt.PYSIGNAL("Actif"),(aFlag,))
         
-        self.viewportUpdate()
-
-    def mousePress(self,event) :
-        if event.button() == qt.Qt.LeftButton :
-            if self.__mode == QubZoomRectangle.UNDER_TOP_LEFT :
-                self.__mode = QubZoomRectangle.MOVE_TOP_LEFT
-            elif self.__mode == QubZoomRectangle.UNDER_BOTTOM_RIGHT :
-                self.__mode = QubZoomRectangle.MOVE_BOTTOM_RIGHT
-            elif self.__mode == QubZoomRectangle.UNDER_TOP_RIGHT :
-                self.__mode = QubZoomRectangle.MOVE_TOP_RIGHT
-            elif self.__mode == QubZoomRectangle.UNDER_BOTTOM_LEFT :
-                self.__mode = QubZoomRectangle.MOVE_BOTTOM_LEFT
-            else:
-                self.__mode = QubZoomRectangle.DRAG
-                (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
-                self.__rectCoord.setRect(x, y, 1, 1)
-            self.viewportUpdate()
-        elif event.button() == qt.Qt.MidButton :
-            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
-            if self.__rectCoord.contains(x,y) :
-                self.__mode = QubZoomRectangle.MOVE
-            
-    def mouseMove(self,event) :
-        try :
-            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
-                                                                 event.y())
-            if self.__mode == QubZoomRectangle.DRAG :
-                w = x - self.__rectCoord.x()
-                h = y - self.__rectCoord.y()
-                if self.__squareFlag :
-                    w = max(w,h)
-                    h = w
-                self.__rectCoord.setSize(qt.QSize(w, h))
-                self.viewportUpdate()
-            elif self.__mode == QubZoomRectangle.MOVE :
-                canvasRect = self._qubImage.matrix().invert()[0].map(self._qubImage.canvas().rect())
-                rect = self.__rectCoord.normalize()
-                if x > canvasRect.width() - rect.width() / 2 :
-                    x = canvasRect.width() - rect.width() / 2
-                elif x < rect.width() / 2 :
-                    x = rect.width() / 2
-
-                if y > (canvasRect.height() - rect.height() / 2) :
-                    y = canvasRect.height() - rect.height() / 2
-                elif y < rect.height() / 2 :
-                    y = rect.height() / 2
-
-                self.__rectCoord.moveCenter(qt.QPoint(x,y))
-
-                rect = self.__rectCoord.normalize()
-                self.emit(qt.PYSIGNAL("RectangleSelected"), 
-                          (rect.x(), rect.y(), 
-                           rect.width(),rect.height()))
-                self.viewportUpdate()
-            elif self.__mode == QubZoomRectangle.MOVE_TOP_LEFT :
-                self.__rectCoord.setTopLeft(qt.QPoint(x,y))
-                self.viewportUpdate()
-            elif self.__mode == QubZoomRectangle.MOVE_BOTTOM_RIGHT :
-                self.__rectCoord.setBottomRight(qt.QPoint(x,y))
-                self.viewportUpdate()
-            elif self.__mode == QubZoomRectangle.MOVE_TOP_RIGHT :
-                self.__rectCoord.setTopRight(qt.QPoint(x,y))
-                self.viewportUpdate()
-            elif self.__mode == QubZoomRectangle.MOVE_BOTTOM_LEFT :
-                self.__rectCoord.setBottomLeft(qt.QPoint(x,y))
-                self.viewportUpdate()
-            else :
-                if self.__rectCoord.contains(x,y) :
-                    topLeft = self._qubImage.matrix().map(self.__rectCoord.topLeft())
-                    bottomRight = self._qubImage.matrix().map(self.__rectCoord.bottomRight())
-                    topRight = self._qubImage.matrix().map(self.__rectCoord.topRight())
-                    bottomLeft = self._qubImage.matrix().map(self.__rectCoord.bottomLeft())
-                    (x, y) = event.x(),event.y()
-                    
-                    if x - topLeft.x() <= 10 and y - topLeft.y() <= 10 :
-                        self.__mode = QubZoomRectangle.UNDER_TOP_LEFT
-                        if self._qubImage.cursor() != qt.QCursor(qt.Qt.SizeFDiagCursor) :
-                            self._qubImage.setCursor(qt.QCursor(qt.Qt.SizeFDiagCursor))
-                    elif bottomRight.x() - x <= 10 and bottomRight.y() -y <= 10:
-                        self.__mode = QubZoomRectangle.UNDER_BOTTOM_RIGHT
-                        if self._qubImage.cursor() != qt.QCursor(qt.Qt.SizeFDiagCursor) :
-                            self._qubImage.setCursor(qt.QCursor(qt.Qt.SizeFDiagCursor))
-                    elif topRight.x() - x <= 10 and y - topRight.y() <= 10 :
-                        self.__mode = QubZoomRectangle.UNDER_TOP_RIGHT
-                        if self._qubImage.cursor() != qt.QCursor(qt.Qt.SizeBDiagCursor) :
-                            self._qubImage.setCursor(qt.QCursor(qt.Qt.SizeBDiagCursor))
-                    elif x - bottomLeft.x() <= 10 and bottomLeft.y() - y <= 10 :
-                        self.__mode = QubZoomRectangle.UNDER_BOTTOM_LEFT
-                        if self._qubImage.cursor() != qt.QCursor(qt.Qt.SizeBDiagCursor) :
-                            self._qubImage.setCursor(qt.QCursor(qt.Qt.SizeBDiagCursor))
-                    else :
-                        self.__mode = QubZoomRectangle.UNDEF
-                        self._qubImage.setCursor(self.__oldCursor)
-                elif self.__mode != QubZoomRectangle.UNDEF :
-                    self.__mode = QubZoomRectangle.UNDEF
-                    self._qubImage.setCursor(self.__oldCursor)
-        except:
-            import traceback
-            traceback.print_exc()
-            
-    def mouseRelease(self, event):
-        if self.__mode != QubZoomRectangle.MOVE :
-            rect = self.__rectCoord.normalize()
-            self.emit(qt.PYSIGNAL("RectangleSelected"), 
-                      (rect.x(), rect.y(), 
-                       rect.width(),rect.height()))
-        self.__mode = QubZoomRectangle.UNDEF
-        self._qubImage.setCursor(self.__oldCursor)
-
-    def viewportUpdate(self) :
-
-        rect = self._qubImage.matrix().map(self.__rectCoord)
-
-        self.__rectangle.setSize(rect.width(), rect.height())
-        self.__rectangle.move(rect.x(), rect.y())
-        self.__rectangle.update()
 
 ###############################################################################
 ####################            QubLineSelection           ####################
@@ -2036,11 +1928,10 @@ class QubBeamAction(QubToggleImageAction):
     def __init__(self, *args, **keys):
         QubToggleImageAction.__init__(self, *args, **keys)
 
-        self.__center = qt.QPoint(0,0)
-
         self._name = "beam"
         self.__state = False
         self.__onMove = False
+        self.__drawingMgr = None
         
     def viewConnect(self, qubImage):
         """
@@ -2048,100 +1939,45 @@ class QubBeamAction(QubToggleImageAction):
         """
         QubToggleImageAction.viewConnect(self, qubImage)
 
-        self.__centerE = QubCanvasEllipse(7,7,0,5760,self._qubImage.canvas())
-        self.__roundE = QubCanvasEllipse(29,19,0,5760, self._qubImage.canvas())
+        self.__drawingMgr = QubPointDrawingMgr(qubImage.canvas(),
+                                                qubImage.matrix())
+        beam = QubCanvasBeam(qubImage.canvas())
+        self.__drawingMgr.addDrawingObject(beam)
+        qubImage.addDrawingMgr(self.__drawingMgr)
 
-        self.setColor(self._qubImage.foregroundColor())
-        self.signalConnect(self._qubImage)
+        self.__drawingMgr.setColor(self._qubImage.foregroundColor())
+        
+        self.__drawingMgr.setEndDrawCallBack(self.sendBeamMove)
 
     def setColor(self, color):
         """   
         Slot connected to "ForegroundColorChanged" "qubImage" signal
         """
-        self.__centerE.setPen(qt.QPen(color))
-        self.__roundE.setPen(qt.QPen(color))
-        
-        self.__centerE.update()
-        self.__roundE.update()
-       
+        self.__drawingMgr.setColor(color)
+      
     def _setState(self, aFlag):
         """
         Draw or Hide the 2 ellipse canvas items
         """
         self.__state = aFlag
 
-        if self.__centerE is not None and self.__roundE is not None:
+        if self.__drawingMgr is not None:
             if self.__state:
-                self.setColor(self._qubImage.foregroundColor())
-                self.__centerE.show()
-                self.__roundE.show()
+                self.__drawingMgr.setColor(self._qubImage.foregroundColor())
+                self.__drawingMgr.show()
+                self.signalConnect(self._qubImage)
             else:
-                self.__centerE.hide()
-                self.__roundE.hide()
-            
-            self.__centerE.update()
-            self.__roundE.update()
+                self.signalDisconnect(self._qubImage)
+                self.__drawingMgr.hide()
 
     def setBeamPosition(self, y, z):
         if y is None or z is None:
             y,z = 0,0
 
-        self.__center.setX(y)
-        self.__center.setY(z)
-        self.viewportUpdate()
+        self.__drawingMgr.setPoint(y, z)
         
-    def mousePress(self, event):
-        """
-        Update upper-left corner position of the rectangle and sets its
-        width and height to 1
-        """
-        if self.__state and event.button() == qt.Qt.LeftButton:
-            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
-
-            if self.inBeam(x, y):
-                self.__onMove = True
-                self.__center.setX(x)
-                self.__center.setY(y)
-
-                self.viewportUpdate()
-    
-    def mouseMove(self, event):
-        if self.__state and self.__onMove and event.state() == qt.Qt.LeftButton :
-            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
-                                                           event.y())
-            self.__center.setX(x)
-            self.__center.setY(y)
-        
-            self.viewportUpdate()
-    
-    def mouseRelease(self, event):
-        if self.__state and event.state() == qt.Qt.LeftButton :
-            if self.__onMove :
-                (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
-                                                               event.y())
-                self.__center.setX(x)
-                self.__center.setY(y)
-
-                self.emit(qt.PYSIGNAL("BeamSelected"), (x, y))
-
-                self.viewportUpdate()
-            self.__onMove = False
-            
-    def viewportUpdate(self):
-        point = self._qubImage.matrix().map(self.__center)
-                
-        self.__centerE.move(point.x(), point.y())  
-        self.__roundE.move(point.x(), point.y())  
-
-    def inBeam(self, x, y):
-        cenx = self.__center.x()
-        ceny = self.__center.y()
-        
-        if (x >= cenx - 14 and x <= cenx + 14) and \
-           (y >= ceny - 9  and y <= ceny + 9):
-           return True
-           
-        return False
+    def sendBeamMove(self, drawingMgr):
+        self.emit(qt.PYSIGNAL("BeamSelected"), drawingMgr.point())
         
 ####################################################################
 ##########                                                ##########
@@ -2594,7 +2430,6 @@ class QubMain(qt.QMainWindow):
         self.setCentralWidget(container)
 
     def colormapChanged(self, colormap, autoscale, colorMin, colorMax):
-        print "ColormapChanged (TEST)"
         self.colormap  = colormap
         self.autoscale = autoscale
         self.colorMin  = colorMin

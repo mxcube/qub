@@ -45,6 +45,20 @@ class _DrawingEventNDrawingMgr(QubDrawingEvent):
         self._drawingMgr = weakref.ref(aDrawingMgr)
         self._onShot = oneShot
         
+class QubMoveNPressed1Point(_DrawingEventNDrawingMgr) :
+    def __init__(self,aDrawingMgr,oneShot) :
+        _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
+        self._drawingMgr().show()
+        
+    def mouseReleased(self,x,y) :
+        self._drawingMgr().move(x,y)
+        self._drawingMgr().endDraw()
+        return self._onShot
+    
+    def mouseMove(self,x,y) :
+        self._drawingMgr().move(x,y)
+        return False                    # NOT END
+        
 class QubPressedNDrag1Point(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,oneShot) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
