@@ -1,6 +1,7 @@
 import qt
 from Qub.Objects.QubDrawingEvent import QubPressedNDrag1Point,QubPressedNDrag2Point
-from Qub.Objects.QubDrawingEvent import QubModifyAction
+from Qub.Objects.QubDrawingEvent import QubModifyAbsoluteAction
+from Qub.Objects.QubDrawingEvent import QubModifyRelativeAction
 class QubDrawingMgr :
     def __init__(self,aCanvas,aMatrix) :
         self._matrix = aMatrix
@@ -147,7 +148,7 @@ class QubPointDrawingMgr(QubDrawingMgr) :
     def _getModifyClass(self,x,y) :
         rect = self.boundingRect()
         if rect.contains(x,y) : 
-            return QubModifyAction(self,self._eventMgr,self.move)
+            return QubModifyAbsoluteAction(self,self._eventMgr,self.move)
 
     def _getDrawingEvent(self) :
         return self._drawingEvent(self,self._oneShot)
@@ -210,9 +211,9 @@ class QubLineDrawingManager(QubDrawingMgr) :
             x2,y2 = self._matrix.map(x2,y2)
             
         if(abs(x - x1) < 5 and abs(y - y1) < 5) :
-            return QubModifyAction(self,self._eventMgr,self.moveFirstPoint)
+            return QubModifyAbsoluteAction(self,self._eventMgr,self.moveFirstPoint)
         elif(abs(x - x2) < 5 and abs(y - y2) < 5) :
-            return QubModifyAction(self,self._eventMgr,self.moveSecondPoint)
+            return QubModifyAbsoluteAction(self,self._eventMgr,self.moveSecondPoint)
         
 class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
@@ -255,8 +256,17 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
         (x1,y1,x2,y2) = self._rect.coords()
         self._rect.setCoords(xNew,y1,x2,yNew)
         self.update()
-        
+
+    def moveRelativeRectangle(self, dx, dy):
+        if self._matrix is not None :
+            dxNew,dyNew = self._matrix.invert()[0].map(dx,dy)
+        else:
+              dxNew,dyNew = dx, dy
+        self._rect.moveBy(dxNew, dyNew)
+        self.update()
+            
     def setPoints(self,x1,y1,x2,y2) :
+        self._rect.setCoords(xNew,y1,x2,yNew)
         self._rect.setCoords(x1,y1,x2,y2);
         self.update()
         
@@ -310,11 +320,23 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
         (x1,y1,x2,y2) = rect.coords()
         if(abs(x - x1) < 5) :           # TOP LEFT OR BOTTOM LEFT
             if(abs(y - y1) < 5) :       # TOP LEFT
-                return QubModifyAction(self,self._eventMgr,self.moveFirstPoint)
+                return QubModifyAbsoluteAction(self,self._eventMgr,
+                                       self.moveFirstPoint,
+                                       qt.QCursor(qt.Qt.SizeFDiagCursor))
             elif(abs(y - y2) < 5) :     # BOTTOM LEFT
-                return QubModifyAction(self,self._eventMgr,self.moveBottomLeft)
+                return QubModifyAbsoluteAction(self,self._eventMgr,
+                                       self.moveBottomLeft,
+                                       qt.QCursor(qt.Qt.SizeBDiagCursor))
         elif(abs(x - x2) < 5) :         # TOP RIGHT OR BOTTOM RIGHT
             if(abs(y - y1) < 5) :       # TOP RIGHT
-                return QubModifyAction(self,self._eventMgr,self.moveTopRight)
+                return QubModifyAbsoluteAction(self,self._eventMgr,
+                                       self.moveTopRight,
+                                       qt.QCursor(qt.Qt.SizeBDiagCursor))
             elif(abs(y - y2) < 5) :
-                return QubModifyAction(self,self._eventMgr,self.moveSecondPoint)
+                return QubModifyAbsoluteAction(self,self._eventMgr,
+                                       self.moveSecondPoint,
+                                       qt.QCursor(qt.Qt.SizeFDiagCursor))
+        elif (rect.contains(x, y)):
+                return QubModifyRelativeAction(self,self._eventMgr,
+                                       self.moveRelativeRectangle)
+            
