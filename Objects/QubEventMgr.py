@@ -35,7 +35,7 @@ class QubEventMgr:
             
     def _mousePressed(self,event) :
         try:
-            if event.button() == (qt.Qt.LeftButton + qt.Qt.ShiftButton) :
+            if event.button() == qt.Qt.LeftButton and event.state() == qt.Qt.ShiftButton :
                 self.__checkObjectModify(event.x(),event.y())
             elif event.button() == qt.Qt.LeftButton :
                 for drawingEventRef in self.__pendingEvents[:] :

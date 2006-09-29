@@ -13,6 +13,7 @@ class QubDrawingMgr :
         self.__exclusive = True
         self.__exceptList = []          # event Name with is not exclusive
         self.__eventName = ''
+        self.__cantBeModify = True
         
     def __del__(self) :
         for drawingObject in self._drawingObjects :
@@ -37,9 +38,6 @@ class QubDrawingMgr :
         for drawingObject in self._drawingObjects :
             drawingObject.show()
 
-    def setAutoDisconnectEvent(self,aFlag) :
-        self._oneShot = aFlag
-        
     def boundingRect(self) :
         returnRect = None
         for drawingObject in self._drawingObjects :
@@ -50,12 +48,13 @@ class QubDrawingMgr :
                 returnRect = objectRect
         return returnRect
         
-    def getModifyClass(self,x,y) :
-        return None
 
-    def update(self) :
-        raise StandardError('update has to be redifined')
-
+    def setCanBeModify(self,aFlag) :
+        self.__cantBeModify = aFlag
+        
+    def setAutoDisconnectEvent(self,aFlag) :
+        self._oneShot = aFlag
+        
     def setExclusive(self,aFlag) :
         self.__exclusive = bool(aFlag)
         
@@ -97,9 +96,21 @@ class QubDrawingMgr :
         """
         if self._endDrawCbk is not None :
             self._endDrawCbk(self)
-        
+            
+            ####### HAS TO BE REDEFINE IN SUBCLASS #######
+    def update(self) :
+        raise StandardError('update has to be redifined')
+
     def _getDrawingEvent(self) :
         raise StandardError('_getDrawingEvent has to be redifined')
+
+    def _getModifyClass(self,x,y) :
+        return None
+
+                ####### CALL BY THE EVENT LOOP #######
+    def getModifyClass(self,x,y) :
+        if self.__cantBeModify :
+            return self._getModifyClass(x,y)
 
 class QubPointDrawingMgr(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
@@ -133,7 +144,7 @@ class QubPointDrawingMgr(QubDrawingMgr) :
         for drawingObject in self._drawingObjects :
             drawingObject.move(x,y)
 
-    def getModifyClass(self,x,y) :
+    def _getModifyClass(self,x,y) :
         rect = self.boundingRect()
         if rect.contains(x,y) : 
             return QubModifyAction(self,self._eventMgr,self.move)
@@ -192,7 +203,7 @@ class QubLineDrawingManager(QubDrawingMgr) :
     def _getDrawingEvent(self) :
         return self._drawingEvent(self,self._oneShot)
             
-    def getModifyClass(self,x,y) :
+    def _getModifyClass(self,x,y) :
         (x1,y1,x2,y2) = self._x1,self._y1,self._x2,self._y2
         if self._matrix is not None :
             x1,y1 = self._matrix.map(x1,y1)
@@ -291,7 +302,7 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
     def _getDrawingEvent(self) :
         return self._drawingEvent(self,self._oneShot)
 
-    def getModifyClass(self,x,y) :
+    def _getModifyClass(self,x,y) :
         rect = self._rect.normalize()
         self._rect = rect
         if self._matrix is not None :
