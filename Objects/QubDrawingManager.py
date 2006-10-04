@@ -111,7 +111,13 @@ class QubDrawingMgr :
                 ####### CALL BY THE EVENT LOOP #######
     def getModifyClass(self,x,y) :
         if self.__cantBeModify :
-            return self._getModifyClass(x,y)
+            aVisibleFlag = False
+            for drawingObject in self._drawingObjects :
+                if drawingObject.isVisible() :
+                    aVisibleFlag = True
+                    break
+            if aVisibleFlag :
+                return self._getModifyClass(x,y)
 
 class QubPointDrawingMgr(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :

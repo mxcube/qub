@@ -160,7 +160,7 @@ class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
     def mouseMovePressed(self, x, y):
         self._modify(x, y)
         
-    def mouseRelease(self, x, y):
+    def mouseReleased(self, x, y):
         self._modify(x, y)
         self._drawingMgr().endDraw()
 
@@ -184,6 +184,6 @@ class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
         self.__oldX = x
         self.__oldY = y        
         
-    def mouseRelease(self, x, y):
-        self._modify(x - self.__startX, y - self.__startY)
+    def mouseReleased(self, x, y):
+        self._modify(x - self.__oldX, y - self.__oldY)
         self._drawingMgr().endDraw()
