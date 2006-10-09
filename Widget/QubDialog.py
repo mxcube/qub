@@ -15,6 +15,7 @@ from Qub.Objects.QubDrawingManager import QubPointDrawingMgr,QubLineDrawingManag
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget,QubCanvasEllipse
 from Qub.Widget.QubWidgetSet import QubSlider,QubColorToolMenu
 from Qub.Icons.QubIcons import loadIcon
+from Qub.Objects.QubDrawingEvent import QubMoveNPressed1Point
 
 ####################################################################
 ##########                                                ##########
@@ -138,6 +139,9 @@ class QubMeasureListDialog(qt.QDialog):
             if self.__lastdrawingMgr is not None :
                 self.__lastdrawingMgr.stopDrawing()
             self.__lastdrawingMgr = self.__tools[self.__ToolIdSelected][1](self.__canvas,self.__matrix)
+            
+            if self.__ToolIdSelected == 0:
+                self.__lastdrawingMgr.setDrawingEvent(QubMoveNPressed1Point)
             self.__lastdrawingMgr.setAutoDisconnectEvent(True)
             drawingobject = self.__tools[self.__ToolIdSelected][2](self.__canvas)
             self.__lastdrawingMgr.addDrawingObject(drawingobject)
