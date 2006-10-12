@@ -1,4 +1,4 @@
-import qt
+
 import weakref
 import itertools
 
