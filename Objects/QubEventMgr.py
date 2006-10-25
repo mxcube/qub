@@ -49,7 +49,9 @@ class QubEventMgr:
                                      srcMatrix,destMatrix)
         self.addLinkEventMgr(linkEventMgr)
         anEventMgr.addLinkEventMgr(linkEventMgr)
-
+        for drawingMgr in self.__drawingMgr :
+            drawingMgr().addLinkEventMgr(linkEventMgr)
+            
     def rmEventMgrLink(self,anEventMgr) :
         """ this methode unlink event manager
         """
@@ -132,6 +134,9 @@ class QubEventMgr:
             except:
                 import traceback
                 traceback.print_exc()
+        if evtMgr is None :
+            for link in self.__eventLinkMgrs :
+                link.update(self)
                 
     def _keyPressed(self,keyevent,evtMgr = None) :
         if keyevent.key() == qt.Qt.Key_Shift :
@@ -250,7 +255,7 @@ class _linkEventMgr :
         mgrNMeth = self.__evtMgrs[0]
         if mgrNMeth[0] == evtMgr :
             mgrNMeth = self.__evtMgrs[1]
-        mgrNMeth[1][_linkEventMgr.UPDATE](mgrNMeth[0])
+        mgrNMeth[1][_linkEventMgr.UPDATE](evtMgr)
         
     def keyPressed(self,event,evtMgr) :
         self._simpleEvent(event,evtMgr,_linkEventMgr.KEY_PRESSED)

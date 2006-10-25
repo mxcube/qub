@@ -232,7 +232,6 @@ class QubMeasureListDialog(qt.QDialog):
 
     def closeEvent(self,closeEvent)  :
         self.hide()
-        self.__measureList.clear()
         self.__lastdrawingMgr = None
         
 ####################################################################

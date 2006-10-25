@@ -80,6 +80,9 @@ class QubCanvasBeam(QubCanvasEllipse):
         QubCanvasEllipse.setPen(self,pen)
         self.__centerE.setPen(pen)
 
+    def setCanvas(self,aCanvas) :
+        QubCanvasEllipse.setCanvas(self,aCanvas)
+        self.__centerE.setCanvas(aCanvas)
 
 ################################################################################
 ####################           QubCanvasTarget                ##################

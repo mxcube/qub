@@ -722,7 +722,6 @@ class QubZoomRectangle(QubToggleImageAction) :
 
         self.__drawingMgr = Qub2PointSurfaceDrawingManager(qubImage.canvas(),
                                                            qubImage.matrix())
-        self.__drawingMgr.setAutoDisconnectEvent(True)
         zoomrect = qtcanvas.QCanvasRectangle(qubImage.canvas())
         self.__drawingMgr.addDrawingObject(zoomrect)
         qubImage.addDrawingMgr(self.__drawingMgr)
@@ -739,7 +738,8 @@ class QubZoomRectangle(QubToggleImageAction) :
 
     def initSelection(self,ox,oy,width,height) :
         self.__drawingMgr.setRect(ox,oy,width,height)
-
+        self.rectangleChanged(self.__drawingMgr)
+        
     def rectangleChanged(self, drawingMgr):
         rect =  drawingMgr.rect()     
         self.emit(qt.PYSIGNAL("RectangleSelected"), 
@@ -1502,6 +1502,10 @@ class QubZoomListAction(QubAction):
         self._qubImage = None
 
         self._listPopupMenu = None
+
+        self.__lastIdSelected = 0
+        
+        self._actionZoomMode = None
         
     def viewConnect(self, qubImage):
         """
@@ -1564,6 +1568,7 @@ class QubZoomListAction(QubAction):
             popMenu.insertItem('%d%%' % int(zoomVal * 100), i)
             if zoomVal == self._initZoom :
                 idDefaultZoom = i
+                self.__lastIdSelected = idDefaultZoom
         self.connect(popMenu, qt.SIGNAL("activated(int )"),
                      self._applyZoomFromList)
         return (popMenu,idDefaultZoom)
@@ -1573,8 +1578,12 @@ class QubZoomListAction(QubAction):
             Calculate zoom value from array
             """        
             try:
+                if self._actionZoomMode is not None :
+                    self._actionZoomMode.setState(False)
                 self._applyZoom(self._zoomValList[index])
+                self.__lastIdSelected = index
             except :
+                import traceback
                 traceback.print_exc()
     
     def _applyZoom(self, zoomVal):
@@ -1603,6 +1612,12 @@ class QubZoomListAction(QubAction):
             """
             self._qubImage.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
     
+    def zoom(self) :
+        try:
+            return self._zoomValList[self.__lastIdSelected]
+        except:
+            return 1
+        
     def writeStrValue(self, strVal):
             """
             update zoom value in toolbar and menu widget
@@ -1611,6 +1626,11 @@ class QubZoomListAction(QubAction):
             self._widget.setText(qstr)
             if self._item is not None:
                 self._menu.changeItem(self._item, qstr)
+
+    def setActionZoomMode(self,anActionZoomMode) :
+        """link Action zoom list with ActionZoomMod (QubZoomAction)
+        """
+        self._actionZoomMode = anActionZoomMode
 
 ###############################################################################
 ####################              QubZoomAction            ####################
@@ -1643,7 +1663,9 @@ class QubZoomAction(QubAction):
         self._qubImage = None
         self._sigConnected = False
         self._name = "Zoom tools"
-                
+
+        self._keepROI = keys.get("keepROI",False)
+
     def viewConnect(self, qubImage):
         """
         connect action with the QubImage object on which it will be applied
@@ -1734,7 +1756,10 @@ class QubZoomAction(QubAction):
                             self._sigConnected = False
             else:
                 self._qubImage.setScrollbarMode("Auto")
-
+                if self._listAction is not None :
+                    zoom = self._listAction.zoom()
+                    self._qubImage.setZoom(zoom,zoom,self._keepROI)
+                
                 if self._sigConnected == True:
                     self.disconnect(self._qubImage,
                                     qt.PYSIGNAL("ViewportResized"),
@@ -1768,7 +1793,7 @@ class QubZoomAction(QubAction):
         update zoom value in the ZoomStrListAction object if necessary
         """
         if self._listAction is not None:
-            (zoomx, zoomy) = self._qubImage.zoom()
+            (zoomx, zoomy) = self._qubImage.zoom().zoom()
             if zoomx == zoomy:
                 strVal = "%d%%"%(int(zoomx*100))
             else:

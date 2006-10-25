@@ -155,7 +155,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
         return current x and y zoom values
         """
         if self.__plug is not None:
-            return(self.__plug.getZoom())
+            return self.__plug.zoom()
         
         raise StandardError("QubPixmapDisplay object not plugged")
             
@@ -193,7 +193,11 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
         else:
             zoom = zoomClass.zoom()
             (view_w, view_h) = (self.viewport().width(), self.viewport().height())
-            (im_w, im_h) = (image.width(), image.height())
+            if zoomClass.isRoiZoom() :
+                offx,offy,width,height = zoomClass.roi()
+                (im_w, im_h) = width,height
+            else:
+                (im_w, im_h) = (image.width(), image.height())
             (w, h) = (int(im_w * zoom[0]), int(im_h * zoom[1]))
 
             if((w, h) == (view_w, view_h) and self.__scrollMode == "FillScreen" or
@@ -208,9 +212,9 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
                 zoom_h = float(view_h) / im_h
                 if self.__scrollMode == "Fit2Screen":
                     zoom_val = min(zoom_w, zoom_h)
-                    self.__plug.zoom().setZoom(zoom_val, zoom_val)
+                    self.__plug.zoom().setZoom(zoom_val, zoom_val,zoomClass.isRoiZoom())
                 else:
-                    self.__plug.zoom().setZoom(zoom_w, zoom_h)
+                    self.__plug.zoom().setZoom(zoom_w, zoom_h,zoomClass.isRoiZoom())
                 self.__startIdle()
 
         zoomx,zoomy = zoomClass.zoom()
