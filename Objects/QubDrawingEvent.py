@@ -148,9 +148,12 @@ class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
                  cursor = qt.QCursor(qt.Qt.SizeAllCursor)) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,False)
         self._eventmgr = aEventmgr
-        aEventmgr.setCursor(cursor)
+        self._cursor = cursor
         self._modify = modifyCBK
-                
+
+    def setCursor(self,eventMgr) :
+        eventMgr.setCursor(self._cursor)
+        
     def mousePressed(self, x, y):
         self._modify(x,y)
                 
@@ -169,9 +172,12 @@ class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
                  cursor = qt.QCursor(qt.Qt.SizeAllCursor)) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,False)
         self._eventmgr = aEventmgr
-        aEventmgr.setCursor(cursor)
+        self._cursor = cursor
         self._modify = modifyCBK
         
+    def setCursor(self,eventMgr) :
+        eventMgr.setCursor(self._cursor)
+
     def mousePressed(self, x, y):
         self.__oldX = x
         self.__oldY = y

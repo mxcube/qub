@@ -1,12 +1,16 @@
+import weakref
 import qt
 from Qub.Objects.QubDrawingEvent import QubPressedNDrag1Point,QubPressedNDrag2Point
 from Qub.Objects.QubDrawingEvent import QubModifyAbsoluteAction
 from Qub.Objects.QubDrawingEvent import QubModifyRelativeAction
+from Qub.Tools import QubWeakref
+
 class QubDrawingMgr :
     def __init__(self,aCanvas,aMatrix) :
         self._matrix = aMatrix
         self._canvas = aCanvas
         self._drawingObjects = []
+        self._foreignObjects = []       # Object from other Views
         self._eventMgr = None
         self._lastEvent = None
         self._oneShot = False
@@ -22,23 +26,50 @@ class QubDrawingMgr :
                 drawingObject.removeInCanvas()
             else:
                 drawingObject.setCanvas(None)
-            
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            for drawingObject in objectlist :
+                drawingObject.setCanvas(None)
+                
     def addDrawingObject(self,aDrawingObject) :
-        self._drawingObjects.append(aDrawingObject)
-
-    def removeDrawingObject(self,aDrawingObject) :
         try :
-            self._drawingObjects.remove(aDrawingObject)
+            self._drawingObjects.append(aDrawingObject)
+            for link,canvas,matrix,objectlist in self._foreignObjects :
+                newObject = aDrawingObject.__class__(None)
+                newObject.setCanvas(canvas)
+                objectlist.append(newObject)
         except:
-            pass
-        
+            import traceback
+            traceback.print_exc()
+            
+    def removeDrawingObject(self,aDrawingObject) :
+        aFindFlag = False
+        for i,drawingObject in enumerate(self._drawingObjects):
+            if aDrawingObject == drawingObject :
+                aFindFlag = True
+                break
+        if aFindFlag :
+            self._drawingObjects.pop(i)
+            for link,canvas,matrix,objectlist in self._foreignObjects :
+                objectlist.pop(i)
+                
     def hide(self) :
         for drawingObject in self._drawingObjects :
             drawingObject.hide()
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            for drawingObject in objectlist :
+                drawingObject.hide()
+                
     def show(self) :
-        for drawingObject in self._drawingObjects :
-            drawingObject.show()
-
+        try :
+            for drawingObject in self._drawingObjects :
+                drawingObject.show()
+            for link,canvas,matrix,objectlist in self._foreignObjects :
+                for drawingObject in objectlist :
+                    drawingObject.show()
+        except:
+            import traceback
+            traceback.print_exc()
+            
     def boundingRect(self) :
         returnRect = None
         for drawingObject in self._drawingObjects :
@@ -70,7 +101,12 @@ class QubDrawingMgr :
             pen = drawingObject.pen()
             pen.setColor(color)
             drawingObject.setPen(pen)
-            
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            for drawingObject in objectlist :
+                pen = drawingObject.pen()
+                pen.setColor(color)
+                drawingObject.setPen(pen)
+                
     def startDrawing(self) :
         if self._eventMgr is not None :
             self._lastEvent = self._getDrawingEvent()
@@ -82,9 +118,6 @@ class QubDrawingMgr :
     def stopDrawing(self) :
         self._lastEvent = None
                     
-    def setEventMgr(self,anEventMgr) :
-        self._eventMgr = anEventMgr
-
     def setEndDrawCallBack(self,cbk) :
         self._endDrawCbk = cbk
 
@@ -119,6 +152,31 @@ class QubDrawingMgr :
             if aVisibleFlag :
                 return self._getModifyClass(x,y)
 
+    def setEventMgr(self,anEventMgr) :
+        self._eventMgr = anEventMgr
+
+    def addLinkEventMgr(self,aLinkEventMgr) :
+        try:
+            canvas,matrix = aLinkEventMgr.getCanvasNMatrix(self._eventMgr)
+            newObjects = []
+            for drawing in self._drawingObjects :
+                nObject = drawing.__class__(None)
+                nObject.setCanvas(canvas)
+                newObjects.append(nObject)
+            self._foreignObjects.append((weakref.ref(aLinkEventMgr,QubWeakref.createWeakrefMethod(self.__linkRm)),
+                                         canvas,matrix,newObjects))
+        except:
+            import traceback
+            traceback.print_exc()
+        
+    def __linkRm(self,linkref) :
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            if link == linkref :
+                for drawingObject in objectlist :
+                    drawingObject.setCanvas(None)
+                self._foreignObjects.remove((link,canvas,matrix,objectlist))
+                break
+            
 class QubPointDrawingMgr(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
@@ -133,6 +191,8 @@ class QubPointDrawingMgr(QubDrawingMgr) :
 
         for drawingObject in self._drawingObjects :
             drawingObject.move(x,y)
+
+        self._drawForeignObject()
                 
     def setPoint(self,x,y) :
         self._x,self._y = x,y
@@ -151,6 +211,8 @@ class QubPointDrawingMgr(QubDrawingMgr) :
         for drawingObject in self._drawingObjects :
             drawingObject.move(x,y)
 
+        self._drawForeignObject()
+        
     def _getModifyClass(self,x,y) :
         rect = self.boundingRect()
         if rect.contains(x,y) : 
@@ -159,6 +221,18 @@ class QubPointDrawingMgr(QubDrawingMgr) :
     def _getDrawingEvent(self) :
         return self._drawingEvent(self,self._oneShot)
 
+    def _drawForeignObject(self) :
+        try:
+            for link,canvas,matrix,objectlist in self._foreignObjects :
+                x,y = self._x,self._y
+                if matrix is not None :
+                    x,y = matrix.map(x,y)
+                for drawingObject in objectlist :
+                    drawingObject.move(x,y)
+        except:
+            import traceback
+            traceback.print_exc()
+            
 class QubLineDrawingManager(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
@@ -177,6 +251,8 @@ class QubLineDrawingManager(QubDrawingMgr) :
         for drawingObject in self._drawingObjects :
             drawingObject.setPoints(x,y,x2,y2)
 
+        self._drawForeignObject()
+
     def moveSecondPoint(self,x,y) :
         if self._matrix is not None :
             self._x2,self._y2 = self._matrix.invert()[0].map(x,y)
@@ -188,6 +264,8 @@ class QubLineDrawingManager(QubDrawingMgr) :
         for drawingObject in self._drawingObjects :
             drawingObject.setPoints(x1,y1,x,y)
 
+        self._drawForeignObject()
+        
     def setPoints(self,x1,y1,x2,y2) :
         self._x1,self._y1 = x1,y1
         self._x2,self._y2 = x2,y2
@@ -207,6 +285,8 @@ class QubLineDrawingManager(QubDrawingMgr) :
         for drawingObject in self._drawingObjects :
             drawingObject.setPoints(x1,y1,x2,y2)
 
+        self._drawForeignObject()
+        
     def _getDrawingEvent(self) :
         return self._drawingEvent(self,self._oneShot)
             
@@ -220,6 +300,18 @@ class QubLineDrawingManager(QubDrawingMgr) :
             return QubModifyAbsoluteAction(self,self._eventMgr,self.moveFirstPoint)
         elif(abs(x - x2) < 5 and abs(y - y2) < 5) :
             return QubModifyAbsoluteAction(self,self._eventMgr,self.moveSecondPoint)
+
+    def _drawForeignObject(self) :
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            x1,y1 = self._x1,self._y1
+            x2,y2 = self._x2,self._y2
+            if matrix is not None :
+                x1,y1 = matrix.map(x1,y1)
+                x2,y2 = matrix.map(x2,y2)
+                
+            for drawingObject in objectlist :
+                drawingObject.setPoints(x1,y1,x2,y2)
+
         
 class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
@@ -309,12 +401,15 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
         return height
     
     def update(self) :
-        rect = self._matrix.map(self._rect.normalize())
+        rect = self._rect.normalize()
+        if self._matrix is not None :
+            rect = self._matrix.map(rect)
         x,y,width,height = rect.rect()
         for drawingObject in self._drawingObjects :
             drawingObject.move(x,y)
             drawingObject.setSize(width,height)
-                
+        self._drawForeignObject()
+        
     def _getDrawingEvent(self) :
         return self._drawingEvent(self,self._oneShot)
 
@@ -346,3 +441,13 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
                 return QubModifyRelativeAction(self,self._eventMgr,
                                        self.moveRelativeRectangle)
             
+    def _drawForeignObject(self) :
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            rect = self._rect.normalize()
+            if matrix is not None :
+                rect = matrix.map(rect)
+            x,y,width,height = rect.rect()
+            for drawingObject in objectlist :
+                drawingObject.move(x,y)
+                drawingObject.setSize(width,height)
+

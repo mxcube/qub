@@ -212,14 +212,16 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
                 else:
                     self.__plug.zoom().setZoom(zoom_w, zoom_h)
                 self.__startIdle()
-        offx,offy = (0,0)
+
         zoomx,zoomy = zoomClass.zoom()
         lastoffx,lastoffy = self.__matrix.dx(),self.__matrix.dy()
         self.__matrix.setMatrix(zoomx, 0, 0, zoomy,0,0)
         if zoomClass.isRoiZoom() :
             offx,offy,width,height = zoomClass.roi()
             self.__matrix = self.__matrix.translate(-offx,-offy)
-            if (offx,offy) != (lastoffx,lastoffy) :
+            lastoffx /= zoomx
+            lastoffy /= zoomy
+            if (offx,offy) != (-lastoffx,-lastoffy) :
                 self.__startIdle()
 
     def setScrollbarMode(self, mode):
