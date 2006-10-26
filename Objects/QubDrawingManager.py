@@ -364,7 +364,6 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
         self.update()
             
     def setPoints(self,x1,y1,x2,y2) :
-        self._rect.setCoords(xNew,y1,x2,yNew)
         self._rect.setCoords(x1,y1,x2,y2);
         self.update()
         
