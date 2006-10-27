@@ -6,6 +6,8 @@ from Qub.Objects.QubDrawingEvent import QubModifyRelativeAction
 from Qub.Tools import QubWeakref
 
 class QubDrawingMgr :
+    """ Base class of Drawing manager
+    """
     def __init__(self,aCanvas,aMatrix) :
         self._matrix = aMatrix
         self._canvas = aCanvas
@@ -22,20 +24,28 @@ class QubDrawingMgr :
         
     def __del__(self) :
         for drawingObject in self._drawingObjects :
-            if hasattr(drawingObject,'removeInCanvas') :
-                drawingObject.removeInCanvas()
-            else:
-                drawingObject.setCanvas(None)
+            drawingObject.setCanvas(None)
         for link,canvas,matrix,objectlist in self._foreignObjects :
             for drawingObject in objectlist :
                 drawingObject.setCanvas(None)
                 
+                    ####### PUBLIC METHODE #######
     def addDrawingObject(self,aDrawingObject) :
         try :
             self._drawingObjects.append(aDrawingObject)
+            if hasattr(aDrawingObject,'setScrollView') and self._eventMgr is not None :
+                aDrawingObject.setScrollView(self._eventMgr.scrollView())
+            if hasattr(aDrawingObject,'setMatrix') :
+                aDrawingObject.setMatrix(self._matrix)
             for link,canvas,matrix,objectlist in self._foreignObjects :
                 newObject = aDrawingObject.__class__(None)
                 newObject.setCanvas(canvas)
+                if hasattr(newObject,'setScrollView') :
+                    otherMgr = link().getOtherMgr(self._eventMgr)
+                    newObject.setScrollView(otherMgr.scrollView())
+                if hasattr(newObject,'setMatrix') :
+                    otherMgr = link().getOtherMgr(self._eventMgr)
+                    newObject.setMatrix(matrix)
                 objectlist.append(newObject)
         except:
             import traceback
@@ -70,30 +80,48 @@ class QubDrawingMgr :
             import traceback
             traceback.print_exc()
             
-    def boundingRect(self) :
-        returnRect = None
-        for drawingObject in self._drawingObjects :
-            objectRect = drawingObject.boundingRect()
-            if returnRect is not None :
-                returnRect = objectRect.unit(returnRect)
-            else :
-                returnRect = objectRect
-        return returnRect
-        
 
     def setCanBeModify(self,aFlag) :
+        """
+        authorize the user to modify the drawing manager ie :
+                  -> resized,moved....
+        """
         self.__cantBeModify = aFlag
         
     def setAutoDisconnectEvent(self,aFlag) :
+        """
+        disconnect the event at the end of procedure otherwise
+        the event is keep in the event loop as soon as the startDrawing is called
+        default = False
+        """
         self._oneShot = aFlag
         
     def setExclusive(self,aFlag) :
+        """
+        set the exclusivity of the event :
+            if True (default) the event loop will exclude every other
+               event which is not in the ExceptExclusiveList when
+               startDrawing is called
+            if False not exclusive
+        see setExceptExclusiveListName
+        see setEventName
+        """
         self.__exclusive = bool(aFlag)
         
     def setExceptExclusiveListName(self,names) :
+        """
+        list of event names that is not exclusive with this drawing
+        see setEventName
+        see setExclusive
+        """
         self.__exceptList = names
 
     def setEventName(self,name) :
+        """
+        the name of the event, its use to make the exclusion
+        see setExclusive
+        see setExceptExclusiveListName
+        """
         self.__eventName = name
         
     def setColor(self,color) :
@@ -108,29 +136,69 @@ class QubDrawingMgr :
                 drawingObject.setPen(pen)
                 
     def startDrawing(self) :
+        """
+        start the drawing procedure, now this object will listen the event loop :
+               -> mouse move,click...
+        """
         if self._eventMgr is not None :
             self._lastEvent = self._getDrawingEvent()
-            self._lastEvent.setExceptExclusiveListName(self.__exceptList)
-            self._lastEvent.setExclusive(self.__exclusive)
-            self._lastEvent.setName(self.__eventName)
-            self._eventMgr.addDrawingEvent(self._lastEvent)
+            if self._lastEvent is not None :
+                self._lastEvent.setExceptExclusiveListName(self.__exceptList)
+                self._lastEvent.setExclusive(self.__exclusive)
+                self._lastEvent.setName(self.__eventName)
+                self._eventMgr.addDrawingEvent(self._lastEvent)
 
     def stopDrawing(self) :
+        """
+        this methode ends the listening of the event loop
+        """
         self._lastEvent = None
                     
     def setEndDrawCallBack(self,cbk) :
+        """
+        set the end callback procedure
+        """
         self._endDrawCbk = cbk
 
     def setDrawingEvent(self,event) :
+        """
+        change the drawing procedure beavior
+        see QubDrawingEvent
+        """
         self._drawingEvent = event
+        
+                ####### END OF PUBLIC METHODES #######
+    def boundingRect(self) :
+        returnRect = None
+        for drawingObject in self._drawingObjects :
+            objectRect = drawingObject.boundingRect()
+            if returnRect is not None :
+                returnRect = objectRect.unit(returnRect)
+            else :
+                returnRect = objectRect
+        return returnRect
         
     def endDraw(self) :
         """
-        This methode is call at the end of the draw event
+        This methode is call at the end of the drawing procedure
         """
         if self._endDrawCbk is not None :
             self._endDrawCbk(self)
             
+    def addSetHandleMethodToEachDrawingObject(self,call_back,methode_name = '') :
+        """
+        add a methode named : methode_name if is define or the name of the call_back
+        when call this methode will apply the call_back on each drawingObject
+        """
+        newCallable = _foreach_callable(self.__foreach_set,call_back)
+        if methode_name :
+            self.__dict__[methode_name] = newCallable
+        else :
+            try:
+                self.__dict__[call_back.im_func.func_name] = newCallable
+            except AttributeError:
+                self.__dict__[call_back.func_name] = newCallable
+    
             ####### HAS TO BE REDEFINE IN SUBCLASS #######
     def update(self) :
         raise StandardError('update has to be redifined')
@@ -154,6 +222,9 @@ class QubDrawingMgr :
 
     def setEventMgr(self,anEventMgr) :
         self._eventMgr = anEventMgr
+        for drawingObject in self._drawingObjects :
+            if hasattr(drawingObject,'setScrollView') :
+                drawingObject.setScrollView(self._eventMgr.scrollView())
 
     def addLinkEventMgr(self,aLinkEventMgr) :
         try:
@@ -162,6 +233,12 @@ class QubDrawingMgr :
             for drawing in self._drawingObjects :
                 nObject = drawing.__class__(None)
                 nObject.setCanvas(canvas)
+                if hasattr(nObject,'setScrollView') :
+                    otherMgr = aLinkEventMgr.getOtherMgr(self._eventMgr)
+                    nObject.setScrollView(otherMgr.scrollView())
+                if hasattr(nObject,'setMatrix') :
+                    otherMgr = aLinkEventMgr.getOtherMgr(self._eventMgr)
+                    nObject.setMatrix(matrix)
                 newObjects.append(nObject)
             self._foreignObjects.append((weakref.ref(aLinkEventMgr,QubWeakref.createWeakrefMethod(self.__linkRm)),
                                          canvas,matrix,newObjects))
@@ -176,13 +253,59 @@ class QubDrawingMgr :
                     drawingObject.setCanvas(None)
                 self._foreignObjects.remove((link,canvas,matrix,objectlist))
                 break
+
+    def __foreach_set(self,callback,*args,**keys) :
+        try :
+            for drawingObject in self._drawingObjects :
+                callback(drawingObject,*args,**keys)
+            for link,canvas,matrix,objectlist in self._foreignObjects :
+                for drawingObject in objectlist :
+                    callback(drawingObject,*args,**keys)
+        except:
+            import traceback
+            traceback.print_exc()
             
+class QubContainerDrawingMgr(QubDrawingMgr) :
+    """
+    this class is a container of stand alone drawing object
+    """
+    def __init__(self,aCanvas,aMatrix = None) :
+        QubDrawingMgr.__init__(self,aCanvas,aMatrix)
+
+    def update(self) :
+        try :
+            for drawingObject in self._drawingObjects :
+                drawingObject.update()
+            for link,canvas,matrix,objectlist in self._foreignObjects :
+                for drawingObject in objectlist :
+                    drawingObject.update()
+        except:
+            import traceback
+            traceback.print_exc()
+            
+    def _getDrawingEvent(self) :
+        return None                     # just in case that someone call startDrawing
+
 class QubPointDrawingMgr(QubDrawingMgr) :
+    """
+    This class manage all the drawing object
+    that can be define with one point
+    """
     def __init__(self,aCanvas,aMatrix = None) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
         self._x,self._y = 0,0
         self._drawingEvent = QubPressedNDrag1Point
+                
+                    ####### PUBLIC METHODE #######
+    def setPoint(self,x,y) :
+        self._x,self._y = x,y
+        self.update()
+
+    def point(self) :
+        return (self._x,self._y)
+
         
+               ####### INTERNAL LOOP EVENT CALL #######
     def move(self,x,y) :
         if self._matrix is not None :
             self._x,self._y = self._matrix.invert()[0].map(x,y)
@@ -193,14 +316,6 @@ class QubPointDrawingMgr(QubDrawingMgr) :
             drawingObject.move(x,y)
 
         self._drawForeignObject()
-                
-    def setPoint(self,x,y) :
-        self._x,self._y = x,y
-        self.update()
-
-    def point(self) :
-        return (self._x,self._y)
-
 
     def update(self) :
         if self._matrix is not None :
@@ -240,6 +355,17 @@ class QubLineDrawingManager(QubDrawingMgr) :
         self._x2,self._y2 = 0,0
         self._drawingEvent = QubPressedNDrag2Point
 
+                    ####### PUBLIC METHODE #######
+    def setPoints(self,x1,y1,x2,y2) :
+        self._x1,self._y1 = x1,y1
+        self._x2,self._y2 = x2,y2
+        self.update()
+
+    def points(self) :
+        return (self._x1,self._y1,self._x2,self._y2)
+    
+        
+               ####### INTERNAL LOOP EVENT CALL #######
     def moveFirstPoint(self,x,y) :
         if self._matrix is not None :
             self._x1,self._y1 = self._matrix.invert()[0].map(x,y)
@@ -265,15 +391,7 @@ class QubLineDrawingManager(QubDrawingMgr) :
             drawingObject.setPoints(x1,y1,x,y)
 
         self._drawForeignObject()
-        
-    def setPoints(self,x1,y1,x2,y2) :
-        self._x1,self._y1 = x1,y1
-        self._x2,self._y2 = x2,y2
-        self.update()
 
-    def points(self) :
-        return (self._x1,self._y1,self._x2,self._y2)
-    
     def update(self) :
         if self._matrix is not None :
             x1,y1 = self._matrix.map(self._x1,self._y1)
@@ -319,6 +437,20 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
         self._rect = qt.QRect(0,0,1,1)
         self._drawingEvent = QubPressedNDrag2Point
         
+                    ####### PUBLIC METHODE #######
+    def setPoints(self,x1,y1,x2,y2) :
+        self._rect.setCoords(x1,y1,x2,y2);
+        self.update()
+        
+    def setRect(self,x,y,w,h) :
+        self._rect.setRect(x,y,w,h);
+        self.update()
+
+    def rect(self) :
+        rect = self._rect.normalize()
+        return rect
+    
+               ####### INTERNAL LOOP EVENT CALL #######
     def moveFirstPoint(self,x,y) :
         if self._matrix is not None :
             xNew,yNew = self._matrix.invert()[0].map(x,y)
@@ -359,22 +491,10 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
         if self._matrix is not None :
             dxNew,dyNew = self._matrix.invert()[0].map(dx,dy)
         else:
-              dxNew,dyNew = dx, dy
+            dxNew,dyNew = dx, dy
         self._rect.moveBy(dxNew, dyNew)
         self.update()
-            
-    def setPoints(self,x1,y1,x2,y2) :
-        self._rect.setCoords(x1,y1,x2,y2);
-        self.update()
-        
-    def setRect(self,x,y,w,h) :
-        self._rect.setRect(x,y,w,h);
-        self.update()
 
-    def rect(self) :
-        rect = self._rect.normalize()
-        return rect
-    
     def width(self) :
         width = 0
         try:
@@ -450,3 +570,22 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
                 drawingObject.move(x,y)
                 drawingObject.setSize(width,height)
 
+############################## Callable ##############################
+class _foreach_callable :
+    def __init__(self,meth,callback) :
+        self.__objRef = weakref.ref(meth.im_self)
+        self.__func_meth = weakref.ref(meth.im_func)
+        try :
+            self.__cbk = weakref.ref(callback.im_func)
+        except AttributeError :
+            self.__cbk = weakref.ref(callback)
+    def __call__(self,*args,**keys) :
+        aReturnFlag = False
+        try:
+            if self.__cbk() is not None :
+                self.__func_meth()(self.__objRef(),self.__cbk(),*args,**keys)
+                aReturnFlag = True
+        except:
+            import traceback
+            traceback.print_exc()
+        return aReturnFlag

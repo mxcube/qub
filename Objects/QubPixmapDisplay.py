@@ -10,6 +10,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
                                       qt.Qt.WNoAutoErase|qt.Qt.WStaticContents) 
                                            
         QubEventMgr.__init__(self)
+        self._setScrollView(self)
         """
         parent widget
         """

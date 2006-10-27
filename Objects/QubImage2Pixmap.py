@@ -152,7 +152,7 @@ class QubImage2PixmapPlug :
             self.__width,self.__height = (0,0)
             self.__allimage = True
             self.__mutex = qt.QMutex()
-            self._interpolation = cv.CV_INTER_LINEAR
+            self._interpolation = cv.CV_INTER_LINEAR #CV_INTER_CUBIC
             self.__interpolationInUse = self._interpolation
             
             self.__pixmapIO = [QubPixmapTools.IO(),QubPixmapTools.IO()]

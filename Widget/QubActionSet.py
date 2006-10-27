@@ -2054,6 +2054,9 @@ class QubHideRectangleSelection(QubRectangleSelection):
 #####################################################################
 ##########                  QubScaleAction                 ##########
 #####################################################################
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasScale
+from Qub.Objects.QubDrawingManager import QubContainerDrawingMgr
+
 class QubScaleAction(QubToggleImageAction) :
     HORIZONTAL,VERTICAL,BOTH = (0x1,0x2,0x3)
     def __init__(self,*args,**keys) :
@@ -2061,44 +2064,35 @@ class QubScaleAction(QubToggleImageAction) :
         self.__xPixelSize = 0
         self.__yPixelSize = 0
         self.__mode = keys.get("mode",QubScaleAction.BOTH)
-        self.__unit = [(1e-3,'mm'),(1e-6,'\xb5m'),(1e-9,'nm')]
         self.__autorizeValues = keys.get('authorized_values',[1,2,5,10,20,50,100,200,500])
 
-        self.__hLine = None
-        self.__hText = None
-        self.__vLine = None
-        self.__vText = None
-        self.__state = False
-        
+        self.__scale = None
+                
     def viewConnect(self, qubImage):
         QubToggleImageAction.viewConnect(self,qubImage)
-        color = qt.QColor('green')
-        self.__hLine = qtcanvas.QCanvasLine(qubImage.canvas())
-        self.__hLine.setPen(qt.QPen(color,4))
-        self.__hText = qtcanvas.QCanvasText(qubImage.canvas())
-        self.__hText.setColor(color)
-        
-        self.__vLine = qtcanvas.QCanvasLine(qubImage.canvas())
-        self.__vLine.setPen(qt.QPen(color,4))
-        self.__vText = qtcanvas.QCanvasText(qubImage.canvas())
-        self.__vText.setColor(color)
+        self.__scale = QubContainerDrawingMgr(qubImage.canvas(),qubImage.matrix())
+        scaleObject = QubCanvasScale(qubImage.canvas())
+        self.__scale.addDrawingObject(scaleObject)
+        qubImage.addDrawingMgr(self.__scale)
 
-        self.viewportUpdate()
+        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setXPixelSize)
+        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setYPixelSize)
+        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setMode)
+        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setAutorizedValues)
+        
+        self.__scale.setXPixelSize(self.__xPixelSize)
+        self.__scale.setYPixelSize(self.__yPixelSize)
+        self.__scale.setMode(self.__mode)
+        self.__scale.setAutorizedValues(self.__autorizeValues)
+        
         
     def setXPixelSize(self,size) :
         try:
             self.__xPixelSize = abs(size)
         except:
             self.__xPixelSize = 0
-        if self.__hText is not None :
-            if(self.__state and self.__mode & QubScaleAction.HORIZONTAL and
-               self.__xPixelSize is not None and self.__xPixelSize) :
-                self.viewportUpdate()
-                self.__hText.show()
-                self.__hLine.show()
-            else:
-                self.__hText.hide()
-                self.__hLine.hide()
+        if self.__scale is not None :
+            self.__scale.setXPixelSize(self.__xPixelSize)
 
     def xPixelSize(self) :
         return self.__xPixelSize
@@ -2108,117 +2102,19 @@ class QubScaleAction(QubToggleImageAction) :
             self.__yPixelSize = abs(size)
         except:
             self.__yPixelSize = 0
-        if self.__vText is not None :
-            if (self.__state and self.__mode & QubScaleAction.VERTICAL and
-                self.__yPixelSize is not None and self.__yPixelSize) :
-                self.__vText.show()
-                self.__vLine.show()
-                self.viewportUpdate()
-            else :
-                self.__vText.hide()
-                self.__vLine.hide()
+        if self.__scale is not None :
+            self.__scale.setYPixelSize(self.__yPixelSize)
 
     def yPixelSize(self) :
         return self.__yPixelSize
-        
-    def viewportUpdate(self) :
-        if self.__state and self._qubImage is not None :
-            (canvasX,canvasY) = (self._qubImage.canvas().width(),self._qubImage.canvas().height())
-            (viewSizeX,viewSizeY) = (self._qubImage.visibleWidth(),self._qubImage.visibleHeight())
-            (nbXPixel,nbYPixel) =  min(canvasX,viewSizeX),min(canvasY,viewSizeY)
-            (widthUse,heightUse) = (nbXPixel,nbYPixel)
-            (xOriCrop,yOriCrop) = self._qubImage.matrix().invert()[0].map(0,0)
-            (xOri,yOri) = (self._qubImage.contentsX(),self._qubImage.contentsY())
-                
-            if self.__mode & QubScaleAction.HORIZONTAL :
-                nbXPixel /= 4 # 1/4 of image display
-                dummy,y1 = self._qubImage.matrix().invert()[0].map(0,0)
-                dummy,y2 = self._qubImage.matrix().invert()[0].map(0,nbXPixel)
-                unit,XSize = self.__getUnitNAuthValue((y2 - y1) * self.__xPixelSize)
-                try:
-                    nbXPixel = int(XSize * unit[0] / self.__xPixelSize)
-                    (nbXPixel,dummy) = self._qubImage.matrix().map(nbXPixel + xOriCrop,0)
-                    y0 = heightUse - 10 + yOri
-                    self.__hLine.setPoints (14 + xOri,y0,nbXPixel + 14 + xOri,y0)
-                    self.__hText.setText('%d %s' % (XSize,unit[1]))
-                    rect = self.__hText.boundingRect()
-                    xTextPos = nbXPixel + 14 - rect.width()
-                    if xTextPos < 14 :
-                        self.__hText.move(nbXPixel + 16 + xOri,y0 - rect.height() / 2)
-                    else:
-                        self.__hText.move(xTextPos + xOri,y0 - rect.height() - 2)
-                except:
-                    pass
-                
-            if self.__mode & QubScaleAction.VERTICAL :
-                nbYPixel /= 4
-                dummy,y1 = self._qubImage.matrix().invert()[0].map(0,0)
-                dummy,y2 = self._qubImage.matrix().invert()[0].map(0,nbYPixel)
-                unit,YSize = self.__getUnitNAuthValue((y2 - y1) * self.__yPixelSize)
-                try:
-                    nbYPixel = int(YSize * unit[0] / self.__yPixelSize)
-                    (dummy,nbYPixel) = self._qubImage.matrix().map(0,nbYPixel + yOriCrop)
-                    y0 = heightUse - 14 + yOri
-                    self.__vLine.setPoints(10 + xOri,y0,10 + xOri,y0 - nbYPixel)
-                    self.__vText.move(15 + xOri,y0 - nbYPixel)
-                    self.__vText.setText('%d %s' % (YSize,unit[1]))
-                except :
-                    pass
-
-            if self.__mode & QubScaleAction.BOTH :
-                hRect = self.__hText.boundingRect()
-                vRect = self.__vText.boundingRect()
-                
-                vPoint = vRect.bottomRight()
-                hPoint = hRect.topLeft()
-                if hPoint.y() - vPoint.y() < 5 :
-                    hLinePoint = self.__hLine.endPoint()
-                    self.__hText.move(hLinePoint.x() + 2,hLinePoint.y() - hRect.height() / 2)
-
-                    vLinePoint = self.__vLine.endPoint()
-                    vTextRect = self.__vText.boundingRect()
-                    self.__vText.move(vLinePoint.x() - 4,vLinePoint.y() - vTextRect.height())
-            
                     
     def _setState(self,aFlag) :
-        self.__state = aFlag
-        if aFlag :
-            self.viewportUpdate()
-            self.signalConnect(self._qubImage)
-            if self.__mode & QubScaleAction.HORIZONTAL and self.__xPixelSize is not None and self.__xPixelSize :
-                self.__hText.show()
-                self.__hLine.show()
-            if self.__mode & QubScaleAction.VERTICAL and self.__yPixelSize is not None and self.__yPixelSize :
-                self.__vText.show()
-                self.__vLine.show()
-        else :
-            self.signalDisconnect(self._qubImage)
-            self.__hText.hide()
-            self.__hLine.hide()
-            self.__vText.hide()
-            self.__vLine.hide()
-    
-    def __getUnitNAuthValue(self,size) :
-        for unit in self.__unit :
-                tmpSize = size / unit[0]
-                if 1. < tmpSize < 1000. :
-                    size = int(tmpSize)
-                    aFindFlag = False
-                    for i,autValue in enumerate(self.__autorizeValues) :
-                        if size < autValue :
-                            if i > 0 :
-                                size = self.__autorizeValues[i - 1]
-                            else :
-                                size = autValue
-                            aFindFlag = True
-                            break
-                        elif size == autValue:
-                            aFindFlag = True
-                            break
-                    if not aFindFlag :
-                        size = autValue
-                    break
-        return (unit,size)
+        if self.__scale is not None :
+            if aFlag:
+                # HAS TO BE REMOVE
+                self.__scale.show()
+            else:
+                self.__scale.hide()
 
 ####################################################################
 ##########                                                ##########

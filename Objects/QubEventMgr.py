@@ -10,7 +10,8 @@ class QubEventMgr:
         self.__eventLinkMgrs = []
         self.__mouseX,self.__mouseY = 0,0
         self.__curentModifierMgr = None
-        
+        self.__scrollView = None
+  
     def addDrawingMgr(self,aDrawingMgr) :
         try:
             self.__drawingMgr.append(weakref.ref(aDrawingMgr,self.__weakRefDrawingMgrRemove))
@@ -40,7 +41,9 @@ class QubEventMgr:
             import traceback
             traceback.print_exc()
             
-    def addEventMgrLink(self,anEventMgr,srcCanvas,desCanvas,srcMatrix,destMatrix) :
+    def addEventMgrLink(self,anEventMgr,
+                        srcCanvas,desCanvas,
+                        srcMatrix,destMatrix) :
         """ this methode link several event manager together,
         thanks to that, each draw may be seen on every view
         """
@@ -62,7 +65,12 @@ class QubEventMgr:
                 mgr1.rmLinkEventMgr(link)
                 mgr2.rmLinkEventMgr(link)
                 break
+    def scrollView(self) :
+        return self.__scrollView
     
+    def _setScrollView(self,aScrollView) :
+        self.__scrollView = aScrollView
+        
     def _mousePressed(self,event,evtMgr = None) :
         try:
             if event.button() == qt.Qt.LeftButton and event.state() == qt.Qt.ShiftButton :
@@ -128,13 +136,10 @@ class QubEventMgr:
         for drawingMgr in self.__drawingMgr :
             try:
                 drawingMgr().update()
-                if evtMgr is None:          # event propagate
-                    for link in self.__eventLinkMgrs :
-                        link.update(self)
             except:
                 import traceback
                 traceback.print_exc()
-        if evtMgr is None :
+        if evtMgr is None :             # event propagate
             for link in self.__eventLinkMgrs :
                 link.update(self)
                 
@@ -236,12 +241,14 @@ class QubEventMgr:
 class _linkEventMgr :
     MOUSE_PRESSED,MOUSE_MOVE,MOUSE_RELEASE,UPDATE,KEY_PRESSED,KEY_RELEASED,LEAVE_EVENT = range(7)
 
-    def __init__(self,evMgr1,evMgr2,canvas1,canvas2,matrix1,matrix2) :
+    def __init__(self,evMgr1,evMgr2,
+                 canvas1,canvas2,
+                 matrix1,matrix2) :
         self.__evtMgrs = [(evMgr1,evMgr1.getEventMethodes()),
                           (evMgr2,evMgr2.getEventMethodes())]
         self.__canvas = [canvas1,canvas2]
         self.__matrix = [matrix1,matrix2]
-
+        
     def mousePressed(self,event,evtMgr) :
         self._mouseEvent(event,evtMgr,_linkEventMgr.MOUSE_PRESSED)
         
@@ -290,6 +297,12 @@ class _linkEventMgr :
     def getMgrs(self) :
         return self.__evtMgrs[0][0],self.__evtMgrs[1][0]
 
+    def getOtherMgr(self,eventMgr) :
+        if eventMgr == self.__evtMgrs[0][0] :
+            return self.__evtMgrs[1][0]
+        else :
+            return self.__evtMgrs[0][0]
+        
     def getCanvasNMatrix(self,evtMgr) :
         matrix1,matrix2 = self.__matrix
         canvas1,canvas2 = self.__canvas
