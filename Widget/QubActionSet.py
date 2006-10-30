@@ -723,6 +723,10 @@ class QubZoomRectangle(QubToggleImageAction) :
         self.__drawingMgr = Qub2PointSurfaceDrawingManager(qubImage.canvas(),
                                                            qubImage.matrix())
         zoomrect = qtcanvas.QCanvasRectangle(qubImage.canvas())
+        pen = zoomrect.pen()
+        pen.setStyle(qt.Qt.DashLine)
+        pen.setWidth(2)
+        zoomrect.setPen(pen)
         self.__drawingMgr.addDrawingObject(zoomrect)
         qubImage.addDrawingMgr(self.__drawingMgr)
 
@@ -1740,18 +1744,17 @@ class QubZoomAction(QubAction):
                 and link update zoom value to the view resize event
                 """
                 if self._listAction is not None:
-                    self._updateZoomValue()
-                    
+                                       
                     if self._selName == "Fit2Screen":
                         if self._sigConnected == False:
                             self.connect(self._qubImage,
-                                         qt.PYSIGNAL("ViewportResized"),
+                                         qt.PYSIGNAL("ViewportUpdated"),
                                          self._updateZoomValue)
                             self._sigConnected = True
                     else:
                         if self._sigConnected == True:
                             self.disconnect(self._qubImage,
-                                            qt.PYSIGNAL("ViewportResized"),
+                                            qt.PYSIGNAL("ViewportUpdated"),
                                             self._updateZoomValue)
                             self._sigConnected = False
             else:
@@ -1759,10 +1762,11 @@ class QubZoomAction(QubAction):
                 if self._listAction is not None :
                     zoom = self._listAction.zoom()
                     self._qubImage.setZoom(zoom,zoom,self._keepROI)
-                
+                    self._updateZoomValue()
+                    
                 if self._sigConnected == True:
                     self.disconnect(self._qubImage,
-                                    qt.PYSIGNAL("ViewportResized"),
+                                    qt.PYSIGNAL("ViewportUpdated"),
                                     self._updateZoomValue)
                     self._sigConnected = False
                 

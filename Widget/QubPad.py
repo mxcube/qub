@@ -268,6 +268,9 @@ class QubPad(QubWidgetFromUI):
         for step in step_list :
             self.__rStepCombo.insertItem(self.__stepPixmap,str(step))
         
+    def setPadSize(self,aPercent) :
+        self.__padButton.setPadSize(aPercent)
+        
     def __hAxisSet(self) :
         aPos,valid = self.__hAxisPos.text().toFloat()
         if not self.__padButton.hstate.move(aPos) :
@@ -1334,13 +1337,18 @@ class _pad_button(qt.QPushButton) :
         self.__incOrDecPadSize(-0.20)
     def incPadSize(self) :
         self.__incOrDecPadSize(0.25)
-        
-    def __incOrDecPadSize(self,inc) :
+    def setPadSize(self,aPercent) :
+        self.__incOrDecPadSize(aPercent,True)
+    def __incOrDecPadSize(self,inc,anAbsoluteFlag = False) :
         pad_path = QubIcons.getIconPath('pad.png')
         old_size = self.__padInUse.size()
         tmp_image = qt.QImage(pad_path)
-        old_scale = old_size.width() / float(tmp_image.width())
-        old_scale *= 1 + inc
+        if anAbsoluteFlag :
+            old_scale = inc
+        else:
+            old_scale = old_size.width() / float(tmp_image.width())
+            old_scale *= 1 + inc
+            
         if 0.3 <= old_scale :
             self.parent().show()
             self.stopButton.hide()
