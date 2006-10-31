@@ -150,11 +150,17 @@ class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
         self._eventmgr = aEventmgr
         self._cursor = cursor
         self._modify = modifyCBK
-
+        self._dirtyFlag = False
+        
+    def __del__(self) :
+        if self._dirtyFlag :
+            self._drawingMgr().endDraw()
+        
     def setCursor(self,eventMgr) :
         eventMgr.setCursor(self._cursor)
         
     def mousePressed(self, x, y):
+        self._dirtyFlag = True
         self._modify(x,y)
                 
     def mouseMove(self, x, y):
@@ -165,6 +171,7 @@ class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
         
     def mouseReleased(self, x, y):
         self._modify(x, y)
+        self._dirtyFlag = False
         self._drawingMgr().endDraw()
 
 class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
@@ -174,11 +181,17 @@ class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
         self._eventmgr = aEventmgr
         self._cursor = cursor
         self._modify = modifyCBK
-        
+        self._dirtyFlag = False
+
+    def __del__(self) :
+        if self._dirtyFlag :
+            self._drawingMgr().endDraw()
+            
     def setCursor(self,eventMgr) :
         eventMgr.setCursor(self._cursor)
 
     def mousePressed(self, x, y):
+        self._dirtyFlag = True
         self.__oldX = x
         self.__oldY = y
                 
@@ -192,4 +205,5 @@ class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
         
     def mouseReleased(self, x, y):
         self._modify(x - self.__oldX, y - self.__oldY)
+        self._dirtyFlag = False
         self._drawingMgr().endDraw()

@@ -201,9 +201,9 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
                 (im_w, im_h) = (image.width(), image.height())
             (w, h) = (int(im_w * zoom[0]), int(im_h * zoom[1]))
 
-            if((w, h) == (view_w, view_h) and self.__scrollMode == "FillScreen" or
+            if(abs(w - view_w) <= 1 and abs(h - view_h) <= 1 and self.__scrollMode == "FillScreen" or
                self.__scrollMode == "Fit2Screen" and zoom[0] == zoom[1] and
-               (w == view_w and h <= view_h or w <= view_w and h == view_h)) :
+               (abs(w - view_w) <= 1 and h <= view_h or w <= view_w and abs(h - view_h) <= 1)) :
                 if (cvs_w, cvs_h) != (pix_w, pix_h):
                     self.__cvs.resize(pix_w, pix_h)
                     self.__startIdle()
