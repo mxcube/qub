@@ -191,7 +191,7 @@ class QubMeasureListDialog(qt.QDialog):
                self.__yPixelSize is not None and self.__yPixelSize) :
                 distwidth = self.__getDistanceString(width * self.__xPixelSize)
                 distheight = self.__getDistanceString(height * self.__yPixelSize)
-                surface = self.__getDistanceString(width * self.__xPixelSize * height * self.__yPixelSize)
+                surface = self.__getSurfaceString(width * self.__xPixelSize * height * self.__yPixelSize)
                 anItem.setText(1,"distance (x,y) -> (%sm,%sm), surface %sm2" % (distwidth,distheight,surface))
             else :
                 anItem.setText(1,'distance (x,y) -> (%d,%d) pixel' % (width,height))
@@ -202,6 +202,15 @@ class QubMeasureListDialog(qt.QDialog):
             if 1. < tmpDist < 1000. :
                 return "%.2f %s" % (tmpDist,unitString)
         return "%.2f" % dist
+
+    def __getSurfaceString(self,surface) :
+        print 'surface',surface
+        for unit,unitString in [(1e-6,'m'),(1e-12,'\xb5'),(1e-18,'n'),(1e-24,'p')] :
+            tmpDist = surface / unit
+            print 'tmpDist',tmpDist
+            if 0.01 <= tmpDist < 1000. :
+                return "%.2f %s" % (tmpDist,unitString)
+        return "%.2f" % surface
     
     def __getItemWithDrawingObject(self,drawingMgr) :
         Item = self.__measureList.firstChild()

@@ -134,6 +134,13 @@ class QubDrawingMgr :
                 pen = drawingObject.pen()
                 pen.setColor(color)
                 drawingObject.setPen(pen)
+
+    def setPen(self,pen) :
+        for drawingObject in self._drawingObjects :
+            drawingObject.setPen(pen)
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            for drawingObject in objectlist :
+                drawingObject.setPen(pen)
                 
     def startDrawing(self) :
         """
@@ -258,9 +265,11 @@ class QubDrawingMgr :
         try :
             for drawingObject in self._drawingObjects :
                 callback(drawingObject,*args,**keys)
+                
             for link,canvas,matrix,objectlist in self._foreignObjects :
                 for drawingObject in objectlist :
                     callback(drawingObject,*args,**keys)
+                    
         except:
             import traceback
             traceback.print_exc()
@@ -579,6 +588,7 @@ class _foreach_callable :
             self.__cbk = weakref.ref(callback.im_func)
         except AttributeError :
             self.__cbk = weakref.ref(callback)
+
     def __call__(self,*args,**keys) :
         aReturnFlag = False
         try:
