@@ -107,12 +107,15 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
                 aLock.lock()
                 aWorkingStruct.end = True
                 if self.__plug is not None and not self.__plug.isEnd() :
-                    for i,dataStruct in enumerate(self.__dataPending) :
+                    removeDataStructs = []
+                    for dataStruct in self.__dataPending :
                         if dataStruct.end :
                             self.__postSetImage.append(dataStruct.image)
+                            removeDataStructs.append(dataStruct)
                         else :
                             break
-                    self.__dataPending[0:i + 1] = []
+                    for dataStruct in removeDataStructs :
+                        self.__dataPending.remove(dataStruct)
                 else :
                     self.__dataPending = []
             except :
