@@ -319,18 +319,28 @@ class QubPadPlug :
         print "Should redefine Horizontal Stop"
     def stopRotation(self) :
         print "Should redefine Rotation Stop"
+
     def up(self,step) :
         print "Should move %f step up" % step
     def down(self,step) :
         print "Should move %f step down" % step
+    def moveVertical(self,pos) :
+        print "Vertical motor should move at %f" % pos
+        
     def left(self,step) :
         print "Should move %f step left" % step
     def right(self,step) :
         print "Should move %f step right" % step
+    def moveHorizontal(self,pos) :
+        print "Horizontal motor should move at %f" % pos
+    
     def clockwise(self,step) :
         print "Should move %f step clockwise" % step
     def unclockwise(self,step) :
         print "Should move %f step unclockwise" % step
+    def moveRotation(self,pos) :
+        print "Rotation motor should move at %f" % pos
+        
     def setPad(self,aPad) :
         self._padButton = aPad
 
@@ -587,17 +597,13 @@ class _hMoveRight(_hMotorState) :
 class _hUndoRedo(_hMotorState) :
     def __init__(self,manager,plug,aUndoFlag) :
         _hMotorState.__init__(self,manager,plug)
-        self.__step = 0
         currentPos = self._mgr.getHPos()
         if aUndoFlag :
-            self.__step = self._mgr.hundoredo.undo(currentPos) - currentPos
+            newPos = self._mgr.hundoredo.undo(currentPos)
         else :
-            self.__step = self._mgr.hundoredo.redo(currentPos) - currentPos
+            newPos = self._mgr.hundoredo.redo(currentPos)
         if(self._plug) :
-            if self.__step > 0 :
-                self._plug.right(self.__step)
-            else :
-                self._plug.left(-self.__step)
+            self._plug.moveHorizontal(newPos)
         self._mgr.moveState.move()
 
     def __del__(self) :
@@ -609,27 +615,19 @@ class _hUndoRedo(_hMotorState) :
             self._plug.stopHorizontal()
         
     def setYourStateOnImage(self,image) :
-        if self.__step > 0 :
-            self._mgr.setYellowOn(image,self._mgr.RIGHT)
-            self._mgr.setGrayOn(image,self._mgr.LEFT)
-        else :
-            self._mgr.setYellowOn(image,self._mgr.LEFT)
-            self._mgr.setGrayOn(image,self._mgr.RIGHT)
-
+        self._mgr.setYellowOn(image,self._mgr.RIGHT)
+        self._mgr.setYellowOn(image,self._mgr.LEFT)
+        
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('yellow'))
 
 class _hMoveAbs(_hMotorState) :
     def __init__(self,manager,plug,anAbsPos) :
         _hMotorState.__init__(self,manager,plug)
-        self.__step = 0
         currentPos = self._mgr.getHPos()
-        self.__step = anAbsPos - currentPos
+        self._mgr.hundoredo.addPos(currentPos)
         if(self._plug) :
-            if self.__step > 0 :
-                self._plug.right(self.__step)
-            else:
-                self._plug.left(-self.__step)
+            self._plug.moveHorizontal(anAbsPos)
         self._mgr.moveState.move()
 
     def __del__(self) :
@@ -641,13 +639,9 @@ class _hMoveAbs(_hMotorState) :
             self._plug.stopHorizontal()
 
     def setYourStateOnImage(self,image) :
-        if self.__step > 0 :
-            self._mgr.setYellowOn(image,self._mgr.RIGHT)
-            self._mgr.setGrayOn(image,self._mgr.LEFT)
-        else :
-            self._mgr.setYellowOn(image,self._mgr.LEFT)
-            self._mgr.setGrayOn(image,self._mgr.RIGHT)
-
+        self._mgr.setYellowOn(image,self._mgr.RIGHT)
+        self._mgr.setYellowOn(image,self._mgr.LEFT)
+        
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('yellow'))
 
@@ -821,17 +815,13 @@ class _vMoveDown(_vMotorState) :
 class _vUndoRedo(_vMotorState) :
     def __init__(self,manager,plug,aUndoFlag) :
         _vMotorState.__init__(self,manager,plug)
-        self.__step = 0
         currentPos = self._mgr.getVPos()
         if aUndoFlag :
-            self.__step = self._mgr.vundoredo.undo(currentPos) - currentPos
+            newPos = self._mgr.vundoredo.undo(currentPos)
         else :
-            self.__step = self._mgr.vundoredo.redo(currentPos) - currentPos
+            newPos = self._mgr.vundoredo.redo(currentPos)
         if(self._plug) :
-            if self.__step > 0 :
-                self._plug.up(self.__step)
-            else :
-                self._plug.down(-self.__step)
+            self._plug.moveVertical(newPos)
         self._mgr.moveState.move()
     def __del__(self) :
         self._mgr.moveState.endMove()
@@ -843,27 +833,19 @@ class _vUndoRedo(_vMotorState) :
             self._plug.stopVertical()
 
     def setYourStateOnImage(self,image) :
-        if self.__step > 0 :
-            self._mgr.setYellowOn(image,self._mgr.UP)
-            self._mgr.setGrayOn(image,self._mgr.DOWN)
-        else :
-            self._mgr.setYellowOn(image,self._mgr.DOWN)
-            self._mgr.setGrayOn(image,self._mgr.UP)
-
+        self._mgr.setYellowOn(image,self._mgr.UP)
+        self._mgr.setYellowOn(image,self._mgr.DOWN)
+        
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('yellow'))
 
 class _vMoveAbs(_vMotorState) :
     def __init__(self,manager,plug,anAbsPos) :
         _vMotorState.__init__(self,manager,plug)
-        self.__step = 0
         currentPos = self._mgr.getVPos()
-        self.__step = anAbsPos - currentPos
+        self._mgr.vundoredo.addPos(currentPos)
         if(self._plug) :
-            if self.__step > 0 :
-                self._plug.up(self.__step)
-            else :
-                self._plug.down(-self.__step)
+            self._plug.moveVertical(anAbsPos)
         self._mgr.moveState.move()
     def __del__(self) :
         self._mgr.moveState.endMove()
@@ -875,13 +857,9 @@ class _vMoveAbs(_vMotorState) :
             self._plug.stopVertical()
 
     def setYourStateOnImage(self,image) :
-        if self.__step > 0 :
-            self._mgr.setYellowOn(image,self._mgr.UP)
-            self._mgr.setGrayOn(image,self._mgr.DOWN)
-        else :
-            self._mgr.setYellowOn(image,self._mgr.DOWN)
-            self._mgr.setGrayOn(image,self._mgr.UP)
-
+        self._mgr.setYellowOn(image,self._mgr.UP)
+        self._mgr.setYellowOn(image,self._mgr.DOWN)
+        
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('yellow'))
 
@@ -1057,17 +1035,13 @@ class _rMoveUnclockwise(_rMotorState) :
 class _rUndoRedo(_rMotorState) :
     def __init__(self,manager,plug,aUndoFlag) :
         _rMotorState.__init__(self,manager,plug)
-        self.__step = 0
         currentPos = self._mgr.getRPos()
         if aUndoFlag :
-            self.__step = self._mgr.rundoredo.undo(currentPos) - currentPos
+            newPos = self._mgr.rundoredo.undo(currentPos)
         else :
-            self.__step = self._mgr.rundoredo.redo(currentPos) - currentPos
+            newPos = self._mgr.rundoredo.redo(currentPos)
         if(self._plug) :
-            if self.__step > 0 :
-                self._plug.clockwise(self.__step)
-            else :
-                self._plug.unclockwise(-self.__step)
+            self._plug.moveRotation(newPos)
         self._mgr.moveState.move()
     def __del__(self) :
         self._mgr.moveState.endMove()
@@ -1079,13 +1053,9 @@ class _rUndoRedo(_rMotorState) :
             self._plug.stopRotation()
 
     def setYourStateOnImage(self,image) :
-        if self.__step > 0 :
-            self._mgr.setYellowOn(image,self._mgr.CLOCKWISE)
-            self._mgr.setGrayOn(image,self._mgr.UNCLOCKWISE)
-        else:
-            self._mgr.setYellowOn(image,self._mgr.UNCLOCKWISE)
-            self._mgr.setGrayOn(image,self._mgr.CLOCKWISE)
-
+        self._mgr.setYellowOn(image,self._mgr.CLOCKWISE)
+        self._mgr.setYellowOn(image,self._mgr.UNCLOCKWISE)
+        
     def setBackgroundLabel(self,label) :
         label.setPaletteBackgroundColor(qt.QColor('yellow'))
 
@@ -1094,6 +1064,7 @@ class _rMoveAbs(_rMotorState) :
         _rMotorState.__init__(self,manager,plug)
         self.__step = 0
         currentPos = self._mgr.getRPos()
+        self._mgr.rundoredo.addPos(currentPos)
         self.__step = anAbsPos- currentPos
         
         if(self._plug) :
@@ -1824,7 +1795,9 @@ class _myTestPlug(QubPadPlug) :
         print "Vertical Stop"
     def stopHorizontal(self) :
         print "Horizontal Stop"
-
+    def stopRotation(self) :
+        print "Rotation Stop"
+        
     def up(self,step) :
         print "Move %f step up" % step
         self.vtimer = qt.QTimer()
