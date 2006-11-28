@@ -130,6 +130,9 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
         self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
         self._update()
         self.__idle.stop()
+
+    def _realEmitActionInfo(self,text) :
+        self.emit(qt.PYSIGNAL("ActionInfo"),(text,))
         
     ##################################################
     ## PUBLIC METHOD    

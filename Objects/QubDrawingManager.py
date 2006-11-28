@@ -21,6 +21,7 @@ class QubDrawingMgr :
         self.__exceptList = []          # event Name with is not exclusive
         self.__eventName = ''
         self.__cantBeModify = True
+        self._actionInfo = ''
         
     def __del__(self) :
         for drawingObject in self._drawingObjects :
@@ -173,6 +174,18 @@ class QubDrawingMgr :
         see QubDrawingEvent
         """
         self._drawingEvent = event
+        
+    def getActionInfo(self) :
+        """
+        This methode is called be the event manager to dispatch action information
+        """
+        return self._actionInfo
+
+    def setActionInfo(self,text) :
+        """
+        Set the information about the action
+        """
+        self._actionInfo = text
         
                 ####### END OF PUBLIC METHODES #######
     def boundingRect(self) :

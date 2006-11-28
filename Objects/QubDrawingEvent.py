@@ -38,13 +38,18 @@ class QubDrawingEvent :
             return False
     def setDubMode(self,aFlag) :
         pass                            # TODO
+
+    def getActionInfo(self) :
+        return ''                       # MUST BE REDEFINE
     
 class _DrawingEventNDrawingMgr(QubDrawingEvent):
     def __init__(self,aDrawingMgr,oneShot) :
         QubDrawingEvent.__init__(self)
         self._drawingMgr = weakref.ref(aDrawingMgr)
         self._onShot = oneShot
-        
+    def getActionInfo(self) :
+        return self._drawingMgr().getActionInfo()
+    
 class QubMoveNPressed1Point(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,oneShot) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)

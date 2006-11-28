@@ -151,6 +151,7 @@ class QubMeasureListDialog(qt.QDialog):
             anItemList = QubMeasureListDialog._ItemList(self.__measureList,self.__lastdrawingMgr)
             anItemList.setText(0,'Mes %d' % self.__mesID)
             self.__lastdrawingMgr.setColor(self.__defaultColor)
+            self.__lastdrawingMgr.setActionInfo('Drawing Mesure %d' % self.__mesID)
             self.__mesID += 1
         except:
             import traceback

@@ -1946,7 +1946,38 @@ class QubPositionAction(QubImageAction):
         self.xLabel.setText(str(x))
         self.yLabel.setText(str(y))
         
-        
+####################################################################
+##########                                                ##########
+##########                 QubInfoAction               ##########
+##########                                                ##########
+####################################################################
+class QubInfoAction(QubImageAction) :
+    def __init__(self,*args,**keys) :
+        QubImageAction.__init__(self,autoConnect=True,*args,**keys)
+
+    def __del__(self) :
+        if self._qubImage is not None :
+            self.disconnect(qubImage,qt.PYSIGNAL("ActionInfo"),
+                            self.__displayTextInfo)
+    def addStatusWidget(self,parent) :
+        if self._widget is None :
+            self._widget = qt.QLabel(parent)
+        return self._widget
+    
+    def viewConnect(self,qubImage) :
+        self._qubImage = qubImage
+        if self._qubImage is not None :
+            self.connect(qubImage,qt.PYSIGNAL("ActionInfo"),
+                         self.__displayTextInfo)
+
+    def __displayTextInfo(self,text) :
+        if self._widget is not None :
+            try:
+                self._widget.setText(text)
+            except:
+                import traceback
+                traceback.print_exc()
+                
 ####################################################################
 ##########                                                ##########
 ##########                 QubBeamAction                  ##########

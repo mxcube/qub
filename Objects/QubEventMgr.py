@@ -11,7 +11,9 @@ class QubEventMgr:
         self.__mouseX,self.__mouseY = 0,0
         self.__curentModifierMgr = None
         self.__scrollView = None
-  
+        self.__actionInfoIdle = qt.QTimer(self)
+        qt.QObject.connect(self.__actionInfoIdle,qt.SIGNAL('timeout()'),self.__emitActionInfo)
+        
     def addDrawingMgr(self,aDrawingMgr) :
         try:
             self.__drawingMgr.append(weakref.ref(aDrawingMgr,self.__weakRefDrawingMgrRemove))
@@ -37,6 +39,8 @@ class QubEventMgr:
                 if len(excludeEvents) :
                     self.__excludedEvent.append((weakref.ref(aDrawingEvent,self.__weakRefEventRemove),excludeEvents))
             self.__pendingEvents.append(weakref.ref(aDrawingEvent,self.__weakRefEventRemove))
+            if not self.__actionInfoIdle.isActive() :
+                self.__actionInfoIdle.start(0)
         except:
             import traceback
             traceback.print_exc()
@@ -180,11 +184,15 @@ class QubEventMgr:
             aDrawingEventRef().endPolling()
         except:
             pass
-        
+        if not self.__actionInfoIdle.isActive() :
+            self.__actionInfoIdle.start(0)
+            
     def __weakRefEventRemove(self,eventRef) :
         try :
             self.__pendingEvents.remove(eventRef)
             self.__checkExcludedEventsBeforeRemove(eventRef)
+            if not self.__actionInfoIdle.isActive() :
+                self.__actionInfoIdle.start(0)
         except:
             pass
 
@@ -226,8 +234,26 @@ class QubEventMgr:
             if anEventMgr is None : anEventMgr = self
             self.__curentModifierMgr.setCursor(anEventMgr)
             
-            
+    def __emitActionInfo(self) :       
+        textList = []
+        try:
+            for pendingRef in self.__pendingEvents :
+                text = pendingRef().getActionInfo()
+                if text :
+                    textList.append(text)
+            textInfo = ' - '.join(textList)
+            self._realEmitActionInfo(textInfo)
+        except:
+            import traceback
+            traceback.print_exc()
+        self.__actionInfoIdle.stop()
 
+    def _realEmitActionInfo(self,text) :
+        """
+        This methode should be redefine
+        """
+        print text
+        
     def addLinkEventMgr(self,linkEventMgr) :
         """ Do not call this methode directly
         """
