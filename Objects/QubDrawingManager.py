@@ -619,17 +619,19 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         return aEndFlag
 
     def update(self) :
-        for point_id,(x,y) in self._points :
+        for point_id,(x,y) in enumerate(self._points) :
             if self._matrix is not None :
                 x,y = self._matrix.map(x,y)
 
             for drawingObject in self._drawingObjects :
                 drawingObject.move(x,y,point_id)
 
-            self._drawingObjects(point_id)
+            self._drawForeignObject(point_id)
 
     def _getModifyClass(self,x,y) :
         for i,(xpoint,ypoint) in enumerate(self._points) :
+            if self._matrix is not None :
+                xpoint,ypoint = self._matrix.map(xpoint,ypoint)
             if(abs(x - xpoint) < 5 and abs(y - ypoint) < 5) :
                 func = self.move.im_func
                 tmpfunc = new.function(func.func_code,func.func_globals,'tmpmove',(self,0,0,i))

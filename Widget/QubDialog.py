@@ -208,7 +208,8 @@ class QubMeasureListDialog(qt.QDialog):
         if self.__lastdrawingMgr == drawingMgr :
             self.__lastdrawingMgr = None
         if anItem is not None :
-            points = drawingMgr.points()
+            points = []
+            points.extend(drawingMgr.points())
             jx,jy = points.pop(0)
             vect = [(x - jx,y - jy) for x,y in points]
             (x1,y1),(x2,y2) = vect
@@ -231,10 +232,8 @@ class QubMeasureListDialog(qt.QDialog):
         return "%.2f" % dist
 
     def __getSurfaceString(self,surface) :
-        print 'surface',surface
         for unit,unitString in [(1e-6,'m'),(1e-12,'\xb5'),(1e-18,'n'),(1e-24,'p')] :
             tmpDist = surface / unit
-            print 'tmpDist',tmpDist
             if 0.01 <= tmpDist < 1000. :
                 return "%.2f %s" % (tmpDist,unitString)
         return "%.2f" % surface
