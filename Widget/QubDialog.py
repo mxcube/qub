@@ -11,8 +11,13 @@ import math
 import os.path
 from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 from Qub.Objects.QubPixmapDisplay import QubPixmapZoomPlug
-from Qub.Objects.QubDrawingManager import QubPointDrawingMgr,QubLineDrawingManager,Qub2PointSurfaceDrawingManager
-from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget,QubCanvasEllipse
+from Qub.Objects.QubDrawingManager import QubPointDrawingMgr
+from Qub.Objects.QubDrawingManager import QubLineDrawingManager
+from Qub.Objects.QubDrawingManager import Qub2PointSurfaceDrawingManager
+from Qub.Objects.QubDrawingManager import QubPolygoneDrawingMgr
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasEllipse
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasAngle
 from Qub.Widget.QubWidgetSet import QubSlider,QubColorToolMenu
 from Qub.Icons.QubIcons import loadIcon
 from Qub.Objects.QubDrawingEvent import QubMoveNPressed1Point
@@ -47,7 +52,8 @@ class QubMeasureListDialog(qt.QDialog):
         
         self.__tools = [('point',QubPointDrawingMgr,QubCanvasTarget,self.__endPointDrawing),
                         ('distance',QubLineDrawingManager,qtcanvas.QCanvasLine,self.__endDistanceDrawing),
-                        ('rectangle',Qub2PointSurfaceDrawingManager,qtcanvas.QCanvasRectangle,self.__endSurfaceDrawing)]
+                        ('rectangle',Qub2PointSurfaceDrawingManager,qtcanvas.QCanvasRectangle,self.__endSurfaceDrawing),
+                        ('angle',QubPolygoneDrawingMgr,QubCanvasAngle,self.__endAngleDrawing)]
         
         self.__ToolIdSelected = 0
         self.__lastdrawingMgr = None
@@ -197,6 +203,26 @@ class QubMeasureListDialog(qt.QDialog):
             else :
                 anItem.setText(1,'distance (x,y) -> (%d,%d) pixel' % (width,height))
 
+    def __endAngleDrawing(self,drawingMgr) :
+        anItem = self.__getItemWithDrawingObject(drawingMgr)
+        if self.__lastdrawingMgr == drawingMgr :
+            self.__lastdrawingMgr = None
+        if anItem is not None :
+            points = drawingMgr.points()
+            jx,jy = points.pop(0)
+            vect = [(x - jx,y - jy) for x,y in points]
+            (x1,y1),(x2,y2) = vect
+            if(self.__xPixelSize is not None and self.__xPixelSize and
+               self.__yPixelSize is not None and self.__yPixelSize) :
+                x1 *= self.__xPixelSize;x2 *= self.__xPixelSize
+                y1 *= self.__yPixelSize;y2 *= self.__yPixelSize
+                
+            scalar = x1 * x2 + y1 * y2
+            dist1 = math.sqrt(x1 **2 + y1 **2)
+            dist2 = math.sqrt(x2 **2 + y2 ** 2)
+            angle = math.acos(scalar/(dist1*dist2))
+            anItem.setText(1,"angle -> %f deg" % (angle * 180 / math.pi))
+            
     def __getDistanceString(self,dist) :
         for unit,unitString in [(1e-3,'m'),(1e-6,'\xb5'),(1e-9,'n'),(1e-12,'p')] :
             tmpDist = dist / unit

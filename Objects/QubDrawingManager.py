@@ -1,6 +1,7 @@
 import weakref
 import qt
-from Qub.Objects.QubDrawingEvent import QubPressedNDrag1Point,QubPressedNDrag2Point
+import new
+from Qub.Objects.QubDrawingEvent import QubPressedNDrag1Point,QubPressedNDrag2Point,QubNPointClick
 from Qub.Objects.QubDrawingEvent import QubModifyAbsoluteAction
 from Qub.Objects.QubDrawingEvent import QubModifyRelativeAction
 from Qub.Tools import QubWeakref
@@ -224,7 +225,7 @@ class QubDrawingMgr :
         raise StandardError('update has to be redifined')
 
     def _getDrawingEvent(self) :
-        raise StandardError('_getDrawingEvent has to be redifined')
+        return self._drawingEvent(self,self._oneShot)
 
     def _getModifyClass(self,x,y) :
         return None
@@ -355,9 +356,6 @@ class QubPointDrawingMgr(QubDrawingMgr) :
         if rect.contains(x,y) : 
             return QubModifyAbsoluteAction(self,self._eventMgr,self.move)
 
-    def _getDrawingEvent(self) :
-        return self._drawingEvent(self,self._oneShot)
-
     def _drawForeignObject(self) :
         try:
             for link,canvas,matrix,objectlist in self._foreignObjects :
@@ -427,9 +425,6 @@ class QubLineDrawingManager(QubDrawingMgr) :
 
         self._drawForeignObject()
         
-    def _getDrawingEvent(self) :
-        return self._drawingEvent(self,self._oneShot)
-            
     def _getModifyClass(self,x,y) :
         (x1,y1,x2,y2) = self._x1,self._y1,self._x2,self._y2
         if self._matrix is not None :
@@ -551,9 +546,6 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
             drawingObject.setSize(width,height)
         self._drawForeignObject()
         
-    def _getDrawingEvent(self) :
-        return self._drawingEvent(self,self._oneShot)
-
     def _getModifyClass(self,x,y) :
         rect = self._rect.normalize()
         self._rect = rect
@@ -592,6 +584,70 @@ class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
                 drawingObject.move(x,y)
                 drawingObject.setSize(width,height)
 
+class QubPolygoneDrawingMgr(QubDrawingMgr) :
+    def __init__(self,aCanvas,aMatrix = None) :
+        QubDrawingMgr.__init__(self,aCanvas,aMatrix)
+        self._points = []
+        self._drawingEvent = QubNPointClick
+
+                    ####### PUBLIC METHODE #######
+    def setPoints(self,pointList) :
+        self._points = []
+        self.update()
+
+    def points(self) :
+        return self._points
+
+               ####### INTERNAL LOOP EVENT CALL #######
+    def move(self,x,y,point_id) :
+        if self._matrix is not None :
+            xWarp,yWarp = self._matrix.invert()[0].map(x,y)
+        else:
+            xWarp,yWarp = x,y
+
+        if len(self._points) <= point_id :
+            self._points.append((xWarp,yWarp))
+        else:
+            self._points[point_id] = (xWarp,yWarp)
+
+        aEndFlag = False
+        for drawingObject in self._drawingObjects :
+            aEndFlag = drawingObject.move(x,y,point_id) or aEndFlag
+
+        self._drawForeignObject(point_id)
+
+        return aEndFlag
+
+    def update(self) :
+        for point_id,(x,y) in self._points :
+            if self._matrix is not None :
+                x,y = self._matrix.map(x,y)
+
+            for drawingObject in self._drawingObjects :
+                drawingObject.move(x,y,point_id)
+
+            self._drawingObjects(point_id)
+
+    def _getModifyClass(self,x,y) :
+        for i,(xpoint,ypoint) in enumerate(self._points) :
+            if(abs(x - xpoint) < 5 and abs(y - ypoint) < 5) :
+                func = self.move.im_func
+                tmpfunc = new.function(func.func_code,func.func_globals,'tmpmove',(self,0,0,i))
+                callBack = new.instancemethod(tmpfunc,self,QubPolygoneDrawingMgr)
+                return QubModifyAbsoluteAction(self,self._eventMgr,callBack)
+
+    def _drawForeignObject(self,point_id) :
+        try:
+            for link,canvas,matrix,objectlist in self._foreignObjects :
+                x,y = self._points[point_id]
+                if matrix is not None :
+                    x,y = matrix.map(x,y)
+                for drawingObject in objectlist :
+                    drawingObject.move(x,y,point_id)
+        except:
+            import traceback
+            traceback.print_exc()
+            
 ############################## Callable ##############################
 class _foreach_callable :
     def __init__(self,meth,callback) :

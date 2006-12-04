@@ -147,6 +147,31 @@ class Qub2PointClick(_DrawingEventNDrawingMgr) :
             else :
                 self._drawingMgr().moveSecondPoint(x,y)
         return False
+
+class QubNPointClick(_DrawingEventNDrawingMgr) :
+    def __init__(self,aDrawingMgr,oneShot) :
+        _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
+        self.__pointNb = 0
+        self.__active = False
+        
+    def mousePressed(self,x,y) :
+        if self.__pointNb == 0 :
+            self._drawingMgr().show()
+        self._drawingMgr().move(x,y,self.__pointNb)
+        self.__active = True
+        
+    def mouseReleased(self,x,y) :
+        aEndFlag = self._drawingMgr().move(x,y,self.__pointNb)
+        if aEndFlag :
+            self.__pointNb = 0; self.__active = False
+            self._drawingMgr().endDraw()
+        else: self.__pointNb += 1
+        return aEndFlag and self._onShot
+
+    def mouseMove(self,x,y) :
+        if self.__active :
+            self._drawingMgr().move(x,y,self.__pointNb)
+            
                      ####### MODIFY EVENT #######
 class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,aEventmgr,modifyCBK,

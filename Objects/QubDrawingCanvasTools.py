@@ -170,7 +170,7 @@ class QubCanvasHLine(qtcanvas.QCanvasLine) :
 ####################           QubCanvasScale                 ##################
 ################################################################################
 
-class QubCanvasScale(qtcanvas.QCanvasItem) :
+class QubCanvasScale(qtcanvas.QCanvasLine) :
     HORIZONTAL,VERTICAL,BOTH = (0x1,0x2,0x3)
     def __init__(self,canvas) :
         color = qt.QColor('green')
@@ -356,3 +356,54 @@ class QubCanvasScale(qtcanvas.QCanvasItem) :
                     break
         return (unit,size)
 
+################################################################################
+####################           QubCanvasAngle                 ##################
+################################################################################
+class QubCanvasAngle(qtcanvas.QCanvasLine) :
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasLine.__init__(self,canvas)
+        self.__secLine = None
+        self.__showFlag = False
+        
+    def move(self,x,y,point_id) :
+        if point_id == 0 :
+            if self.__secLine is None : # Init
+                self.setPoints(x,y,x,y)
+            else:                       # Modif
+                for line in [self,self.__secLine] :
+                    endPoint = line.endPoint()
+                    line.setPoints(x,y,endPoint.x(),endPoint.y())
+        elif point_id == 1 :
+            firstPoint = self.startPoint()
+            self.setPoints(firstPoint.x(),firstPoint.y(),x,y)
+        else:
+            if self.__secLine is None :
+                self.__secLine = qtcanvas.QCanvasLine(self.canvas())
+                self.__secLine.setPen(self.pen())
+                if self.__showFlag :
+                    self.__secLine.show()
+            firstPoint = self.startPoint()
+            self.__secLine.setPoints(firstPoint.x(),firstPoint.y(),x,y)
+            return True                 # END OF POLYGONE
+                    
+    def show(self) :
+        qtcanvas.QCanvasLine.show(self)
+        if self.__secLine is not None :
+            self.__secLine.show()
+        self.__showFlag = True
+
+    def hide(self) :
+        qtcanvas.QCanvasLine.hide(self)
+        if self.__secLine is not None :
+            self.__secLine.hide()
+        self.__showFlag = False
+
+    def setPen(self,pen) :
+        qtcanvas.QCanvasLine.setPen(self,pen)
+        if self.__secLine is not None :
+            self.__secLine.setPen(pen)
+
+    def setCanvas(self,aCanvas) :
+        qtcanvas.QCanvasLine.setCanvas(self,aCanvas)
+        if self.__secLine is not None :
+            self.__secLine.setCanvas(aCanvas)
