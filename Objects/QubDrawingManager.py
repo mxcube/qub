@@ -1,3 +1,4 @@
+import math
 import weakref
 import qt
 import new
@@ -374,6 +375,7 @@ class QubLineDrawingManager(QubDrawingMgr) :
         self._x1,self._y1 = 0,0
         self._x2,self._y2 = 0,0
         self._drawingEvent = QubPressedNDrag2Point
+        self.__contraintObject = None      # no constraint
 
                     ####### PUBLIC METHODE #######
     def setPoints(self,x1,y1,x2,y2) :
@@ -384,8 +386,13 @@ class QubLineDrawingManager(QubDrawingMgr) :
     def points(self) :
         return (self._x1,self._y1,self._x2,self._y2)
     
+    def setConstraint(self,constraintObject) :
+        """
+        set constraint
+        """
+        self.__contraintObject = constraintObject
         
-               ####### INTERNAL LOOP EVENT CALL #######
+               ####### internal LOOP EVENT CALL #######
     def moveFirstPoint(self,x,y) :
         if self._matrix is not None :
             self._x1,self._y1 = self._matrix.invert()[0].map(x,y)
@@ -393,7 +400,8 @@ class QubLineDrawingManager(QubDrawingMgr) :
         else:
             self._x1,self._y1 = x,y
             x2,y2 = self._x2,self._y2
-        
+
+
         for drawingObject in self._drawingObjects :
             drawingObject.setPoints(x,y,x2,y2)
 
@@ -406,7 +414,31 @@ class QubLineDrawingManager(QubDrawingMgr) :
         else:
             self._x2,self._y2 = x,y
             x1,y1 = self._x1,self._y1
-        
+
+        if self.__contraintObject is not None :
+            dummy,dummy,self._x2,self._y2 = self.__contraintObject.calc(self._x1,self._y1,self._x2,self._y2)
+            if self._matrix is not None :
+                x,y = self._matrix.map(self._x2,self._y2)
+            else:
+                x,y = self._x2,self._y2
+
+##        if self.__contraintAngle >= 0 :
+##            if self.__contraintAngle != math.pi / 2 :
+##                X = (self._x2 - self._x1) ** 2
+                
+##                Y = math.sqrt((X / (math.cos(self.__contraintAngle) ** 2)) - X)
+##                if y - y1 < 0 :
+##                    Y = -Y
+##                self._y2 = Y + self._y1
+                    
+##                if self._matrix is not None :
+##                    x,y = self._matrix.map(self._x2,self._y2)
+##                else:
+##                    x,y = self._x2,self._y2
+##            else:                       # 90 deg
+##                if self._matrix is not None : 
+##                    x,dummy = self._matrix.map(self._x1,self._y1)
+##                    self._x2 = self._x1
         for drawingObject in self._drawingObjects :
             drawingObject.setPoints(x1,y1,x,y)
 
@@ -432,7 +464,8 @@ class QubLineDrawingManager(QubDrawingMgr) :
             x2,y2 = self._matrix.map(x2,y2)
             
         if(abs(x - x1) < 5 and abs(y - y1) < 5) :
-            return QubModifyAbsoluteAction(self,self._eventMgr,self.moveFirstPoint)
+            self._x1,self._y1,self._x2,self._y2 = self._x2,self._y2,self._x1,self._y1
+            return QubModifyAbsoluteAction(self,self._eventMgr,self.moveSecondPoint)
         elif(abs(x - x2) < 5 and abs(y - y2) < 5) :
             return QubModifyAbsoluteAction(self,self._eventMgr,self.moveSecondPoint)
 
