@@ -6,9 +6,21 @@ from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
 from opencv import cv
 from QubOpenCv import qtTools
-
+##@brief This class manage the copy between QImage and QPixmap
+#
+#This is an effecient way to transforme a QImage to a QPixmap
+#@see QImage
+#@see QPixmap
 class QubImage2Pixmap(qt.QObject) :
+    ##@brief idle transformation of image to pixmap
+    #
+    #every tranformation is done with this idle to be on the rythm of
+    #the computer
     class _Idle(qt.QTimer) :
+        ##@param cnt is in fact QubImage2Pixmap
+        ##@param skipSmooth:
+        # - if <b>True</b>: the image skip try to be smooth
+        # - else <b>False</b>: skip all image and take the last
         def __init__(self,cnt,skipSmooth) :
             qt.QTimer.__init__(self)
             self.connect(self,qt.SIGNAL('timeout()'),self.__idleCopy)
@@ -19,7 +31,9 @@ class QubImage2Pixmap(qt.QObject) :
             self.__PrevImageNeedZoom = None
             self.__imageZoomProcess = _ImageZoomProcess(self)
             self.__cnt = cnt
-            
+        ##@brief the link between QubImage2Pixmap and an other object which display Pixmap
+        #@see Qub::Objects::QubPixmapDisplay::QubPixmapDisplay
+        #@param aPlug must be inherited from QubImage2PixmapPlug
         def plug(self,aPlug) :
             if isinstance(aPlug,QubImage2PixmapPlug) :
                 aLock = QubLock(self.__mutex)
@@ -27,11 +41,17 @@ class QubImage2Pixmap(qt.QObject) :
                 self.__plugs.append(aPlug)
             else :
                 raise StandardError('Must be a QubImage2PixmapPlug')
-            
+        ##@return the plug object inherited from QubImage2PixmapPlug
         def getPlugs(self) :
             aLock = QubLock(self.__mutex)
             return self.__plugs
-        
+        ##@brief add an image in the pending stack
+        #
+        #All image are transformed to Pixmap asynchronously, there is two way:
+        # -# if a client asked a zoom, the image is pushed in a zoom task list.
+        #    those image are zoomed in a thread
+        # -# if a client just want to display full image, the task is pushed in the display
+        #    stack
         def putImage(self,aQImage,aLockFlag = True) :
             aLock = QubLock(self.__mutex,aLockFlag)
             if len(self.__plugs) :
@@ -47,6 +67,7 @@ class QubImage2Pixmap(qt.QObject) :
                 else :
                     self.appendPendingList([(plug,aQImage,aQImage) for plug in self.__plugs],False)
 
+        ##@brief add an image in the pending display stack
         def appendPendingList(self,aList,aLock = True) :
             aLock = QubLock(self.__mutex,aLock)
             self.__plugsNimagesPending.append(aList)
@@ -57,7 +78,7 @@ class QubImage2Pixmap(qt.QObject) :
                 event.event_name = "_startTimer"
                 qt.qApp.postEvent(self.__cnt,event)
 
-                    
+        ##@brief need a refresh for somme reason
         def refresh(self) :
             aLock = QubLock(self.__mutex)
             needzoom = False
@@ -75,6 +96,7 @@ class QubImage2Pixmap(qt.QObject) :
                         self.putImage(previmage,False)
                 
                     
+        ##@brief this methode is the idle callback
         def __idleCopy(self) :
             self.__copy()
             aLock = QubLock(self.__mutex)
@@ -82,6 +104,7 @@ class QubImage2Pixmap(qt.QObject) :
                 aLock.unLock()
                 self.stop()
         
+        ##@brief copy image on a pixmap
         def __copy(self) :
             aLock = QubLock(self.__mutex)
             self.decim(self.__plugsNimagesPending)
@@ -114,6 +137,11 @@ class QubImage2Pixmap(qt.QObject) :
                             pass
                         aLock.unLock()
                             
+        ##@brief decimation algorithm
+        #
+        #this methode has two way of decimation :
+        # -# a smooth one decim 1/5 image in a task list
+        # -# skip all except the last
         def decim(self,l) :
             lenght = len(l)
             if self.__skipSmooth  and lenght < 25 : # (<25 -> stream is up to 4x)
@@ -123,27 +151,36 @@ class QubImage2Pixmap(qt.QObject) :
             elif lenght > 1 :                      # last
                 for x in xrange(lenght - 1) :
                     l.pop(0)
-    """
-    This class manage the copy between QImage and QPixmap
-    """
+
+    ##@brief constructor
     def __init__(self,skipSmooth = True) :
         qt.QObject.__init__(self)
         self.__idle = QubImage2Pixmap._Idle(self,skipSmooth)
         
+    ##@brief Asynchronous Image Put, the copy to pixmap will be made on idle
     def putImage(self,aQImage) :
-        """
-        Asynchronous Image Put, the copy to pixmap will be made on idle
-        """
         self.__idle.putImage(aQImage)
 
+    ##@brief link the object to an other one which can display pixmap
     def plug(self,aQubImage2PixmapPlug) :
         self.__idle.plug(aQubImage2PixmapPlug)
-
+    ##@brief it use for the communication between the main thread and other
+    #@todo the methode is needed by QT3 because it's not MT-Safe,
+    #it's could be remove when QT4 will be used
     def customEvent(self,event) :
         if event.event_name == "_startTimer" and not self.__idle.isActive():
             self.__idle.start(0)
-                    
+
+##@brief this class is the link between QubImage2Pixmap and
+#other object which can display Pixmap
+#
+#You have to derivate this class for specific needs.
+#@see setPixmap
+#
 class QubImage2PixmapPlug :
+    ##@brief the Zoom class containt two Pixmap for a soft double buffer
+    #
+    #on inherited class, you can set the interpolation. default is CV_INTER_LINEAR (bilinear interpolation)
     class Zoom :
         def __init__(self,cnt) :
             self.__cnt = cnt
@@ -160,10 +197,18 @@ class QubImage2PixmapPlug :
             self.__bufferId = 0
             for buffer in self.__pixmapIO :
                 buffer.setShmPolicy(QubPixmapTools.IO.ShmKeepAndGrow)
-
+        ##@retun the horizontal and vertical zoom as a tuple
         def zoom(self) :
             aLock = QubLock(self.__mutex)
             return self.__zoom
+        ##@brief set the horizontal and vertical zoom
+        #@param zoomx horizontal zoom
+        #@param zoomy vertical zoom
+        #@param keepROI :
+        # - if <b>False</b> the pixmap will be zoomed on the full image
+        # - else <b>True</b> the pixmap will be zoomed with the ROI previously set
+        #
+        #@see setRoiNZoom
         def setZoom(self,zoomx,zoomy,keepROI = False) :
             aLock = QubLock(self.__mutex)
             if self.__zoom != (zoomx,zoomy) :
@@ -171,7 +216,15 @@ class QubImage2PixmapPlug :
                 self.__allimage = not keepROI
                 aLock.unLock()
                 self.__cnt.refresh()
-        
+        ##@brief set the ROI and the zoom
+        #
+        #the pixmap will be zoomed using the ROI and horizontal and vertical zoom
+        #@param ox left point of the ROI
+        #@param oy top point of the ROI
+        #@param width the width of the ROI
+        #@param height the height of the ROI
+        #@param zoomx horizontal zoom
+        #@param zoomy vertical zoom
         def setRoiNZoom(self,ox,oy,width,height,zoomx,zoomy) :
             aLock = QubLock(self.__mutex)
             self.__allimage = False
@@ -183,19 +236,28 @@ class QubImage2PixmapPlug :
                 self.__interpolationInUse = self._interpolation
             aLock.unLock()    
             self.__cnt.refresh()
-
+        ##@return if zoom is with ROI or not
         def isRoiZoom(self) :
             return not self.__allimage
-        
+        ##@return the ROI as a tuple (left,top,with,height)
         def roi(self) :
             aLock = QubLock(self.__mutex)
             return (self.__ox,self.__oy,self.__width,self.__height)
 
-               ####### USE by ImageZoomProcess #######
+        ##@name Internal called
+        #@warning don't called those methode directly
+        #@{
+        #
+        
+        #@return if the pixmap need to be zoomed
         def needZoom(self) :
             aLock = QubLock(self.__mutex)
             return self.__zoom != (1,1)
-
+        ##@brief this methode zoom image
+        #
+        #by using opencv library.
+        #@param imageOpencv is an opencv image
+        #@return a QImage zoomed 
         def getZoomedImage(self,imageOpencv) :
             aLock = QubLock(self.__mutex) # LOCK
             width = imageOpencv.width
@@ -231,7 +293,7 @@ class QubImage2PixmapPlug :
             elif not self.__allimage :
                 cv.cvResetImageROI(imageOpencv)
             return zoomedImage
-        
+        ##@return the zoomed pixmap
         def getPixmapFrom(self,zoomedImage) :
             pixmapbuffer = self.__pixmapbuffer[self.__bufferId % len(self.__pixmapbuffer)]
             pixmapIO = self.__pixmapIO[self.__bufferId % len(self.__pixmapIO)]
@@ -244,34 +306,47 @@ class QubImage2PixmapPlug :
             pixmapIO.putImage(pixmapbuffer,0,0,zoomedImage)
             
             return pixmapbuffer
+        ##@}
+        #
+        #
 
+    ##@brief constuctor
     def __init__(self) :
         self.__endFlag = False
         self._zoom = QubImage2PixmapPlug.Zoom(self)
         self._mgr = None
-        
+
+    ##@brief get the zoom class
+    #@return QubImage2PixmapPlug::Zoom
+    #
     def zoom(self) :
         return self._zoom
     
+    ##@brief This methode is call when an image is copied on pixmap
+    #
+    #You have to redefined it in inherited class
+    #@return stop flag:
+    # - if <b>True</b>: the plug will be removed from every polling,
+    #the object won't be called again util you replug
+    # - else <b>False</b>: this wont be unplug
+    #
+    #@param pixmap the zoomed pixmap
+    #@param image the full image
     def setPixmap(self,pixmap,image) :
-        """
-        This methode is call when an image is copied on pixmap
-        """
         return True
-
+    ##@brief need a pixmap refresh
     def refresh(self) :
         if self._mgr is not None :
             self._mgr.refresh()
-
+    ##@brief this is the end ... of the plug. after this call, the plug will be removed from every polling.
     def setEnd(self) :
-        """
-        this is the end ... of the plug. after this call, the plug will be removed from every polling.
-        """
         self.__endFlag = True
 
+    ##@return if the plug have to be remove from the polling
     def isEnd(self) :
         return self.__endFlag
-    
+    ##@brief set the container of this plug
+    #@param aMgr actually is a QubPixmapDisplay
     def setManager(self,aMgr) :
         self._mgr = aMgr
 #Private

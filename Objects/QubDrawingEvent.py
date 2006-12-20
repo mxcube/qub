@@ -1,11 +1,20 @@
 import weakref
 import qt
+##@defgroup DrawingEvent
+#@brief Manager of the event behaviour
+#
+#They are the link between Qub::Objects::QubEventMgr::QubEventMgr and
+#QubDrawingManager.
 
+##@brief base class of drawing event
+#@ingroup DrawingEvent
 class QubDrawingEvent :
     def __init__(self,exclusive = True,exceptList = []) :
         self.__name = ''
-        self.__exceptList = exceptList  # exclusive with the name of other event
-        self.__exclusive = exclusive      # if False self.__exceptList is not considered
+        # exclusive with the name of other event
+        self.__exceptList = exceptList
+        # if False self.__exceptList is not considered
+        self.__exclusive = exclusive
         
     def mousePressed(self,x,y) :
         pass
@@ -14,10 +23,8 @@ class QubDrawingEvent :
     def mouseMove(self,x,y) :
         pass
 
+    #@brief called when the event is removed from the polling loop
     def endPolling(self) :
-        """
-        called when the event is removed from the polling loop
-        """
         pass
     
     def setName(self,name) :
@@ -36,9 +43,14 @@ class QubDrawingEvent :
             return self.__exceptList
         else :
             return False
+    #@brief methode called when the event is just exclude or active again
+    #@param aFlag :
+    # - if <b>True</b> event is dub (exclude)
+    # - else <b>False</b> event is active
     def setDubMode(self,aFlag) :
         pass                            # TODO
 
+    #@return text information about the current action
     def getActionInfo(self) :
         return ''                       # MUST BE REDEFINE
     
@@ -50,6 +62,13 @@ class _DrawingEventNDrawingMgr(QubDrawingEvent):
     def getActionInfo(self) :
         return self._drawingMgr().getActionInfo()
     
+##@brief A point event behaviour manager.
+#@ingroup DrawingEvent
+#
+#Behaviour description:
+# -# show drawing object on init
+# -# move the drawing object on mouse move
+# -# call the endDraw callback on mouse released
 class QubMoveNPressed1Point(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,oneShot) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
@@ -63,7 +82,13 @@ class QubMoveNPressed1Point(_DrawingEventNDrawingMgr) :
     def mouseMove(self,x,y) :
         self._drawingMgr().move(x,y)
         return False                    # NOT END
-        
+##@brief The default point event behaviour manager
+#@ingroup DrawingEvent
+#
+#Behaviour description:
+# -# show drawing object on mouse pressed
+# -# call drawing object move until mouse released
+# -# on mouse released call endDraw callback
 class QubPressedNDrag1Point(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,oneShot) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
@@ -85,7 +110,15 @@ class QubPressedNDrag1Point(_DrawingEventNDrawingMgr) :
         if self.__buttonPressed :
             self._drawingMgr().move(x,y)
         return False                    # NOT END
-
+##@brief Set 2 points with a pressed and drag
+#@ingroup DrawingEvent
+#
+#The default line and rectangle behaviour manager
+#Behaviour description:
+# -# show drawing object on mouse pressed and set the
+#absolute position on the first point
+# -# move the second point until mouse button is released
+# -# on mouse released call endDraw callback
 class QubPressedNDrag2Point(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,oneShot) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
@@ -109,6 +142,14 @@ class QubPressedNDrag2Point(_DrawingEventNDrawingMgr) :
             self._drawingMgr().moveSecondPoint(x,y)
         return False                    # not END
 
+##@brief Set 2 points with 2 click
+#@ingroup DrawingEvent
+#
+#Behaviour description:
+# -# show drawing object on first mouse pressed
+# -# set the first point on first mouse released
+# -# start moving the second point since mouse pressed
+# -# set the second point on second mouse released and call endDraw callback
 class Qub2PointClick(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,oneShot) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
@@ -148,6 +189,17 @@ class Qub2PointClick(_DrawingEventNDrawingMgr) :
                 self._drawingMgr().moveSecondPoint(x,y)
         return False
 
+##@brief Set N point with N click
+#@ingroup DrawingEvent
+#
+#This event behaviour manager is used with polygone.
+#Behaviour description:
+# -# the drawing object is shown on first mouse pressed
+# -# on first mouse released set the first point absolute position
+# -# check if it's the end of the draw by testing the return of
+#the drawing manager's moving methode:
+#    - if it's return <b>True</b> end of draw and call endDraw callback
+#    - else go to next point
 class QubNPointClick(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,oneShot) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
@@ -172,7 +224,10 @@ class QubNPointClick(_DrawingEventNDrawingMgr) :
         if self.__active :
             self._drawingMgr().move(x,y,self.__pointNb)
             
-                     ####### MODIFY EVENT #######
+##@brief Modify a point
+#@ingroup DrawingEvent
+#
+#This is the default event behaviour manger to modify point
 class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,aEventmgr,modifyCBK,
                  cursor = qt.QCursor(qt.Qt.SizeAllCursor)) :
@@ -204,6 +259,8 @@ class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
         self._dirtyFlag = False
         self._drawingMgr().endDraw()
 
+##@brief Modify a point by relative moving
+#@ingroup DrawingEvent
 class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,aEventmgr,modifyCBK,
                  cursor = qt.QCursor(qt.Qt.SizeAllCursor)) :

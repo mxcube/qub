@@ -27,29 +27,51 @@ from Qub.Objects.QubDrawingEvent import QubMoveNPressed1Point
 ##########             QubMeasureListDialog               ##########
 ##########                                                ##########
 ####################################################################
+## @brief Measurement tools on view
+#
+#this dialog must be linked with a Canvas,and an event manager
+#such as :
+# - QubPixmapDisplay
+#
+#This tool provide measurment such as:
+#    - point
+#    - distance
+#    - surface (rectangle)
+#    - angle
+#
+#@see Qub::Objects::QubPixmapDisplay::QubPixmapDisplay
+
 class QubMeasureListDialog(qt.QDialog):
+    ## @brief this class is use to manage drawing manager in the QListViewItem
+    #@see QListViewItem
     class _ItemList(qt.QListViewItem) :
         def __init__(self,aListView,aDrawingMgr) :
             qt.QListViewItem.__init__(self,aListView)
-            self.__drawingMgr = aDrawingMgr
+            self.__drawingMgr = aDrawingMgr # !< the drawing manager
 
         def drawingMgr(self) :
             return self.__drawingMgr
         
+    ##@param args  params are equivalent of a Dialog constructor
+    # -# parent
+    # -# name
+    # -# modal
+    # -# fl
+    #@param keys this dico should contain
+    # - 'canvas' this key is mandatory
+    # - 'eventMgr' this key is mandatory
+    # - 'matrix' this key is optional
+    #@see QCanvas
+    #@see QWMatrix
+    #@see Qub::Objects::QubEventMgr::QubEventMgr
     def __init__(self,*args,**keys) :
-        """
-        *args = Dialog Param
-        1 -> parent
-        2 -> name
-        3 -> modal
-        4 -> fl
-        """
         qt.QDialog.__init__(self,*args)
 
         self.__canvas = keys.get('canvas',None)
         self.__matrix = keys.get('matrix',None)
         self.__eventMgr = keys.get('eventMgr',None)
-        
+        ## Description tools table
+        # (name,DrawingManager,DrawingObject,end draw callback)
         self.__tools = [('point',QubPointDrawingMgr,QubCanvasTarget,self.__endPointDrawing),
                         ('distance',QubLineDrawingManager,qtcanvas.QCanvasLine,self.__endDistanceDrawing),
                         ('rectangle',Qub2PointSurfaceDrawingManager,qtcanvas.QCanvasRectangle,self.__endSurfaceDrawing),
@@ -108,24 +130,32 @@ class QubMeasureListDialog(qt.QDialog):
         self.__yPixelSize = 0
         self.__defaultColor = qt.Qt.black
         
+    ##@brief set horizontal pixel size (scale)
+    #@param size pixel size in meter
     def setXPixelSize(self,size) :
         try:
             self.__xPixelSize = abs(size)
         except:
             self.__xPixelSize = 0
-                
+
+    ##@brief set vertical pixel size (scale)
+    #@param size pixel size in meter
     def setYPixelSize(self,size) :
         try:
             self.__yPixelSize = abs(size)
         except:
             self.__yPixelSize = 0
             
+    ##@brief set the default color of the drawing measure
+    #@param color qt.QColor
+    #@see QColor
     def setDefaultColor(self,color) :
         self.__defaultColor = color
         
     def __tr(self,s,c = None):
         return qt.qApp.translate("MeasureWindow",s,c)
 
+    ##
     def __createPopMenu(self,parent) :
         popMenu = qt.QPopupMenu(parent)
 
@@ -274,7 +304,12 @@ class QubMeasureListDialog(qt.QDialog):
 ##########               QubSaveImageDialog               ##########
 ##########                                                ##########
 ####################################################################
+##@brief this dialogue is use to save an image
+#
+#With this tool, you can save an image in JPEG or PNG
 class QubSaveImageDialog(qt.QDialog):
+    ##@brief this is the plug for the QubImage2Pixmap Object
+    #@see Qub::Objects::QubImage2Pixmap::QubImage2Pixmap
     class _Image2Pixmap(QubPixmapZoomPlug) :
         def __init__(self,receiver,buttonFile) :
             QubPixmapZoomPlug.__init__(self,receiver)
@@ -301,12 +336,10 @@ class QubSaveImageDialog(qt.QDialog):
             
         def getImage(self) :
             return self.__lastImage
-    """
-    Dialog to take a snapshot of the falcon via device server
-    and to save it in different format
-    "parent" is supposed to be the brick itself in order to acces its
-    "pixmap" attribute
-    """
+
+    ##@brief Dialog to take a snapshot and to save it in different format
+    #@param parent is supposed to be the brick itself in order to acces its
+    #@param name the name of the widget dialog
     def __init__(self,parent = None,name = '') :
         qt.QDialog.__init__(self, parent, name)
         
@@ -338,6 +371,8 @@ class QubSaveImageDialog(qt.QDialog):
         hlayout.addSpacing(10)
         hlayout.addWidget(self.__buttonFile)
 
+    ##@brief Called when the Save button is pressed
+    #This methode display a file selector and save the image
     def openFile(self):
         filename = qt.QFileDialog.getSaveFileName( ".", "*;;*.png;;*.jpg", self, "selectFile",
                                                     "Choose a filename to save under")
@@ -356,11 +391,15 @@ class QubSaveImageDialog(qt.QDialog):
                 dialog = qt.QErrorMessage(self.__parent)
                 dialog.message('File format not managed')
                 dialog.exec_loop()
-            
+
+    ##You have to call this methode at least one to link
+    #the save image dialogue to QubImage2Pixmap Object
+    #@see Qub::Objects::QubImage2Pixmap::QubImage2Pixmap
     def setImage2Pixmap(self,image2pixmap) :
         self.__imagePlug.setInPoll()
         image2pixmap.plug(self.__imagePlug)
 
+    ## It use the refresh the old image with the current
     def refresh(self) :
         self.__imagePlug.refresh()
 
@@ -370,6 +409,10 @@ class QubSaveImageDialog(qt.QDialog):
 ##########        QubBrightnessContrastDialog             ##########
 ##########                                                ##########
 ####################################################################        
+##@brief Brightness and contrast control for falcon device
+#The popup dialog display two slider:
+# -# for the brightness
+# -# for the contrast
 class QubBrightnessContrastDialog(qt.QDialog):
     def __init__(self, parent):
         qt.QDialog.__init__(self, parent)
@@ -423,13 +466,18 @@ class QubBrightnessContrastDialog(qt.QDialog):
                      self.setBrightness)
         vlayout.addWidget(self.brightnessSlider)
 
+    ##@brief set the constrast range
     def setContrastLimits(self, contrastMin, contrastMax):
         self.__contrastMin = contrastMin
         self.__contrastMax = contrastMax
         
         self.setContrast(self.__contrast)
         self.contrastChanged(self.__contrast)
-        
+    ##@brief set the contrast
+    #
+    #Callback of the contrast slider
+    #@param contrast must be between contrastMax and contrastMin
+    #@see setContrastLimits
     def setContrast(self, contrast):
         self.__contrast = contrast
         if contrast < self.__contrastMin:
@@ -448,14 +496,18 @@ class QubBrightnessContrastDialog(qt.QDialog):
             self.__contrast = self.__contrastMax
 
         self.contrastSlider.setValue(self.__contrast)
-
+    ##@brief set the brightness range
     def setBrightnessLimits(self, brightnessMin, brightnessMax):
         self.__brightnessMin = brightnessMin
         self.__brightnessMax = brightnessMax
         
         self.setBrightness(self.__brightness)
         self.BrightnessChanged(self.__brightness)
-
+    ##@brief set the brightness
+    #
+    #Callback of the brightness slider
+    #@param brightness must be between brightnessMax and brightnessMin
+    #@see setBrightnessLimits
     def setBrightness(self, brightness):
         self.__brightness = brightness
         if brightness < self.__brightnessMin:
@@ -474,7 +526,10 @@ class QubBrightnessContrastDialog(qt.QDialog):
             self.__brightness = self.__brightnessMax
             
         self.brightnessSlider.setValue(self.__brightness)
-            
+    ##@brief set the camera hardware object
+    #
+    #You have to call this methode at least one to set the hardware object
+    #for a full init of this dialog
     def setCamera(self, camera):
         self.__camera = camera
         

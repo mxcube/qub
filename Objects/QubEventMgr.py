@@ -1,19 +1,41 @@
 import qt
 import weakref
 import itertools
-
+##@brief This class is use as a event manager and dispatcher.
+#
+#it's centralise all events needed by drawing objects.
+#As we want a standard way of drawing object, it's acting
+#as an event filter:
+# - Modification can only be done by <b>SHIFT and LEFT CLICK</b>
+# - Drawing on <b>LEFT CLICK</b>
+#
+#Moreover exclusive event are managed.
+#And finally you can link an event managed with other
 class QubEventMgr:
     def __init__(self) :
+        ##the active event loop
 	self.__pendingEvents = []
+        ##the event list which are exclude
         self.__excludedEvent = []
+        ##the drawing manager list
 	self.__drawingMgr = []
+        ##the event link list 
         self.__eventLinkMgrs = []
+        #@{
+        ##the last mouse position
         self.__mouseX,self.__mouseY = 0,0
+        ##@}
+
+        ##the current object in modification state
         self.__curentModifierMgr = None
+        ##the scrollview associate
         self.__scrollView = None
+        ##the idle use for the action's info 
         self.__actionInfoIdle = qt.QTimer(self)
         qt.QObject.connect(self.__actionInfoIdle,qt.SIGNAL('timeout()'),self.__emitActionInfo)
-        
+    ##@brief add a drawing manager
+    #
+    #@param aDrawingMgr a Qub::Objects::QubDrawingMgr::QubDrawingMgr
     def addDrawingMgr(self,aDrawingMgr) :
         try:
             self.__drawingMgr.append(weakref.ref(aDrawingMgr,self.__weakRefDrawingMgrRemove))
@@ -23,7 +45,10 @@ class QubEventMgr:
         except:
             import traceback
             traceback.print_exc()
-            
+    ##@brief insert an event in the pool
+    #
+    #After this call, the drawing event will be called on each mouse event
+    #@param aDrawingMgr a Qub::Objects::QubDrawingEvent::QubDrawingEvent
     def addDrawingEvent(self,aDrawingEvent) :
         try:
             exclusive = aDrawingEvent.exclusive()
@@ -44,13 +69,19 @@ class QubEventMgr:
         except:
             import traceback
             traceback.print_exc()
-            
+    ##@brief this methode link several event manager together,
+    #thanks to that, each draw may be seen on every view
+    #
+    #After this call, each event on one event manager will be dispatcher on other via _linkEventMgr class
+    #
+    #@param anEventMgr the other event manager to be link with
+    #@param srcCanvas the canvas that this object manage
+    #@param desCanvas the other canvas
+    #@param srcMatrix the Matrix related of this object
+    #@param destMatrix the other Matrix
     def addEventMgrLink(self,anEventMgr,
                         srcCanvas,desCanvas,
                         srcMatrix,destMatrix) :
-        """ this methode link several event manager together,
-        thanks to that, each draw may be seen on every view
-        """
         linkEventMgr = _linkEventMgr(self,anEventMgr,
                                      srcCanvas,desCanvas,
                                      srcMatrix,destMatrix)
@@ -58,10 +89,8 @@ class QubEventMgr:
         anEventMgr.addLinkEventMgr(linkEventMgr)
         for drawingMgr in self.__drawingMgr :
             drawingMgr().addLinkEventMgr(linkEventMgr)
-            
+    ##@brief unlink between an event manager
     def rmEventMgrLink(self,anEventMgr) :
-        """ this methode unlink event manager
-        """
         linkfind = None
         for link in self.__eventLinkMgrs :
             mgr1,mgr2 = link.getMgrs()
@@ -69,12 +98,30 @@ class QubEventMgr:
                 mgr1.rmLinkEventMgr(link)
                 mgr2.rmLinkEventMgr(link)
                 break
+
+    ##@brief get the scrollview
+    #
+    #@return the scrollview of the object or None
+    #
     def scrollView(self) :
         return self.__scrollView
-    
+
+    ##@name methode called by the inheritance
+    #@{
+    #all this methode should be called by the inheritance
+    #in order to dispatche event to the drawing
+      
+    ##@brief set the scroll view if one
+    #
+    #this methode should be called by the inheritance if it's got a scrollView
     def _setScrollView(self,aScrollView) :
         self.__scrollView = aScrollView
-        
+    ##@brief mouse has been pressed
+    #
+    #dispatch event via the drawing event
+    #@see Qub::Objects::QubDrawingEvent::QubDrawingEvent
+    #@param event qt event
+    #@param evtMgr if not None external event ie: generated from a linked event manager
     def _mousePressed(self,event,evtMgr = None) :
         try:
             if event.button() == qt.Qt.LeftButton and event.state() == qt.Qt.ShiftButton :
@@ -92,7 +139,10 @@ class QubEventMgr:
         except:
             import traceback
             traceback.print_exc()
-            
+    
+    ##@brief mouse has moved
+    #
+    #@see _mousePressed
     def _mouseMove(self,event,evtMgr = None) :
         try:
             self.__mouseX,self.__mouseY = event.x(),event.y()
@@ -120,6 +170,9 @@ class QubEventMgr:
             import traceback
             traceback.print_exc()
             
+    ##@brief mouse has been released
+    #
+    #@see _mousePressed
     def _mouseRelease(self,event,evtMgr = None) :
         try:
             if event.state() & qt.Qt.LeftButton :
@@ -136,6 +189,9 @@ class QubEventMgr:
             import traceback
             traceback.print_exc()
 
+    ##@brief need a redraw of some drawing
+    #
+    #this methode is called when the canvas was resized or when the view is scrolled
     def _update(self,evtMgr = None) :
         for drawingMgr in self.__drawingMgr :
             try:
@@ -146,7 +202,11 @@ class QubEventMgr:
         if evtMgr is None :             # event propagate
             for link in self.__eventLinkMgrs :
                 link.update(self)
-                
+    ##@brief a key was pressed
+    #
+    #this methode filter SHIFT key which it's used for object modification
+    #add dispatch key event via the drawing event
+    #@see _mousePressed
     def _keyPressed(self,keyevent,evtMgr = None) :
         if keyevent.key() == qt.Qt.Key_Shift :
             self.__checkObjectModify(self.__mouseX,self.__mouseY,evtMgr)
@@ -154,6 +214,9 @@ class QubEventMgr:
             for link in self.__eventLinkMgrs :
                 link.keyPressed(keyevent,self)
                 
+    ##@brief a key was released
+    #
+    #@see _keyPressed
     def _keyReleased(self,keyevent,evtMgr = None) :
         if keyevent.key() == qt.Qt.Key_Shift :
             if self.__curentModifierMgr is not None :
@@ -167,11 +230,17 @@ class QubEventMgr:
                 link.keyReleased(keyevent,self)
                 
 
+    ##@brief the mouse leave the window
+    #
+    #leave the modification state if active
     def _leaveEvent(self,event,evtMgr = None) :
          if self.__curentModifierMgr is not None :
                 self.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
                 self.__curentModifierMgr = None
-        
+    ##@}
+    #
+    
+    ##@brief remove a drawing event object of the pending event loop
     def _rmDrawingEventRef(self,aDrawingEventRef) :
         try:
             self.__pendingEvents.remove(aDrawingEventRef)
@@ -187,6 +256,10 @@ class QubEventMgr:
         if not self.__actionInfoIdle.isActive() :
             self.__actionInfoIdle.start(0)
             
+    ##@brief weakref callback on the drawing event object
+    #
+    #Event object is no longer reference -> clean the pending event loop
+    #@see Qub::Objects::QubDrawingEvent::QubDrawingEvent
     def __weakRefEventRemove(self,eventRef) :
         try :
             self.__pendingEvents.remove(eventRef)
@@ -196,12 +269,23 @@ class QubEventMgr:
         except:
             pass
 
+    ##@brief weakref callback on DrawingManager
+    #
+    #Drawing is no longer reference, hide it on canvas and
+    #removed from the managed list 
+    #@see Qub::Objects::QubDrawingMgr::QubDrawingMgr
     def __weakRefDrawingMgrRemove(self,mgrRef) :
         try:
             self.__drawingMgr.remove(mgrRef)
         except:
            pass
 
+    ##@brief check if this event hased exclude some other
+    #
+    #this methode it's be called just before the event in arg is removed
+    #@param eventRef the weakref of a drawing event
+    #@see Qub::Objects::QubDrawingEvent::setExclusive
+    #@see Qub::Objects::QubDrawingEvent::setExceptExclusiveListName
     def __checkExcludedEventsBeforeRemove(self,eventRef) :
         for eRef,excludedList in self.__excludedEvent[:] :
             if eRef() == eventRef() :
@@ -214,7 +298,7 @@ class QubEventMgr:
                     self.__pendingEvents[i]().setDubMode(False)
                 self.__excludedEvent.remove((eRef,excludedList))
                 break
-
+    ##@brief check if a drawing manager can be modify at this pixel
     def __checkObjectModify(self,x,y,anEventMgr) :
         BBoxNmodifyClass = []
         for drawingMgr in self.__drawingMgr :
@@ -234,6 +318,9 @@ class QubEventMgr:
             if anEventMgr is None : anEventMgr = self
             self.__curentModifierMgr.setCursor(anEventMgr)
             
+    ##@brief manage the action's information
+    #
+    #@see Qub::Objects::QubDrawingManager::setActionInfo
     def __emitActionInfo(self) :       
         textList = []
         try:
@@ -248,15 +335,14 @@ class QubEventMgr:
             traceback.print_exc()
         self.__actionInfoIdle.stop()
 
+
+    #@brief This methode should be redefine
+    #@param text the action's text information 
     def _realEmitActionInfo(self,text) :
-        """
-        This methode should be redefine
-        """
         print text
         
+    #@brief Do not call this methode directly
     def addLinkEventMgr(self,linkEventMgr) :
-        """ Do not call this methode directly
-        """
         self.__eventLinkMgrs.append(linkEventMgr)
 
     def getEventMethodes(self) :

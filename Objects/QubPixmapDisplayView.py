@@ -5,18 +5,14 @@ from Qub.Widget.QubView import QubView
 
 from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 
-
-################################################################################
-####################               QubImageView             ####################
-################################################################################
+##@brief The QubPixmapDisplayView allows to display QPixmap
+#
+#and put behavior
+#(zoom,selection,print ....) on it using QubAction.
+#It creates a instance of QubPixmapDisplay as QubView view.
+#@ingroup ImageDisplayTools
+#@see Qub::Widget::QubView::QubView
 class QubPixmapDisplayView(QubView):
-    """
-    The QubPixmapDisplayView allows to display QPixmap and put behavior
-    (zoom,selection,print ....) on it using QubAction.
-    It inherits QubView to get the window structure (toolbar/contextmenu,
-    view, statusbar).
-    It creates a instance of QubImage as QubView view.  
-    """
     def __init__(self,
                 parent=None, name=None, actions=None,flags=qt.Qt.WDestructiveClose):
         QubView.__init__(self, parent, name, flags)
@@ -28,30 +24,32 @@ class QubPixmapDisplayView(QubView):
         if actions is not None:
             self.addAction(actions)
             
+    ##@brief Set the Qpixmap to be displayed and tells the
+    #Qub::Objects::QubPixmapDisplay::QubPixmapDisplay widget to
+    #display it
+    #@param pixmap a qt.QPixmap at the request size
+    #@param image the full qt.QImage 
     def setPixmap(self, pixmap,image):
-        """
-        Set the Qpixmap to be displayed and tells the QubImage widget to
-        display it
-        """
         self.view().setPixmap(pixmap,image)
     
+    ##@brief Change the scroll bar policy of the view (QubImage)
+    #@param mode accepted values:
+    # - <b>"Auto"</b> Scrollbars are shown if needed
+    # - <b>"AlwaysOff"</b> Scrollbars are never displayed
+    # - <b>"Fit2Screen"</b> Displayed pixmap size follow CanvasView size
+    #keeping data pixmap ratio
+    # - <b>"FullScreen"</b> Displayed pixmap size is CanvasView size without
+    #keeping data pixmap ratio
     def setScrollbarMode(self, mode):
-        """
-        Change the scroll bar policy of the view (QubImage)
-        accepted values:
-            "Auto":         Scrollbars are shown if needed
-            "AlwaysOff" :   Scrollbars are never displayed
-            "Fit2Screen" :  Displayed pixmap size follow CanvasView size 
-                            keeping data pixmap ratio
-            "FullScreen":   Displayed pixmap size is CanvasView size without 
-                            keeping data pixmap ratio
-        """
         self.view().setScrollbarMode(mode)
             
     def closeWidget(self):
         print "CloseWidget ImageView"
         self.view().closeWidget()
 
+    ##@brief set the interface plug
+    #
+    #@param plug is a Qub::Objects::QubImage2Pixmap::QubImage2PixmapPlug
     def setPixmapPlug(self,plug) :
         self.view().setPixmapPlug(plug)
                       

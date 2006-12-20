@@ -2150,7 +2150,103 @@ class QubScaleAction(QubToggleImageAction) :
                 self.__scale.show()
             else:
                 self.__scale.hide()
+#####################################################################
+##########                  QubRulerAction                 ##########
+#####################################################################
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasRuler
 
+class QubRulerAction(QubToggleImageAction) :
+    HORIZONTAL,VERTICAL = range(2)
+    def __init__(self,*args,**keys) :
+        QubToggleImageAction.__init__(self,*args,**keys)
+        self.__ruler = None
+        self.__iconName = keys.get('iconName','gears')
+
+    def viewConnect(self,qubImage) :
+        QubToggleImageAction.viewConnect(self,qubImage)
+        self.__ruler = []
+        for i in range(2) :
+            ruler = QubContainerDrawingMgr(qubImage.canvas(),qubImage.matrix())
+            rulerObject = QubCanvasRuler(qubImage.canvas())
+            ruler.addDrawingObject(rulerObject)
+            qubImage.addDrawingMgr(ruler)
+
+            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setPositionMode)
+            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setLabel)
+            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setCursorPosition)
+            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setLimits)
+            if i :
+                ruler.setPositionMode(QubCanvasRuler.VERTICAL)
+            else:
+                ruler.setPositionMode(QubCanvasRuler.HORIZONTAL)
+            self.connect(qubImage,qt.PYSIGNAL("ForegroundColorChanged"),
+                         ruler.setColor)
+            self.__ruler.append(ruler)
+            
+    ##@brief create widget for the view toolbar
+    def addToolWidget(self, parent):
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent,self._name)
+            self._widget.setAutoRaise(True)
+            self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png" % self.__iconName)))
+            self._widget.setToggleButton(True)
+            self._widget.connect(self._widget, qt.SIGNAL("toggled(bool)"),
+                                 self._setState)
+            qt.QToolTip.add(self._widget, "%s"%self._name)
+
+        return self._widget
+    ##@brief set the cursor label
+    #@param HorV can be :
+    # - QubRulerAction.HORIZONTAL for horizontal ruler
+    # - QubRulerAction.VERTICAL for vertical ruler
+    #
+    #@param motorId can be 0 or 1 because ruler can manage at most 2 cursors
+    #@param textLabel the label of the cursor
+    def setLabel(self,HorV,motorId,textLabel) :
+        try:
+            self.__ruler[HorV].setLabel(motorId,textLabel)
+        except:
+            import traceback
+            traceback.print_exc()
+    ##@brief set limit of ruler
+    #for param: @see setLabel
+    def setLimits(self,HorV,motorId,lowLimit,highLimit) :
+        try:
+            self.__ruler[HorV].setLimits(motorId,lowLimit,highLimit)
+        except:
+            import traceback
+            traceback.print_exc()
+    ##@brief set the cursor position
+    #for param: @see setLabel
+    def setCursorPosition(self,HorV,motorId,position) :
+        try:
+            self.__ruler[HorV].setCursorPosition(motorId,position)
+        except:
+            import traceback
+            traceback.print_exc()
+        
+    def _setState(self,aFlag) :
+        for ruler in self.__ruler:
+            if aFlag: ruler.show()
+            else: ruler.hide()
+
+    def test(self) :
+        self.__ruler[QubRulerAction.HORIZONTAL].setLabel(0,'samy')
+        self.__ruler[QubRulerAction.HORIZONTAL].setLabel(1,'sampy')
+        self.__ruler[QubRulerAction.VERTICAL].setLabel(0,'samz')
+        self.__ruler[QubRulerAction.VERTICAL].setLabel(1,'sampz')
+
+        
+        self.__ruler[QubRulerAction.HORIZONTAL].setLimits(0,-10,1000)
+        self.__ruler[QubRulerAction.HORIZONTAL].setLimits(1,-50,50)
+        self.__ruler[QubRulerAction.VERTICAL].setLimits(0,0,3)
+        self.__ruler[QubRulerAction.VERTICAL].setLimits(1,-3,10)
+
+        self.__ruler[QubRulerAction.HORIZONTAL].setCursorPosition(0,5)
+        self.__ruler[QubRulerAction.HORIZONTAL].setCursorPosition(1,43)
+        self.__ruler[QubRulerAction.VERTICAL].setCursorPosition(0,2.1)
+        self.__ruler[QubRulerAction.VERTICAL].setCursorPosition(1,-1.5)
+        
 ####################################################################
 ##########                                                ##########
 ##########                QubOpenDialogAction             ##########

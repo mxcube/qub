@@ -3,6 +3,8 @@ import traceback
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
 
+##@brief This class is use to decompress standard data -> image.
+#data cant be (jpeg,tiff 8 bits...)
 class QubStdData2Image(QubThreadProcess,qt.QObject) :
     class _data_struct :
         PATH_TYPE,DATA_TYPE = range(2)
@@ -22,11 +24,6 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
             self.type = QubStdData2Image._data_struct.DATA_TYPE
             self.data = data
             return self
-    """
-    This class is use to decompress standard data -> image.
-    data cant be (jpeg,tiff 8 bits...)
-    WARNING the setImage plug methode will be called in an other thread than the main
-    """
     def __init__(self) :
         QubThreadProcess.__init__(self)
         qt.QObject.__init__(self)
@@ -45,16 +42,13 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
         else :
             raise StandardError('Must be a QubStdData2ImagePlug')
 
+    ##@brief insert a data array in the decompress queues
+    #@param data must be an array of a known type (jpeg,png...)
     def putData(self,data) :
-        """
-        insert a data array in the decompress queues
-        """
         self.__append(data,None)
-        
+    ##@brief Insert a image path file in the decompress queues
+    #@param path the full path of the image
     def putImagePath(self,path) :
-        """
-        Insert a image path file in the decompress queues
-        """
         self.__append(None,path)
         
     
@@ -148,7 +142,9 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
     def setSwapRGB(self,aFlag) :
         aLock = QubLock(self.__mutex)
         self.__swap = aFlag
-        
+
+##@brief this class link a Data image provider and
+#a image manager
 class QubStdData2ImagePlug :
     def __init__(self) :
         self.__endFlag = False
@@ -157,8 +153,11 @@ class QubStdData2ImagePlug :
     def isEnd(self) :
         return self.__endFlag
 
+    ##@brief This methode is call when an image is decompressed
+    #@return boolean:
+    # - if <b>True</b> end of the polling for the object link with
+    # - else <b>False</b> keep in the polling loop
+    #
+    #@param image a qt.QImage
     def setImage(self,image) :
-        """
-        This methode is call when an image is decompressed
-        """
         return True                     # (END)

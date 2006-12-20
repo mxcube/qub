@@ -3,34 +3,29 @@ import qtcanvas
 import sys
 from Qub.Objects.QubImage2Pixmap import QubImage2PixmapPlug
 from Qub.Objects.QubEventMgr import QubEventMgr
+##@defgroup ImageDisplayTools Tools to display Pixmap
+#
+#this is simple tools that can be link with DataProvidingTools
 
+##@brief This tool display a Pixmap
+#
+#Display a Pixmap on a QCanvas background pixmap
+#@ingroup ImageDisplayTools
 class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
+    ##@param parent the parent widget
+    #@param name widget name
     def __init__(self, parent=None, name=None):
         qtcanvas.QCanvasView.__init__(self, parent, name, 
                                       qt.Qt.WNoAutoErase|qt.Qt.WStaticContents) 
                                            
         QubEventMgr.__init__(self)
         self._setScrollView(self)
-        """
-        parent widget
-        """
         self.__parent = parent
         self.__name = name
-        
-        """
-        plug
-        """
         self.__plug = None
               
-        """
-        context menu QPopupMenu object
-        """
         self.__contextMenu = None
                 
-        """
-        pixmap which is displayed = data pixmap * transformation matrix
-        """
-        self.bckPixmap = None
         self.__matrix = qt.QWMatrix(1, 0, 0, 1, 0, 0)
         self.__matrix.setTransformationMode(qt.QWMatrix.Areas)
         
@@ -42,9 +37,8 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
         self.__cvs = qtcanvas.QCanvas(1, 1)
         self.setCanvas(self.__cvs)
 
-        """
-        By default set the scrollbar mode to automatic
-        """
+        
+        ##@brief By default set the scrollbar mode to automatic
         self.__scrollMode = "Auto"
         self.setHScrollBarMode(self.Auto)
         self.setVScrollBarMode(self.Auto)
@@ -67,61 +61,74 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
 
         self.__foregroundColor = qtcanvas.QCanvasView.foregroundColor(self)
         
-    ##################################################
-    ## EVENTS    
-    ##################################################          
+    ##@name Mouse Events
+    #@{
+
+    ##@brief Mouse has moved
+    #
+    #tells the actions
+    #if right button is set, this move is for context menu only
     def contentsMouseMoveEvent(self, event):
-        """
-        Mouse has moved, tells the actions
-        if right button is set, this move is for context menu only
-        """
         if event.button() != qt.Qt.RightButton:
             self.emit(qt.PYSIGNAL("MouseMoved"), (event,))
             self.canvas().update()
             
         self._mouseMove(event)
-
+    ##@brief Mouse has been pressed
+    #
+    #tells the actions
+    #if right button is set, this press is for context menu only
     def contentsMousePressEvent(self, event):
-        """
-        Mouse has been pressed, tells the actions
-        if right button is set, this press is for context menu only
-        """
         if event.button() != qt.Qt.RightButton:   
             self.emit(qt.PYSIGNAL("MousePressed"), (event,))
             self.canvas().update()        
 
         self._mousePressed(event)
-        
+    ##@brief Mouse has been release
+    #
+    #tells the actions
+    #if right button is set, this press is for context menu only
     def contentsMouseReleaseEvent(self, event):
-        """
-        Mouse has been pressed, tells the actions
-        if right button is set, this press is for context menu only
-        """
         if event.button() != qt.Qt.RightButton:   
             self.emit(qt.PYSIGNAL("MouseReleased"), (event,))
             self.canvas().update()
             
         self._mouseRelease(event)
+    ##@}
+    #
 
+    ##@brief right mouse button has been hit. make the context menu appears
     def contentsContextMenuEvent(self, event):
-        """
-        right mouse button has been hit. make the context menu appears
-        """
         if self.__contextMenu is not None:
             if event.reason() == qt.QContextMenuEvent.Mouse:
                 self.__contextMenu.exec_loop(qt.QCursor.pos())
 
+    ##@name Key Event
+    #@{
+
+    ##@brief key pressed, dispatch
     def keyPressEvent(self,keyevent) :
         self._keyPressed(keyevent)
-
+    ##@brief key release, dispatch
     def keyReleaseEvent (self,keyevent) :
         self._keyReleased(keyevent)
+    ##@}
 
+    ##@name Enter and Leave Events
+    #@{
+
+    ##@brief manged enter event
+    #
+    #on enter, take the focus for wheel an key event
     def enterEvent(self,event) :
         self.setFocus()
+    ##@brief leave event dispatch
     def leaveEvent(self,event) :
         self._leaveEvent(event)
-        
+    def viewportResizeEvent(self,resize) :
+        self.__startIdle()
+    ##@}
+    
     def __startIdle(self,x = 0,y = 0) :
         if not self.__idle.isActive() :
             self.__idle.start(0)
@@ -134,50 +141,60 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
     def _realEmitActionInfo(self,text) :
         self.emit(qt.PYSIGNAL("ActionInfo"),(text,))
         
-    ##################################################
-    ## PUBLIC METHOD    
-    ##################################################
+    ##@brief link this object with the pixmap object provider
+    #
+    #For now the pixmap object provider could be:
+    # - QubImage2Pixmap
+    #
+    #@param plug the mother class of this object is QubImage2PixmapPlug
+    #@see Qub::Objects::QubImage2Pixmap::QubImage2Pixmap
+    #@see Qub::Objects::QubImage2Pixmap::QubImage2PixmapPlug
     def setPixmapPlug(self, plug):
         if self.__plug is not None :
             self.__plug.setEnd()
         self.__plug = plug
            
+    ##@brief set a context menu on the QubPixmapDisplay
+    #
+    #It'll be called on the right click
+    #@param menu is a QPopupMenu
     def setContextMenu(self, menu):
-        """
-        set the QPopupMenu to be used as context menu
-        """
         self.__contextMenu = menu 
 
+    ##@brief get the current pixmap of this object
+    #@return the current display pixmap
+    #
+    #This methode is called before printing
     def getPPP(self):
-        """
-        return the pixmap to print
-        """
         return self.__cvs.backgroundPixmap()
-
+    ##@brief get the in used zoom class
+    #@see Qub::Objects::QubImage2Pixmap::QubImage2PixmapPlug::Zoom
     def zoom(self):
-        """
-        return current x and y zoom values
-        """
         if self.__plug is not None:
             return self.__plug.zoom()
         
         raise StandardError("QubPixmapDisplay object not plugged")
-            
+    ##@brief set the horizontal and vertical zoom
+    #
+    #@param zoomx the values of the horizontal zoom ie: zoomx == 1 == 100%
+    #@param zoomy the values of the vertical zoom
+    #@param keepROI if keepROI == False -> zoom on full image
+    #               else the ROI is keept
     def setZoom(self, zoomx, zoomy,keepROI = False):
         if self.__plug is None:
             raise StandardError("QubPixmapDisplay object not plugged")
         
         if self.__scrollMode in ["Auto", "AlwaysOff"]:
             self.__plug.zoom().setZoom(zoomx, zoomy,keepROI)
-        
+    
+    ##@brief Change the visible part of the pixmap.
+    #
+    #@param center:
+    # - if True: the (x,y) point of the pixmap is moved to the center of
+    #   the visible part of the QubPixmapDisplay Widget
+    # - if False: the (x,y) point of the pixmap is moved to the upper
+    #   left corner of the visible part of the QubPixmapDisplay object
     def setImagePos(x=0, y=0, center=False):
-        """
-        Change the visible part of the pixmap.
-        "center"=True: the (x,y) point of the pixmap is moved to the center of
-        the visible part of the QubImage Widget
-        "center"=False: the (x,y) point of the pixmap is moved to the upper
-        left corner of the visible part of th QubImage object
-        """            
         (px, py) = self.__matrix.map(x, y)
         
         if center:
@@ -185,6 +202,13 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
         else:
             self.setContentsPos(px, py)
                         
+    ##@brief set the the pixmap on the QubPixmapDisplay
+    #
+    #This is the only way to set a pixmap on QubPixmapDisplay
+    #@warning this mathode should't be directly called, but via the plug
+    #@see setPixmapPlug
+    #@param pixmap the pixmap at the zoom asked
+    #@param image the full size image
     def setPixmap(self, pixmap, image):
         (cvs_w, cvs_h) = (self.__cvs.width(), self.__cvs.height())
         (pix_w, pix_h) = (pixmap.width(), pixmap.height())
@@ -232,17 +256,15 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
             if (offx,offy) != (-lastoffx,-lastoffy) :
                 self.__startIdle()
 
+    ##@brief Change the scroll bar policy
+    #@param mode accepted string values:
+    # -# <b>"Auto"</b>: Scrollbars are shown if needed
+    # -# <b>"AlwaysOff"</b>: Scrollbars are never displayed
+    # -# <b>"Fit2Screen"</b>: Displayed pixmap size follow CanvasView size 
+    #                       keeping data pixmap ratio
+    # -# <b>"FillScreen"</b>: Displayed pixmap size is CanvasView size without 
+    #                       keeping data pixmap ratio
     def setScrollbarMode(self, mode):
-        """
-        Change the scroll bar policy
-        accepted values:
-            "Auto":         Scrollbars are shown if needed
-            "AlwaysOff" :   Scrollbars are never displayed
-            "Fit2Screen" :  Displayed pixmap size follow CanvasView size 
-                            keeping data pixmap ratio
-            "FillScreen":   Displayed pixmap size is CanvasView size without 
-                            keeping data pixmap ratio
-        """
         if mode in ["Auto", "AlwaysOff", "Fit2Screen", "FillScreen"]:
             self.__scrollMode = mode
             
@@ -263,14 +285,22 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
                 self.setVScrollBarMode(self.AlwaysOff)
                 if self.__plug is not None :
                     self.__plug.refresh()
+    ##@brief get the transformation matrix
+    #
+    #the matrix include the image zoom and the translation
     def matrix(self) :
         return self.__matrix
+    ##@brief get the default foreground color of the drawing vector
     def foregroundColor(self) :
         return self.__foregroundColor
+    ##@brief change the default foreground color of the drawing vector 
     def setForegroundColor(self,color) :
         self.__foregroundColor = color
         self.emit(qt.PYSIGNAL("ForegroundColorChanged"), 
                   (self.__foregroundColor,))
+##@brief this is the link plug for QubPixmapDisplay
+#
+#this the link of an object and QubPixmapDisplay
 class QubPixmapZoomPlug(QubImage2PixmapPlug):
     def __init__(self, receiver) :
         QubImage2PixmapPlug.__init__(self)
@@ -282,9 +312,7 @@ class QubPixmapZoomPlug(QubImage2PixmapPlug):
         self._receiver.setPixmap(pixmap, image)
         return False
             
-#########################################################################
-###  CLASS TEST PART
-#########################################################################
+
 class QubImageTest(qt.QMainWindow):
     class _timer(qt.QTimer) :
         def __init__(self,pixmapMgr) :
@@ -346,7 +374,7 @@ class QubImageTest(qt.QMainWindow):
         self.__qubpixmapdisplay.setScrollbarMode(self.__scrollMode[item])            
 
 
-##  MAIN   
+
 if  __name__ == '__main__':
     app = qt.QApplication(sys.argv)
 
