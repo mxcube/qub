@@ -2164,7 +2164,7 @@ class QubRulerAction(QubToggleImageAction) :
         for i in range(2) :
             ruler = QubContainerDrawingMgr(None)
             rulerObject = QubCanvasRuler(None)
-            ruler.addDrawingMgr(ruler)
+            ruler.addDrawingObject(rulerObject)
 
             ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setPositionMode)
             ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setLabel)
