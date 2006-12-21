@@ -608,6 +608,16 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
             import traceback
             traceback.print_exc()
             
+    def setCanvas(self,canvas) :
+        qtcanvas.QCanvasLine.setCanvas(self,canvas)
+        for tup in self.__textlimits :
+            for x in tup :
+                x.setCanvas(canvas)
+        for cur in self.__cursor :
+            cur.setCanvas(canvas)
+        for l in self.__label :
+            l.setCanvas(canvas)
+
     def __createCursor(self) :
         try:
             canvas = self.canvas()

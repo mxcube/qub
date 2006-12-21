@@ -2159,29 +2159,31 @@ class QubRulerAction(QubToggleImageAction) :
     HORIZONTAL,VERTICAL = range(2)
     def __init__(self,*args,**keys) :
         QubToggleImageAction.__init__(self,*args,**keys)
-        self.__ruler = None
         self.__iconName = keys.get('iconName','gears')
-
-    def viewConnect(self,qubImage) :
-        QubToggleImageAction.viewConnect(self,qubImage)
         self.__ruler = []
         for i in range(2) :
-            ruler = QubContainerDrawingMgr(qubImage.canvas(),qubImage.matrix())
-            rulerObject = QubCanvasRuler(qubImage.canvas())
-            ruler.addDrawingObject(rulerObject)
-            qubImage.addDrawingMgr(ruler)
+            ruler = QubContainerDrawingMgr(None)
+            rulerObject = QubCanvasRuler(None)
+            ruler.addDrawingMgr(ruler)
 
             ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setPositionMode)
             ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setLabel)
             ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setCursorPosition)
             ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setLimits)
+            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setCanvas)
             if i :
                 ruler.setPositionMode(QubCanvasRuler.VERTICAL)
             else:
                 ruler.setPositionMode(QubCanvasRuler.HORIZONTAL)
+            self.__ruler.append(ruler)
+            
+    def viewConnect(self,qubImage) :
+        QubToggleImageAction.viewConnect(self,qubImage)
+        for ruler in self.__ruler :
+            ruler.setCanvas(qubImage.canvas())
+            qubImage.addDrawingMgr(ruler)
             self.connect(qubImage,qt.PYSIGNAL("ForegroundColorChanged"),
                          ruler.setColor)
-            self.__ruler.append(ruler)
             
     ##@brief create widget for the view toolbar
     def addToolWidget(self, parent):
