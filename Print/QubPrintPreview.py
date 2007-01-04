@@ -594,6 +594,62 @@ class PrintCanvasPixmap(PrintCanvasImage):
         img = img.scaleWidth(self.width())
         painter.drawImage(self.x(), self.y(), img)
 
+class PrintCanvasVectorNPixmap(PrintCanvasPixmap) :
+    """
+    Class witch draw vector and pixmap
+    """
+    def __init__(self,x, y,srcCavas, img, canvas):
+        PrintCanvasPixmap.__init__(self,x,y,img,canvas)
+        self.__items = []
+        for item in srcCavas.allItems() :
+            if item.isVisible() :
+                newObject = item.__class__(item)
+                if hasattr(newObject,'setScrollView') :
+                    continue
+                else:
+                    newObject.setCanvas(None)
+                self.__items.append(newObject)
+
+    def __del__(self) :
+        for item in self.__items :
+            item.setCanvas(None)
+            
+    def draw(self,p) :
+        PrintCanvasPixmap.draw(self,p)
+        matrix = qt.QWMatrix(p.worldMatrix())
+        scale = float(self.width()) / self.imageWidth
+        matrix.translate(self.x(),self.y())
+        matrix = matrix.scale(scale, scale)
+        np = qt.QPainter(p.device())
+        np.setWorldMatrix(matrix)
+        for item in self.__items :
+            item.draw(np)
+
+    def printTo(self,painter) :
+        PrintCanvasPixmap.printTo(self,painter)
+        scale = float(self.width()) / self.imageWidth
+        matrix = painter.worldMatrix()
+        oldXscale,oldYscale = matrix.m11(),matrix.m22()
+        #set painter for drawing
+        painter.translate(self.x(),self.y())
+        painter.scale(scale,scale)
+
+        for item in self.__items :
+            item.draw(painter)
+        #Reset Painter
+        painter.scale(oldXscale,oldYscale)
+        painter.translate(-self.x(),-self.y())
+        
+        
+    def contentsX(self) :
+        return self.x()
+    def contentsY(self) :
+        return self.y()
+    def visibleWidth(self) :
+        return self.width()
+    def visibleHeight(self) :
+        return self.height()
+    
 
 class PrintCanvasView(qtcanvas.QCanvasView):
     """
@@ -1056,6 +1112,13 @@ class QubPrintPreview(qt.QDialog):
         (x,y) = self.canvasView.getMargin()
         self.__addItem(PrintCanvasPixmap(x+1, y+1, pixmap, self.canvas))
 
+    def addCanvasVectorNPixmap(self,canvas,pixmap) :
+        """
+        add all visible vector of canvas and it's pixmap
+        """
+        (x,y) = self.canvasView.getMargin()
+        self.__addItem(PrintCanvasVectorNPixmap(x+1, y+1,canvas, pixmap, self.canvas))
+        
     def __addItem(self, item):
         """
         """

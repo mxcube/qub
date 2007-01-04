@@ -48,13 +48,14 @@ class _ThreadMgr :
 
         def __del__(self) :
             self.stop()
-            self.wait()
-            
+                        
         def stop(self) :
             aLock = QubLock(self.__mutex)
             self.__stop = True
-            self.__cond.wakeOne()
-
+            self.__cond.wakeAll()
+            aLock.unLock()
+            self.wait()
+            
         def run(self) :
             aLock = QubLock(self.__mutex)
             while not self.__stop :
@@ -96,19 +97,26 @@ class _ThreadMgr :
         self.__cond = qt.QWaitCondition()
         self.__queues = []
         self.__threads = []
+        self.__exitThreadFlag = False
         for x in xrange(2) :
             threadProcess = _ThreadMgr._thread(self.__queues,self.__mutex,self.__cond)
             self.__threads.append(threadProcess)
             threadProcess.start()
-            
 
-
+    def exit(self) :
+        aLock = QubLock(self.__mutex)
+        self.__exitThreadFlag = True
+        self.__cond.wakeAll()
+        aLock.unLock()
+        for thread in self.__threads :
+            thread.stop()
+        
     def push(self,process,lockFlag = True,queueId = 0) :
         aLock = QubLock(self.__mutex,lockFlag)
         nbQueue = len(self.__queues)
         if nbQueue > queueId :
             queue = self.__queues[queueId]
-            while len(queue) > 127 :    # QUEUE LIMIT
+            while len(queue) > 127 and self.__exitThreadFlag :    # QUEUE LIMIT
                 self.__cond.wait()
             queue.append(process)
         else :
@@ -132,3 +140,9 @@ class _ThreadMgr :
 #INIT
 _theThreadPoll = _ThreadMgr()
 
+def _stopThreads() :
+##    _theThreadPoll.exit()
+    qt.qApp.sendPostedEvents()
+    qt.qApp.processEvents()
+
+qt.QObject.connect(qt.qApp,qt.SIGNAL('aboutToQuit()'),_stopThreads)

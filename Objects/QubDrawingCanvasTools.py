@@ -85,18 +85,19 @@ class QubCanvasDonut(qtcanvas.QCanvasEllipse):
             
             p.setClipping(0)       
         except:
-            sys.excepthook(sys.exc_info()[0],
-                       sys.exc_info()[1],
-                       sys.exc_info()[2])
- 
+            import traceback
+            traceback.print_exc() 
 
 ##@brief the Beam Object
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasBeam(QubCanvasEllipse):
     def __init__(self,canvas) :
-        QubCanvasEllipse.__init__(self, 29,19,0,5760, canvas)
-        
-        self.__centerE = QubCanvasEllipse(7,7,0,5760, canvas)
+        if isinstance(canvas,QubCanvasBeam) :
+            QubCanvasEllipse.__init__(self,canvas)
+            self.__centerE = QubCanvasEllipse(canvas._QubCanvasBeam__centerE)
+        else:
+            QubCanvasEllipse.__init__(self, 29,19,0,5760, canvas)
+            self.__centerE = QubCanvasEllipse(7,7,0,5760, canvas)
 
     def move(self,x,y) :
         QubCanvasEllipse.move(self,x,y)
@@ -122,14 +123,20 @@ class QubCanvasBeam(QubCanvasEllipse):
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasTarget(QubCanvasEllipse) :
     def __init__(self,canvas) :
-        self.__pointWidth = 20
-        qtcanvas.QCanvasItem.__init__(self,self.__pointWidth,self.__pointWidth,canvas)
+        if isinstance(canvas,QubCanvasTarget) :
+            self.__pointWidth = canvas._QubCanvasTarget__pointWidth
+            qtcanvas.QCanvasItem.__init__(self,canvas)
+            self.__hLine = qtcanvas.QCanvasLine(canvas._QubCanvasTarget__hLine)
+            self.__vLine = qtcanvas.QCanvasLine(canvas._QubCanvasTarget__vLine)
+        else: 
+            self.__pointWidth = 20
+            qtcanvas.QCanvasItem.__init__(self,self.__pointWidth,self.__pointWidth,canvas)
 
-        self.__hLine = qtcanvas.QCanvasLine(canvas)
-        self.__hLine.setPoints(0,0,self.__pointWidth,self.__pointWidth)
-        self.__vLine = qtcanvas.QCanvasLine(canvas)
-        self.__vLine.setPoints(0,self.__pointWidth,self.__pointWidth,0)
-
+            self.__hLine = qtcanvas.QCanvasLine(canvas)
+            self.__hLine.setPoints(0,0,self.__pointWidth,self.__pointWidth)
+            self.__vLine = qtcanvas.QCanvasLine(canvas)
+            self.__vLine.setPoints(0,self.__pointWidth,self.__pointWidth,0)
+            
     def move(self,x,y) :
         QubCanvasEllipse.move(self,x,y)
         self.__hLine.move(x - self.__pointWidth / 2,y - self.__pointWidth / 2)
@@ -163,8 +170,20 @@ class QubCanvasTarget(QubCanvasEllipse) :
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasText(qtcanvas.QCanvasText) :
     def __init__(self,canvas) :
-        qtcanvas.QCanvasText.__init__(self,canvas)
-        self.__rotation_angle = 0
+        if isinstance(canvas,qtcanvas.QCanvasText) :
+            qtcanvas.QCanvasText.__init__(self,canvas.canvas())
+            self.setText(canvas.text())
+            self.setFont(canvas.font())
+            self.setColor(canvas.color())
+            self.setX(canvas.x())
+            self.setY(canvas.y())
+            self.setZ(canvas.z())
+        else:
+            qtcanvas.QCanvasText.__init__(self,canvas)
+        if isinstance(canvas,QubCanvasText) :
+            self.__rotation_angle = canvas._QubCanvasText__rotation_angle
+        else:
+            self.__rotation_angle = 0
     def setRotation(self,angle) :
         self.__rotation_angle = angle
     def rotation(self) :
@@ -191,9 +210,6 @@ class QubCanvasText(qtcanvas.QCanvasText) :
 ##@brief this is a vertical line draw on the height of the canvas
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasVLine(qtcanvas.QCanvasLine) :
-    def __init__(self,canvas) :
-        qtcanvas.QCanvasLine.__init__(self,canvas)
-
     def move(self,x,y) :
         height = self.canvas().height()
         self.setPoints(x,0,x,height)
@@ -201,39 +217,50 @@ class QubCanvasVLine(qtcanvas.QCanvasLine) :
 ##@brief this is a horizontal line draw on the width of the canvas
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasHLine(qtcanvas.QCanvasLine) :
-    def __init__(self,canvas) :
-        qtcanvas.QCanvasLine.__init__(self,canvas)
-
     def move(self,x,y) :
         width = self.canvas().width()
         self.setPoints(0,y,width,y)
 
 ##@brief this object display the scale on bottom left of the image
 #@ingroup DrawingCanvasToolsContainer
-class QubCanvasScale(qtcanvas.QCanvasLine) :
+class QubCanvasScale(qtcanvas.QCanvasRectangle) :
     HORIZONTAL,VERTICAL,BOTH = (0x1,0x2,0x3)
     def __init__(self,canvas) :
-        color = qt.QColor('green')
-        self.__hLine = qtcanvas.QCanvasLine(canvas)
-        self.__hLine.setPen(qt.QPen(color,4))
-        self.__hText = qtcanvas.QCanvasText(canvas)
-        self.__hText.setColor(color)
-        
-        self.__vLine = qtcanvas.QCanvasLine(canvas)
-        self.__vLine.setPen(qt.QPen(color,4))
-        self.__vText = qtcanvas.QCanvasText(canvas)
-        self.__vText.setColor(color)
+        if isinstance(canvas,QubCanvasScale) :
+            self.__hLine = qtcanvas.QCanvasLine(canvas._QubCanvasScale__hLine)
+            self.__hText = QubCanvasText(canvas._QubCanvasScale__hText)
+            
+            self.__vLine = qtcanvas.QCanvasLine(canvas._QubCanvasScale__vLine)
+            self.__vText = QubCanvasText(canvas._QubCanvasScale__vText)
+            
+            self.__globalShow = canvas._QubCanvasScale__globalShow
+            self.__xPixelSize = canvas._QubCanvasScale__xPixelSize
+            self.__yPixelSize = canvas._QubCanvasScale__yPixelSize
+            self.__mode = canvas._QubCanvasScale__mode
+            self.__unit = list(canvas._QubCanvasScale__unit)
+            self.__autorizeValues = list(canvas._QubCanvasScale__autorizeValues)
 
-        self.__globalShow = False   # remember if the widget is shown
-        self.__xPixelSize = 0
-        self.__yPixelSize = 0
-        self.__mode = QubCanvasScale.BOTH
-        self.__unit = [(1e-3,'mm'),(1e-6,'\xb5m'),(1e-9,'nm')]
-        self.__autorizeValues = [1,2,5,10,20,50,100,200,500]
+            self.__canvas = canvas._QubCanvasScale__canvas
+        else:
+            color = qt.QColor('green')
+            self.__hLine = qtcanvas.QCanvasLine(canvas)
+            self.__hLine.setPen(qt.QPen(color,4))
+            self.__hText = QubCanvasText(canvas)
+            self.__hText.setColor(color)
 
-        self.__scrollView = None
-        self.__matrix = None
-        self.__canvas = canvas
+            self.__vLine = qtcanvas.QCanvasLine(canvas)
+            self.__vLine.setPen(qt.QPen(color,4))
+            self.__vText = QubCanvasText(canvas)
+            self.__vText.setColor(color)
+
+            self.__globalShow = False   # remember if the widget is shown
+            self.__xPixelSize = 0
+            self.__yPixelSize = 0
+            self.__mode = QubCanvasScale.BOTH
+            self.__unit = [(1e-3,'mm'),(1e-6,'\xb5m'),(1e-9,'nm')]
+            self.__autorizeValues = [1,2,5,10,20,50,100,200,500]
+
+            self.__canvas = canvas
     ##@brief set the display mode
     #
     # - if mode == QubCanvasScale::HORIZONTAL the scale will only be horizontal
@@ -369,7 +396,7 @@ class QubCanvasScale(qtcanvas.QCanvasLine) :
                     vLinePoint = self.__vLine.endPoint()
                     vTextRect = self.__vText.boundingRect()
                     self.__vText.move(vLinePoint.x() - 4,vLinePoint.y() - vTextRect.height())
-
+            
     def setScrollView(self,scrollView) :
         self.__scrollView = scrollView
 
@@ -417,20 +444,32 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
     MARGIN = 4
     def __init__(self,canvas) :
         qtcanvas.QCanvasLine.__init__(self,canvas)
-        self.__positionMode = QubCanvasRuler.HORIZONTAL
-        self.__scrollViewPercent = 0.8
         self.__scrollView = None
+        if isinstance(canvas,QubCanvasRuler) :
+            self.__positionMode = canvas._QubCanvasRuler__positionMode
+            self.__scrollViewPercent = canvas._QubCanvasRuler__scrollViewPercent
+            
+            self.__limits = list(canvas._QubCanvasRuler__limits)
+            self.__positions = list(canvas._QubCanvasRuler__positions)
+            self.__textlimits = list(canvas._QubCanvasRuler__textlimits)
+            self.__cursor = list(canvas._QubCanvasRuler__cursor)
+            self.__label = list(canvas._QubCanvasRuler__label)
 
-        self.__limits = []
-        self.__positions = []
-        self.__textlimits = []
-        self.__cursor = []
-        self.__label = []
+            self.__format = canvas._QubCanvasRuler__format
+            self.__globalShow = canvas._QubCanvasRuler__globalShow
+        else :
+            self.__positionMode = QubCanvasRuler.HORIZONTAL
+            self.__scrollViewPercent = 0.8
 
-        self.__color = self.pen().color()
-        self.__format = '%.2f'
-        self.__globalShow = False
-        
+            self.__limits = []
+            self.__positions = []
+            self.__textlimits = []
+            self.__cursor = []
+            self.__label = []
+
+            self.__format = '%.2f'
+            self.__globalShow = False
+            
     ##@brief set where the ruler will be display on the image
     #@param mode can be:
     # - <b>HORIZONTAL</b> horizontal on the image's top
@@ -641,8 +680,15 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
 class QubCanvasAngle(qtcanvas.QCanvasLine) :
     def __init__(self,canvas) :
         qtcanvas.QCanvasLine.__init__(self,canvas)
-        self.__secLine = None
-        self.__showFlag = False
+        if isinstance(canvas,QubCanvasAngle) :
+            if canvas._QubCanvasAngle__secLine is not None :
+                self.__secLine = qtcanvas.QCanvasLine(canvas._QubCanvasAngle__secLine)
+            else:
+                self.__secLine = None
+            self.__showFlag = canvas._QubCanvasAngle__showFlag
+        else:
+            self.__secLine = None
+            self.__showFlag = False
         
     def move(self,x,y,point_id) :
         if point_id == 0 :

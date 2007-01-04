@@ -207,7 +207,7 @@ class QubDrawingMgr :
         for drawingObject in self._drawingObjects :
             objectRect = drawingObject.boundingRect()
             if returnRect is not None :
-                returnRect = objectRect.unit(returnRect)
+                returnRect = objectRect.unite(returnRect)
             else :
                 returnRect = objectRect
         return returnRect

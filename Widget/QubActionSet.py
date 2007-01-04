@@ -247,7 +247,10 @@ class QubPrintPreviewAction(QubAction):
             if self._view is not None:
                 if hasattr(self._view, "getPPP"):
                     self._preview.show()
-                    self._preview.addPixmap(self._view.getPPP())
+                    if hasattr(self._view,'canvas'):
+                        self._preview.addCanvasVectorNPixmap(self._view.canvas(),self._view.getPPP())
+                    else:
+                        self._preview.addPixmap(self._view.getPPP())
 
     def viewConnect(self, view):
         """
@@ -741,8 +744,9 @@ class QubZoomRectangle(QubToggleImageAction) :
         self.__drawingMgr.setColor(color)
 
     def initSelection(self,ox,oy,width,height) :
-        self.__drawingMgr.setRect(ox,oy,width,height)
-        self.rectangleChanged(self.__drawingMgr)
+        if self.__drawingMgr is not None :
+            self.__drawingMgr.setRect(ox,oy,width,height)
+            self.rectangleChanged(self.__drawingMgr)
         
     def rectangleChanged(self, drawingMgr):
         rect =  drawingMgr.rect()     
