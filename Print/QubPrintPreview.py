@@ -604,7 +604,7 @@ class PrintCanvasVectorNPixmap(PrintCanvasPixmap) :
         for item in srcCavas.allItems() :
             if item.isVisible() :
                 newObject = item.__class__(item)
-                if hasattr(newObject,'setScrollView') :
+                if hasattr(newObject,'setScrollView') : # remove standalone items
                     continue
                 else:
                     newObject.setCanvas(None)
