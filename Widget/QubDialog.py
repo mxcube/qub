@@ -21,6 +21,7 @@ from Qub.Objects.QubDrawingCanvasTools import QubCanvasAngle
 from Qub.Widget.QubWidgetSet import QubSlider,QubColorToolMenu
 from Qub.Icons.QubIcons import loadIcon
 from Qub.Objects.QubDrawingEvent import QubMoveNPressed1Point
+from Qub.Tools.QubSvg import QubSvgImageSave
 
 ####################################################################
 ##########                                                ##########
@@ -340,8 +341,10 @@ class QubSaveImageDialog(qt.QDialog):
     ##@brief Dialog to take a snapshot and to save it in different format
     #@param parent is supposed to be the brick itself in order to acces its
     #@param name the name of the widget dialog
-    def __init__(self,parent = None,name = '') :
-        qt.QDialog.__init__(self, parent, name)
+    def __init__(self,parent,name = '',**keys) :
+        qt.QDialog.__init__(self,parent,name)
+
+        self.__canvas = keys.get('canvas',None)
         
         self.resize(350, 350)
         
@@ -387,6 +390,9 @@ class QubSaveImageDialog(qt.QDialog):
                 image.save(filename, "PNG")
             elif ext.lower() == ".jpeg" or ext.lower() ==".jpg" :
                 image.save(filename, "JPEG")
+            elif ext.lower() == '.svg':
+                svg = QubSvgImageSave(image,self.__canvas)
+                svg.save(filename.latin1())
             else :
                 dialog = qt.QErrorMessage(self.__parent)
                 dialog.message('File format not managed')

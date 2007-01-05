@@ -603,17 +603,12 @@ class PrintCanvasVectorNPixmap(PrintCanvasPixmap) :
         self.__items = []
         for item in srcCavas.allItems() :
             if item.isVisible() :
-                newObject = item.__class__(item)
-                if hasattr(newObject,'setScrollView') : # remove standalone items
+                if hasattr(item,'setScrollView') : # remove standalone items
                     continue
-                else:
-                    newObject.setCanvas(None)
+                newObject = item.__class__(item)
+                newObject.setCanvas(None)
                 self.__items.append(newObject)
 
-    def __del__(self) :
-        for item in self.__items :
-            item.setCanvas(None)
-            
     def draw(self,p) :
         PrintCanvasPixmap.draw(self,p)
         matrix = qt.QWMatrix(p.worldMatrix())
