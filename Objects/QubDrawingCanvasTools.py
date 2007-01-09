@@ -125,16 +125,16 @@ class QubCanvasTarget(QubCanvasEllipse) :
     def __init__(self,canvas) :
         if isinstance(canvas,QubCanvasTarget) :
             self.__pointWidth = canvas._QubCanvasTarget__pointWidth
-            qtcanvas.QCanvasItem.__init__(self,canvas)
+            QubCanvasEllipse.__init__(self,canvas)
+            qtcanvas.QCanvasEllipse.__init__(self,canvas)
             self.__hLine = qtcanvas.QCanvasLine(canvas._QubCanvasTarget__hLine)
             self.__vLine = qtcanvas.QCanvasLine(canvas._QubCanvasTarget__vLine)
         else: 
             self.__pointWidth = 20
-            qtcanvas.QCanvasItem.__init__(self,self.__pointWidth,self.__pointWidth,canvas)
-
-            self.__hLine = qtcanvas.QCanvasLine(canvas)
+            QubCanvasEllipse.__init__(self,self.__pointWidth,self.__pointWidth,canvas)
+            self.__hLine = qtcanvas.QCanvasLine(None)
             self.__hLine.setPoints(0,0,self.__pointWidth,self.__pointWidth)
-            self.__vLine = qtcanvas.QCanvasLine(canvas)
+            self.__vLine = qtcanvas.QCanvasLine(None)
             self.__vLine.setPoints(0,self.__pointWidth,self.__pointWidth,0)
             
     def move(self,x,y) :
@@ -159,8 +159,6 @@ class QubCanvasTarget(QubCanvasEllipse) :
 
     def setCanvas(self,canvas) :
         QubCanvasEllipse.setCanvas(self,canvas)
-        self.__hLine.setCanvas(canvas)
-        self.__vLine.setCanvas(canvas)
 
     def setPen(self,pen) :
         QubCanvasEllipse.setPen(self,pen)

@@ -312,15 +312,19 @@ class QubSaveImageDialog(qt.QDialog):
     ##@brief this is the plug for the QubImage2Pixmap Object
     #@see Qub::Objects::QubImage2Pixmap::QubImage2Pixmap
     class _Image2Pixmap(QubPixmapZoomPlug) :
-        def __init__(self,receiver,buttonFile) :
+        def __init__(self,dialog,receiver,buttonFile) :
             QubPixmapZoomPlug.__init__(self,receiver)
             self.__inPollFlag = False
             self.__lastImage = None
             self.__buttonFile = buttonFile
+            self.__dialog = dialog
             
         def setPixmap(self,pixmap,image) :
             self.__inPollFlag = False
             QubPixmapZoomPlug.setPixmap(self,pixmap,image)
+            if self.__dialog.vectorDrawing is not None :
+                self.__dialog.vectorDrawing.setZoom(float(pixmap.width()) / image.width())
+                self.__dialog.vectorDrawing.setSize(pixmap.width(),pixmap.height())
             if not self.__buttonFile.isEnabled() :
                 self.__buttonFile.setEnabled(True)
             self.__lastImage = image
@@ -338,13 +342,46 @@ class QubSaveImageDialog(qt.QDialog):
         def getImage(self) :
             return self.__lastImage
 
+    class _Vector(qtcanvas.QCanvasRectangle) :
+        def __init__(self,srccanvas,matrix,canvas) :
+            qtcanvas.QCanvasRectangle.__init__(self,canvas)
+            self.__srczoom = matrix.m11()
+            self.__items = []
+            self.__zoom = 1
+            for item in srccanvas.allItems() :
+                if item.isVisible() :
+                    if hasattr(item,'setScrollView') : # remove standalone items
+                        continue
+                    newObject = item.__class__(item)
+                    newObject.setCanvas(None)
+                    self.__items.append(newObject)
+
+        def setZoom(self,zoom) :
+            self.__zoom = zoom
+
+        def getVectorZoom(self) :
+            return self.__srczoom
+        
+        def draw(self,p) :
+            zoom = self.__zoom / self.__srczoom
+            nwm = qt.QWMatrix(p.worldMatrix())
+            nwm.scale(zoom,zoom)
+            np = qt.QPainter(p.device())
+            np.setWorldMatrix(nwm)
+            for item in self.__items :
+                item.draw(np)
+
+        def getItems(self) :
+            return self.__items
     ##@brief Dialog to take a snapshot and to save it in different format
     #@param parent is supposed to be the brick itself in order to acces its
     #@param name the name of the widget dialog
     def __init__(self,parent,name = '',**keys) :
         qt.QDialog.__init__(self,parent,name)
+        self.vectorDrawing = None
 
         self.__canvas = keys.get('canvas',None)
+        self.__matrix = keys.get('matrix',None)
         
         self.resize(350, 350)
         
@@ -363,27 +400,36 @@ class QubSaveImageDialog(qt.QDialog):
         self.__buttonFile.setEnabled(False)
         self.connect(self.__buttonFile, qt.SIGNAL("clicked()"), 
                         self.openFile)
-        self.__imagePlug = QubSaveImageDialog._Image2Pixmap(self.__ImView,self.__buttonFile)
+        self.__imagePlug = QubSaveImageDialog._Image2Pixmap(self,self.__ImView,self.__buttonFile)
                         
         iconSet = qt.QIconSet(loadIcon("snapshot.png"))
         self.__snapButton = qt.QPushButton(iconSet, "", self)
-        self.connect(self.__snapButton, qt.SIGNAL("clicked()"),self.__imagePlug.refresh)
+        self.connect(self.__snapButton, qt.SIGNAL("clicked()"),self.__refresh)
            
+        self.__vectorCheck = qt.QCheckBox(self)
+        self.__vectorCheck.setText('vector')
+        self.connect(self.__vectorCheck,qt.SIGNAL("toggled(bool)"),self.__drawVector)
+
         hlayout = qt.QHBoxLayout(vlayout)
         hlayout.addWidget(self.__snapButton)
         hlayout.addSpacing(10)
         hlayout.addWidget(self.__buttonFile)
-
+        hlayout.addSpacing(10)
+        hlayout.addWidget(self.__vectorCheck)
+        
     ##@brief Called when the Save button is pressed
     #This methode display a file selector and save the image
     def openFile(self):
-        filename = qt.QFileDialog.getSaveFileName( ".", "*;;*.png;;*.jpg", self, "selectFile",
+        filename = qt.QFileDialog.getSaveFileName( ".", "*;;*.png;;*.jpg;;*.svg", self, "selectFile",
                                                     "Choose a filename to save under")
         
 
         if filename :
             (radix, ext) = os.path.splitext(str(filename))
-
+            if self.__vectorCheck.isOn() :
+                ext = ".svg"
+                filename = qt.QString(radix + ext)
+            
             image = self.__imagePlug.getImage()
 
             if ext.lower() == ".png" :
@@ -391,7 +437,7 @@ class QubSaveImageDialog(qt.QDialog):
             elif ext.lower() == ".jpeg" or ext.lower() ==".jpg" :
                 image.save(filename, "JPEG")
             elif ext.lower() == '.svg':
-                svg = QubSvgImageSave(image,self.__canvas)
+                svg = QubSvgImageSave(image,self.vectorDrawing.getItems(),self.vectorDrawing.getVectorZoom())
                 svg.save(filename.latin1())
             else :
                 dialog = qt.QErrorMessage(self.__parent)
@@ -409,6 +455,22 @@ class QubSaveImageDialog(qt.QDialog):
     def refresh(self) :
         self.__imagePlug.refresh()
 
+    def __drawVector(self,aFlag) :
+        if aFlag :
+            self.__refresh()
+            self.vectorDrawing.show()
+        else:
+            self.vectorDrawing.hide()
+            
+    def __refresh(self) :
+        for item in self.__ImView.canvas().allItems() :
+            item.setCanvas(None)
+        self.vectorDrawing = None
+        if self.__vectorCheck.isOn() :
+            self.vectorDrawing = QubSaveImageDialog._Vector(self.__canvas,self.__matrix,self.__ImView.canvas())
+            self.vectorDrawing.show()
+        self.__imagePlug.refresh()
+    
 
 ####################################################################
 ##########                                                ##########
