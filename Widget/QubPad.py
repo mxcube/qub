@@ -13,9 +13,9 @@ class QubPad(QubWidgetFromUI):
 
     To Use this class make a plug which inherits from QubPadPlug, and plug it to this widget
     """
-    def __init__(self,parent = None,name = None,fl = 0):
+    def __init__(self,parent = None,name = 'QubPad',fl = 0):
         QubWidgetFromUI.__init__(self,parent,name,fl)
-        self.createGUIFromUI('QubPad.ui')
+        self.createGUIFromUI('QubPad.ui','__mainFrame')
         
         self.__multiplyInUse = 1
         self.__multiplyfactor = 10
@@ -1823,11 +1823,37 @@ class _myTestPlug(QubPadPlug) :
         self.ltimer.start(3000,True)
 
 if __name__ == "__main__":
+    def print_child(nb,parent) :
+        space = '\t' * nb
+        print space,parent.name()
+        color = [qt.Qt.red,qt.Qt.blue,qt.Qt.yellow,qt.Qt.green]
+        try:
+            parent.setPaletteBackgroundColor(color[nb])
+        except:
+            if isinstance(parent,qt.QWidget) :
+                parent.setPaletteBackgroundColor(color[-1])
+        if parent.children() :
+            for child in parent.children() :
+                print_child(nb + 1,child)
+    
     a = qt.QApplication(sys.argv)
     qt.QObject.connect(a,qt.SIGNAL("lastWindowClosed()"),a,qt.SLOT("quit()"))
-    w = QubPad()
+    w = qt.QMainWindow()
+    layout = qt.QVBoxLayout(w)
+    firstPad = QubPad(w)
+    firstPad.show()
+    layout.addWidget(firstPad)
+    secondPad = QubPad(w)
+    mainframe = secondPad.child('__mainFrame')
+    secondPad.show()
+    layout.addWidget(secondPad)
+    layout.addStretch(1)
     plug = _myTestPlug()
-    w.setPlug(plug)
+    firstPad.setPlug(plug)
+    plug = _myTestPlug()
+    secondPad.setPlug(plug)
+    secondPad.setAxis(QubPad.HORIZONTAL_AXIS)
+    print_child(0,secondPad)
     a.setMainWidget(w)
     w.show()
     a.exec_loop()

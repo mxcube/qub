@@ -3,8 +3,17 @@ import os.path
 import re
 import logging
 import qt
-
+##This class record image with svg format
+#
 class QubSvgImageSave :
+    ##The constructor
+    #
+    #@param image the QImage you want to save
+    #@param canvasOrcanvasList :
+    # - a canvas (QCanvas) or
+    # - a canvas item list (QCanvasItem)
+    #
+    #@param zoom the zoom of the canvas or canvas item
     def __init__(self,image,canvasOrcanvasList = None,zoom = 1) :
         self.__items = []
         self.__image = image
@@ -22,7 +31,10 @@ class QubSvgImageSave :
                     newObject = item.__class__(item)
                     newObject.setCanvas(None)
                     self.__items.append(newObject)
-                    
+    ##Save the image in a file (filename.png) and the vector description in other file (filename.svg)
+    #
+    #the svg file contain only the vector description and a link to the png image file
+    #@param file_path the full file path
     def save(self,file_path) :
         old_path = os.getcwdu()
         path,filename = os.path.split(file_path)
