@@ -437,11 +437,11 @@ class QubCanvasScale(qtcanvas.QCanvasRectangle) :
 #@ingroup DrawingCanvasToolsContainer
 #
 #this ruler can manage one or two cursors
-class QubCanvasRuler(qtcanvas.QCanvasLine) :
+class QubCanvasRuler(qtcanvas.QCanvasRectangle) :
     HORIZONTAL,VERTICAL = range(2)
     MARGIN = 4
     def __init__(self,canvas) :
-        qtcanvas.QCanvasLine.__init__(self,canvas)
+        qtcanvas.QCanvasRectangle.__init__(self,canvas)
         self.__scrollView = None
         if isinstance(canvas,QubCanvasRuler) :
             self.__positionMode = canvas._QubCanvasRuler__positionMode
@@ -455,6 +455,8 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
 
             self.__format = canvas._QubCanvasRuler__format
             self.__globalShow = canvas._QubCanvasRuler__globalShow
+
+            self.__line = qtcanvas.QCanvasLine(canvas._QubCanvasRuler__line)
         else :
             self.__positionMode = QubCanvasRuler.HORIZONTAL
             self.__scrollViewPercent = 0.8
@@ -467,6 +469,8 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
 
             self.__format = '%.2f'
             self.__globalShow = False
+            self.__line = qtcanvas.QCanvasLine(canvas)
+
             
     ##@brief set where the ruler will be display on the image
     #@param mode can be:
@@ -518,7 +522,7 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
         for l in [self.__label,self.__cursor] :
             for w in l :
                 w.show()
-        qtcanvas.QCanvasLine.show(self)
+        self.__line.show()
         
     def hide(self) :
         self.__globalShow = False
@@ -528,7 +532,7 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
         for l in [self.__label,self.__cursor] :
             for w in l :
                 w.hide()
-        qtcanvas.QCanvasLine.hide(self)
+        self.__line.hide()
     
     def setPen(self,pen) :
         color = pen.color()
@@ -537,7 +541,7 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
         for limits in self.__textlimits :
             for limitWidget in limits:
                 limitWidget.setColor(color)
-        qtcanvas.QCanvasLine.setPen(self,pen)
+        self.__line.setPen(pen)
         for cursor in self.__cursor :
             brush = cursor.brush()
             brush.setColor(color)
@@ -578,7 +582,7 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
                         hl.move(centerX + (spareSize + QubCanvasRuler.MARGIN) / 2,
                                 QubCanvasRuler.MARGIN + yOri + (textHeight + QubCanvasRuler.MARGIN / 2) * i)
                     y0Line = QubCanvasRuler.MARGIN + yOri + textHeight
-                    self.setPoints(centerX - spareSize / 2, y0Line,centerX + spareSize / 2,y0Line)
+                    self.__line.setPoints(centerX - spareSize / 2, y0Line,centerX + spareSize / 2,y0Line)
                     hTriangle = -textHeight
                     X0position = []
 
@@ -617,7 +621,7 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
                         hl.move(ll.x(),
                                 centerY + (spareSize + QubCanvasRuler.MARGIN) / 2)
                     x0Line = xOri + useSizeX - (QubCanvasRuler.MARGIN + textHeight)
-                    self.setPoints(x0Line,centerY - spareSize / 2,x0Line,centerY + spareSize / 2)
+                    self.__line.setPoints(x0Line,centerY - spareSize / 2,x0Line,centerY + spareSize / 2)
                     hTriangle = textHeight
                     Y0position = []
 
@@ -646,7 +650,8 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
             traceback.print_exc()
             
     def setCanvas(self,canvas) :
-        qtcanvas.QCanvasLine.setCanvas(self,canvas)
+        qtcanvas.QCanvasRectangle.setCanvas(self,canvas)
+        self.__line.setCanvas(canvas)
         for tup in self.__textlimits :
             for x in tup :
                 x.setCanvas(canvas)
@@ -654,6 +659,7 @@ class QubCanvasRuler(qtcanvas.QCanvasLine) :
             cur.setCanvas(canvas)
         for l in self.__label :
             l.setCanvas(canvas)
+        
 
     def __createCursor(self) :
         try:
