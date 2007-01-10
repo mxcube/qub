@@ -176,6 +176,7 @@ class QubCanvasText(qtcanvas.QCanvasText) :
             self.setX(canvas.x())
             self.setY(canvas.y())
             self.setZ(canvas.z())
+            self.setVisible(canvas.isVisible())
         else:
             qtcanvas.QCanvasText.__init__(self,canvas)
         if isinstance(canvas,QubCanvasText) :
