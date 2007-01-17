@@ -672,6 +672,15 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
         self._points = []
         self._drawingEvent = QubNPointClick
+        self.__constraintPoint = {}
+        
+    def __del__(self) :
+        for drawingObject in self._drawingObjects :
+            drawingObject.show()
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            for drawingObject in objectlist :
+                drawingObject.show()
+        QubDrawingMgr.__del__(self)
 
     ##@brief set the list of points
     #@param pointList this is a list a tuple (x,y)
@@ -685,6 +694,11 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
     ##@name Internal loop event call
     #@{
     def move(self,x,y,point_id) :
+        (fromPointId,constraintObject) = self.__constraintPoint.get(point_id,(None,None))
+        if fromPointId is not None and len(self._points) > fromPointId :
+            x0,y0 = self._points[fromPointId]
+            x0,y0,x,y = constraintObject.calc(x0,y0,x,y)
+            
         if self._matrix is not None :
             xWarp,yWarp = self._matrix.invert()[0].map(x,y)
         else:
@@ -713,7 +727,11 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
 
             self._drawForeignObject(point_id)
     ##@}
-
+    def addDrawingObject(self,aDrawingObject) :
+        QubDrawingMgr.addDrawingObject(self,aDrawingObject)
+        if hasattr(aDrawingObject,'getConstraint') :
+            for contraintId,fromPointId,constaintObject in aDrawingObject.getConstraint() :
+                self.__constraintPoint[contraintId] = (fromPointId,constaintObject)
     ##@brief get a modify class to move or resize the polygone
     def _getModifyClass(self,x,y) :
         for i,(xpoint,ypoint) in enumerate(self._points) :

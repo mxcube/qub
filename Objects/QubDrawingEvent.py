@@ -22,7 +22,8 @@ class QubDrawingEvent :
         pass
     def mouseMove(self,x,y) :
         pass
-
+    def mouseDblClick(self,x,y) :
+        pass
     #@brief called when the event is removed from the polling loop
     def endPolling(self) :
         pass
@@ -205,7 +206,7 @@ class QubNPointClick(_DrawingEventNDrawingMgr) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
         self.__pointNb = 0
         self.__active = False
-        
+    
     def mousePressed(self,x,y) :
         if self.__pointNb == 0 :
             self._drawingMgr().show()
@@ -220,6 +221,9 @@ class QubNPointClick(_DrawingEventNDrawingMgr) :
         else: self.__pointNb += 1
         return aEndFlag and self._onShot
 
+    def mouseDblClick(self,x,y) :
+        return True
+    
     def mouseMove(self,x,y) :
         if self.__active :
             self._drawingMgr().move(x,y,self.__pointNb)

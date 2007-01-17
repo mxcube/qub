@@ -18,6 +18,8 @@ from Qub.Objects.QubDrawingManager import QubPolygoneDrawingMgr
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasEllipse
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasAngle
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasCloseLinePolygone
+
 from Qub.Widget.QubWidgetSet import QubSlider,QubColorToolMenu
 from Qub.Icons.QubIcons import loadIcon
 from Qub.Objects.QubDrawingEvent import QubMoveNPressed1Point
@@ -76,7 +78,8 @@ class QubMeasureListDialog(qt.QDialog):
         self.__tools = [('point',QubPointDrawingMgr,QubCanvasTarget,self.__endPointDrawing),
                         ('distance',QubLineDrawingManager,qtcanvas.QCanvasLine,self.__endDistanceDrawing),
                         ('rectangle',Qub2PointSurfaceDrawingManager,qtcanvas.QCanvasRectangle,self.__endSurfaceDrawing),
-                        ('angle',QubPolygoneDrawingMgr,QubCanvasAngle,self.__endAngleDrawing)]
+                        ('angle',QubPolygoneDrawingMgr,QubCanvasAngle,self.__endAngleDrawing),
+                        ('polygon',QubPolygoneDrawingMgr,QubCanvasCloseLinePolygone,self.__defaultEnd)]
         
         self.__ToolIdSelected = 0
         self.__lastdrawingMgr = None
@@ -254,6 +257,11 @@ class QubMeasureListDialog(qt.QDialog):
             dist2 = math.sqrt(x2 **2 + y2 ** 2)
             angle = math.acos(scalar/(dist1*dist2))
             anItem.setText(1,"angle -> %f deg" % (angle * 180 / math.pi))
+
+    def __defaultEnd(self,drawingMgr) :
+        anItem = self.__getItemWithDrawingObject(drawingMgr)
+        if self.__lastdrawingMgr == drawingMgr :
+            self.__lastdrawingMgr = None
             
     def __getDistanceString(self,dist) :
         for unit,unitString in [(1e-3,'m'),(1e-6,'\xb5'),(1e-9,'n'),(1e-12,'p')] :
@@ -279,6 +287,7 @@ class QubMeasureListDialog(qt.QDialog):
 
     def __deleteCBK(self,item) :
         for item in self.__getSelectedIterator() :
+            item.drawingMgr().hide()
             self.__measureList.takeItem(item)
     def __colorChanged(self,color) :
         for item in self.__getSelectedIterator() :

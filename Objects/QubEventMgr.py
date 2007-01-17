@@ -124,7 +124,11 @@ class QubEventMgr:
     #@param evtMgr if not None external event ie: generated from a linked event manager
     def _mousePressed(self,event,evtMgr = None) :
         try:
-            if event.button() == qt.Qt.LeftButton and event.state() == qt.Qt.ShiftButton :
+            if event.button() == qt.Qt.LeftButton and event.type() == qt.QEvent.MouseButtonDblClick:
+                for drawingEventRef in self.__pendingEvents[:] :
+                    if(drawingEventRef().mouseDblClick(event.x(),event.y())) :
+                        self._rmDrawingEventRef(drawingEventRef)
+            elif event.button() == qt.Qt.LeftButton and event.state() == qt.Qt.ShiftButton :
                 if self.__curentModifierMgr is not None :
                     self.__curentModifierMgr.mousePressed(event.x(),event.y())
             elif event.button() == qt.Qt.LeftButton :

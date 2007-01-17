@@ -1,5 +1,8 @@
+import math
+import itertools
 import qt
 import qtcanvas
+from Qub.Objects.QubDrawingConstraint import QubAngleConstraint
 ##@defgroup DrawingCanvasTools Low level objects drawing
 #@brief this is the group of all vector objects which can be put in a simple QCanvas.
 #
@@ -33,19 +36,23 @@ import qtcanvas
 #@ingroup DrawingCanvasTools
 #
 
+##@defgroup DrawingCanvasToolsRectangle Two points surface
+#@brief all drawingObject in this group can be used with Qub::Objects::QubDrawingManager::Qub2PointSurfaceDrawingManager
+#@ingroup DrawingCanvasTools
+#
+
 ##@defgroup DrawingCanvasToolsContainer Stand alone drawing object
 #@brief all drawingObject in this group can only be use with Qub::Objects::QubDrawingManager::QubContainerDrawingMgr
 #@ingroup DrawingCanvasTools
 #
 
-##@defgroup DrawingCanvasToolsPolygone Polygone objects
+##@defgroup DrawingCanvasToolsPolygon Polygon objects
 #@brief all drawing in this group can only be use with Qub::Objects::QubDrawingManager::QubPolygoneDrawingMgr
 #@ingroup DrawingCanvasTools
 #
 
 ##@brief the Ellipse object
 #@ingroup DrawingCanvasToolsPoint
-
 class QubCanvasEllipse(qtcanvas.QCanvasEllipse):
     def drawShape(self, p):
         p.drawArc(int(self.x()-self.width()/2+0.5), 
@@ -681,7 +688,7 @@ class QubCanvasRuler(qtcanvas.QCanvasRectangle) :
 ##@brief drawing object to display two line with one same corner
 #
 #it is use for an angle measurement
-#@ingroup DrawingCanvasToolsPolygone
+#@ingroup DrawingCanvasToolsPolygon
 class QubCanvasAngle(qtcanvas.QCanvasLine) :
     def __init__(self,canvas) :
         qtcanvas.QCanvasLine.__init__(self,canvas)
@@ -737,3 +744,139 @@ class QubCanvasAngle(qtcanvas.QCanvasLine) :
         qtcanvas.QCanvasLine.setCanvas(self,aCanvas)
         if self.__secLine is not None :
             self.__secLine.setCanvas(aCanvas)
+
+##@brief drawing object to display a N lines polygone
+#
+#it is use for an angle measurement
+#@ingroup DrawingCanvasToolsPolygon
+class QubCanvasCloseLinePolygone(qtcanvas.QCanvasPolygon) :
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasPolygon.__init__(self,canvas)
+        if isinstance(canvas,QubCanvasCloseLinePolygone) :
+            self.__points = list(canvas._QubCanvasCloseLinePolygone__points)
+            self.__pen = canvas._QubCanvasCloseLinePolygone__pen
+        else:
+            self.__points = []
+            self.__pen = qt.QPen()
+            
+    def move(self,x,y,point_id = 0) :
+        while len(self.__points) <= point_id:
+            self.__points.append((x,y))
+        self.__points[point_id] = (x,y)
+        self.setPoints(self._areaPoints())
+        return False                    # NEVER END
+    
+    def pen(self) :
+        return self.__pen
+    def setPen(self,pen) :
+        self.__pen = pen
+        
+    def drawShape(self,painter):
+        if self.isVisible() and self.__points :
+            painter.setPen(self.__pen)
+            if len(self.__points) >= 2 :
+                if len(self.__points) > 2 :
+                    for (x1,y1),(x2,y2) in zip(itertools.islice(self.__points,0,None),
+                                               itertools.islice(self.__points,1,None)) :
+                        painter.drawLine(x1,y1,x2,y2)
+                (fx,fy),(ex,ey) = self.__points[0],self.__points[-1]
+                painter.drawLine(fx,fy,ex,ey)
+            else: painter.drawPoint(*self.__points[0])
+        
+    def _areaPoints(self) :
+        if self.canvas() and self.__points :
+            if len(self.__points) > 2 :
+                aP = qt.QPointArray(len(self.__points))
+                for i,(x,y) in enumerate(self.__points) :
+                    aP.setPoint(i,x,y)
+            elif len(self.__points) == 2:
+                aP = qt.QPointArray(4)
+                x0,y0 = self.__points[0]
+                x1,y1 = self.__points[1]
+                aP.putPoints(0,[x0,y0,x1,y0,x1,y1,x0,y1])
+            else:
+                aP = qt.QPointArray(4)
+                x,y = self.__points[0]
+                aP.putPoints(0,[x-2,y-2,x+2,y-2,x+2,y+2,x-2,y+2])
+        else:
+            aP = qt.QPointArray(0)
+        return aP
+
+##@brief drawing object to display a grid
+#
+#@ingroup DrawingCanvasToolsPolygon
+#@ingroup DrawingCanvasToolsRectangle
+class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasRectangle.__init__(self,canvas)
+        if isinstance(canvas,QubCanvasGrid) :
+            self.__angle = canvas._QubCanvasGrid__angle
+            self.__nbPointAxis1 = canvas._QubCanvasGrid__nbPointAxis1
+            self.__nbPointAxis2 = canvas._QubCanvasGrid__nbPointAxis2
+            self.__points = list(canvas._QubCanvasGrid__points)
+        else:
+            self.__angle = 0
+            self.__nbPointAxis1 = 50
+            self.__nbPointAxis2 = 50
+            self.__secondPoints = (0,0)
+        self.__contraintAngle = QubAngleConstraint(self.__angle + 90)
+        
+    def move(self,x,y,point_id = 0) :
+        if point_id == 0:               # FIRST
+            qtcanvas.QCanvasRectangle.move(self,x,y)
+        elif point_id == 1:
+            x1,y1 = self.x(),self.y()
+            X,Y = (x - x1,y - y1)
+            dist = math.sqrt(X ** 2 + Y ** 2)
+            self.__angle = math.acos(X / dist) * 180 / math.pi
+            width = math.sqrt(abs(x - x1) ** 2 + abs(y - y1) ** 2)
+            if y - y1 < 0 :
+                self.__angle = -self.__angle
+            self.setSize (width,self.height())
+            self.__secondPoints = (x,y)
+            self.__contraintAngle.setAngle(self.__angle + 90)
+        else:
+            if abs(self.__angle) == 90 :
+                self.setSize(self.width(),abs(x - self.x()))
+            else :
+                x1,y1 = self.__secondPoints
+                height = math.sqrt(abs(x - x1) ** 2 + abs(y - y1) ** 2)
+                if y - y1 < 0:
+                    height = -height
+                self.setSize(self.width(),height)
+                return True
+
+    def setNbPointAxis1(self,nbPoint) :
+        self.__nbPointAxis1 = nbPoint
+    def setNbPointAxis2(self,nbPoint) :
+        self.__nbPointAxis2 = nbPoint
+
+    def angle(self) :
+        return self.__angle
+    
+    def drawShape(self,painter) :
+        if self.__angle :
+            painter.translate(self.x(),self.y())
+            painter.rotate(self.__angle)
+            painter.translate(-self.x(),-self.y())
+        qtcanvas.QCanvasRectangle.drawShape(self,painter)
+        if self.__nbPointAxis1 and self.__nbPointAxis2 :
+            xStep = self.width() / float(self.__nbPointAxis1)
+            yStep = self.height() / float(self.__nbPointAxis2)
+            y0 = self.y()
+            for lineId in range(self.__nbPointAxis2) :
+                x0 = self.x()
+                for column in range(self.__nbPointAxis1) :
+                    painter.drawPoint(x0,y0)
+                    x0 += xStep
+                y0 += yStep
+                
+        if self.__angle :
+            painter.translate(self.x(),self.y())
+            painter.rotate(-self.__angle)
+            painter.translate(-self.x(),-self.y())
+    ##@brief set the drawing constraint
+    #
+    #Has the grid is a rectangle, the last point (3th) must be drawn to have a square angle
+    def getConstraint(self) :
+        return [(2,1,self.__contraintAngle)]
