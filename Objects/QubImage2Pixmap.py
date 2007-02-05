@@ -1,11 +1,12 @@
 import sys
 import qt
-import QubPixmapTools
+from Qub.CTools import pixmaptools
 
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
 from opencv import cv
-from QubOpenCv import qtTools
+from Qub.CTools.opencv import qtTools
+
 ##@brief This class manage the copy between QImage and QPixmap
 #
 #This is an effecient way to transforme a QImage to a QPixmap
@@ -192,11 +193,11 @@ class QubImage2PixmapPlug :
             self._interpolation = cv.CV_INTER_LINEAR #CV_INTER_CUBIC
             self.__interpolationInUse = self._interpolation
             
-            self.__pixmapIO = [QubPixmapTools.IO(),QubPixmapTools.IO()]
+            self.__pixmapIO = [pixmaptools.IO(),pixmaptools.IO()]
             self.__pixmapbuffer = [qt.QPixmap(),qt.QPixmap()]
             self.__bufferId = 0
             for buffer in self.__pixmapIO :
-                buffer.setShmPolicy(QubPixmapTools.IO.ShmKeepAndGrow)
+                buffer.setShmPolicy(pixmaptools.IO.ShmKeepAndGrow)
         ##@retun the horizontal and vertical zoom as a tuple
         def zoom(self) :
             aLock = QubLock(self.__mutex)

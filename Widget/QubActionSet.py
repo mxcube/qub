@@ -2118,12 +2118,13 @@ class QubScaleAction(QubToggleImageAction) :
         self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setYPixelSize)
         self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setMode)
         self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setAutorizedValues)
+        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setColor)
         
         self.__scale.setXPixelSize(self.__xPixelSize)
         self.__scale.setYPixelSize(self.__yPixelSize)
         self.__scale.setMode(self.__mode)
         self.__scale.setAutorizedValues(self.__autorizeValues)
-        
+
         
     def setXPixelSize(self,size) :
         try:
@@ -2147,6 +2148,19 @@ class QubScaleAction(QubToggleImageAction) :
     def yPixelSize(self) :
         return self.__yPixelSize
                     
+    def addToolWidget(self,parent) :
+        widget = QubToggleImageAction.addToolWidget(self,parent)
+        self.__colorToolButton = QubColorToolButton()
+        widget.setPopup(self.__colorToolButton.popupMenu)
+        self.__colorToolButton.setPopup(None)
+        widget.setPopupDelay(0)
+        self.connect(self.__colorToolButton, qt.PYSIGNAL("colorSelected"),
+                     self.__colorChanged)
+        return widget
+
+    def __colorChanged(self,color) :
+        self.__scale.setColor(color)
+        
     def _setState(self,aFlag) :
         if self.__scale is not None :
             if aFlag:

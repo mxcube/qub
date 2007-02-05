@@ -1,7 +1,7 @@
 import sys
 import qt
 from opencv import cv
-from QubOpenCv import qtTools
+from Qub.CTools.opencv import qtTools
 
 from Qub.Icons import QubIcons
 from Qub.Widget.QubWidgetFromUI import QubWidgetFromUI
@@ -1200,6 +1200,10 @@ class _pad_button(qt.QPushButton) :
                     self.__column_size = tmpimage.width() / 3
                     self.__line_size = tmpimage.height()
                     self.__tuple2ArrowType = {(0,0) : self.UNCLOCKWISE,(1,0) : self.STOP,(2,0) : self.CLOCKWISE}
+                pixmap = self.stopButton.pixmap()
+                image = pixmap.convertToImage()
+                image = image.scaleWidth(image.width() / 2)
+                self.stopButton.setPixmap(qt.QPixmap(image))
             elif aNbAxis == 2 :
                 if axisOring & QubPad.ROTATION_AXIS :
                     if axisOring & QubPad.HORIZONTAL_AXIS :

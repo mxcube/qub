@@ -222,6 +222,7 @@ class QubNPointClick(_DrawingEventNDrawingMgr) :
         return aEndFlag and self._onShot
 
     def mouseDblClick(self,x,y) :
+        self._drawingMgr().endDraw()
         return True
     
     def mouseMove(self,x,y) :

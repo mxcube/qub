@@ -142,16 +142,20 @@ class QubDrawingMgr :
     ##@brief set the color of all the drawing objects
     #@param color is a qt.QColor
     def setColor(self,color) :
-        for drawingObject in self._drawingObjects :
-            pen = drawingObject.pen()
-            pen.setColor(color)
-            drawingObject.setPen(pen)
-        for link,canvas,matrix,objectlist in self._foreignObjects :
-            for drawingObject in objectlist :
+        try:
+            for drawingObject in self._drawingObjects :
                 pen = drawingObject.pen()
                 pen.setColor(color)
                 drawingObject.setPen(pen)
-
+            
+            for link,canvas,matrix,objectlist in self._foreignObjects :
+                for drawingObject in objectlist :
+                    pen = drawingObject.pen()
+                    pen.setColor(color)
+                    drawingObject.setPen(pen)
+        except:
+            import traceback
+            traceback.print_exc()
     ##@brief set the pen of all the drawing object
     #@param pen is a qt.QPen
     def setPen(self,pen) :
@@ -226,7 +230,17 @@ class QubDrawingMgr :
     # - if set the methode added will have this name
     # - else the methode added will have the name of the drawingObject methode
     def addSetHandleMethodToEachDrawingObject(self,call_back,methode_name = '') :
-        newCallable = _foreach_callable(self.__foreach_set,call_back)
+        self.__addHandleMethod(call_back,methode_name,self.__foreach_set)
+
+    ##@brief add on the fly a get methode for all drawing object execpt foreign
+    #
+    #@see addSetHandleMethodToEachDrawingObject
+    def addGetHandleMethodToEachDrawingObject(self,call_back,methode_name = '') :
+        self.__addHandleMethod(call_back,methode_name,self.__foreach_get)
+
+    ##@brief add the handle methode to drawingObjects
+    def __addHandleMethod(self,call_back,methode_name,loop_methode) :
+        newCallable = _foreach_callable(loop_methode,call_back)
         if methode_name :
             self.__dict__[methode_name] = newCallable
         else :
@@ -317,7 +331,17 @@ class QubDrawingMgr :
         except:
             import traceback
             traceback.print_exc()
-            
+    ##@brief callback use by get methode created by addGetHandleMethodToEachDrawingObject
+    def __foreach_get(self,callback,*args,**keys) :
+        returnValues = []
+        try:
+            for drawingObject in self._drawingObjects :
+                value = callback(drawingObject,*args,**keys)
+                returnValues.append(value)
+        except:
+            import traceback
+            traceback.print_exc()
+        return returnValues
 ##@brief this class is a container of stand alone drawing object
 #
 #This class should be used with stand alone DrawingObject
@@ -682,10 +706,19 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
                 drawingObject.show()
         QubDrawingMgr.__del__(self)
 
+    ##@brief set the brush for all drawingObject
+    #@param brush a qt.QBrush
+    def setBrush(self,brush) :
+        for drawingObject in self._drawingObjects :
+            drawingObject.setBrush(brush)
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            for drawingObject in objectlist :
+                drawingObject.setBrush(brush)
+
     ##@brief set the list of points
     #@param pointList this is a list a tuple (x,y)
     def setPoints(self,pointList) :
-        self._points = []
+        self._points = pointList
         self.update()
     ##@return list of tuple (x,y)
     def points(self) :
@@ -697,6 +730,8 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         (fromPointId,constraintObject) = self.__constraintPoint.get(point_id,(None,None))
         if fromPointId is not None and len(self._points) > fromPointId :
             x0,y0 = self._points[fromPointId]
+            if self._matrix is not None :
+                x0,y0 = self._matrix.map(x0,y0)
             x0,y0,x,y = constraintObject.calc(x0,y0,x,y)
             
         if self._matrix is not None :
@@ -726,6 +761,15 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
                 drawingObject.move(x,y,point_id)
 
             self._drawForeignObject(point_id)
+
+        for drawingObject in self._drawingObjects:
+            if hasattr(drawingObject,"update") :
+                drawingObject.update()
+        for link,canvas,matrix,objectlist in self._foreignObjects :
+            for drawingObject in objectlist :
+                if hasattr(drawingObject,"update") :
+                    drawingObject.update()
+        
     ##@}
     def addDrawingObject(self,aDrawingObject) :
         QubDrawingMgr.addDrawingObject(self,aDrawingObject)
@@ -769,12 +813,11 @@ class _foreach_callable :
             self.__cbk = weakref.ref(callback)
 
     def __call__(self,*args,**keys) :
-        aReturnFlag = False
+        aReturnVal = None
         try:
             if self.__cbk() is not None :
-                self.__func_meth()(self.__objRef(),self.__cbk(),*args,**keys)
-                aReturnFlag = True
+                aReturnVal = self.__func_meth()(self.__objRef(),self.__cbk(),*args,**keys)
         except:
             import traceback
             traceback.print_exc()
-        return aReturnFlag
+        return aReturnVal
