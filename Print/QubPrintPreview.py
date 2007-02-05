@@ -624,7 +624,6 @@ class PrintCanvasVectorNPixmap(PrintCanvasPixmap) :
         PrintCanvasPixmap.printTo(self,painter)
         scale = float(self.width()) / self.imageWidth
         matrix = painter.worldMatrix()
-        oldXscale,oldYscale = matrix.m11(),matrix.m22()
         #set painter for drawing
         painter.translate(self.x(),self.y())
         painter.scale(scale,scale)
@@ -632,7 +631,7 @@ class PrintCanvasVectorNPixmap(PrintCanvasPixmap) :
         for item in self.__items :
             item.draw(painter)
         #Reset Painter
-        painter.scale(oldXscale,oldYscale)
+        painter.scale(1/scale,1/scale)
         painter.translate(-self.x(),-self.y())
         
         
