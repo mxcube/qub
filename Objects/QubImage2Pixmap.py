@@ -1,5 +1,7 @@
-import sys
 import qt
+if __name__ == "__main__":              # TEST
+    a = qt.QApplication([])
+    
 from Qub.CTools import pixmaptools
 
 from Qub.Tools.QubThread import QubLock
@@ -45,7 +47,7 @@ class QubImage2Pixmap(qt.QObject) :
         ##@return the plug object inherited from QubImage2PixmapPlug
         def getPlugs(self) :
             aLock = QubLock(self.__mutex)
-            return self.__plugs
+            return list(self.__plugs)
         ##@brief add an image in the pending stack
         #
         #All image are transformed to Pixmap asynchronously, there is two way:
@@ -53,7 +55,8 @@ class QubImage2Pixmap(qt.QObject) :
         #    those image are zoomed in a thread
         # -# if a client just want to display full image, the task is pushed in the display
         #    stack
-        def putImage(self,aQImage,aLockFlag = True) :
+        def putImage(self,images,aLockFlag = True) :
+            zoomedImage,fullimage = images
             aLock = QubLock(self.__mutex,aLockFlag)
             if len(self.__plugs) :
                 needZoomFlag = False
@@ -62,11 +65,11 @@ class QubImage2Pixmap(qt.QObject) :
                     if zoom.needZoom():
                         needZoomFlag = True
                         break
-                self.__PrevImageNeedZoom = aQImage
+                self.__PrevImageNeedZoom = (zoomedImage,fullimage)
                 if needZoomFlag :
-                    self.__imageZoomProcess.putImage(aQImage)
+                    self.__imageZoomProcess.putImage((zoomedImage,fullimage))
                 else :
-                    self.appendPendingList([(plug,aQImage,aQImage) for plug in self.__plugs],False)
+                    self.appendPendingList([(plug,zoomedImage,fullimage) for plug in self.__plugs],False)
 
         ##@brief add an image in the pending display stack
         def appendPendingList(self,aList,aLock = True) :
@@ -108,7 +111,7 @@ class QubImage2Pixmap(qt.QObject) :
         ##@brief copy image on a pixmap
         def __copy(self) :
             aLock = QubLock(self.__mutex)
-            self.decim(self.__plugsNimagesPending)
+            self.__plugsNimagesPending = self.decim(self.__plugsNimagesPending)
             if len(self.__plugsNimagesPending) :
                 plugsNimages = self.__plugsNimagesPending.pop(0)
                 aLock.unLock()
@@ -150,8 +153,8 @@ class QubImage2Pixmap(qt.QObject) :
                 for x in xrange(nbSkip) :
                     l.pop(0)
             elif lenght > 1 :                      # last
-                for x in xrange(lenght - 1) :
-                    l.pop(0)
+                l = l[-1:]
+            return l
 
     ##@brief constructor
     def __init__(self,skipSmooth = True) :
@@ -159,8 +162,8 @@ class QubImage2Pixmap(qt.QObject) :
         self.__idle = QubImage2Pixmap._Idle(self,skipSmooth)
         
     ##@brief Asynchronous Image Put, the copy to pixmap will be made on idle
-    def putImage(self,aQImage) :
-        self.__idle.putImage(aQImage)
+    def putImage(self,imageZoomed,fullimage) :
+        self.__idle.putImage((imageZoomed,fullimage))
 
     ##@brief link the object to an other one which can display pixmap
     def plug(self,aQubImage2PixmapPlug) :
@@ -354,7 +357,7 @@ class QubImage2PixmapPlug :
 class _ImageZoomProcess(QubThreadProcess):
     class _process_struct :
         def __init__(self,image) :
-            self.image = image
+            self.image,self.fullimage = image
             self.plugNimage = []
             self.inProgress = False
             self.end = False
@@ -370,7 +373,7 @@ class _ImageZoomProcess(QubThreadProcess):
          
     def getFunc2Process(self) :
         aLock = QubLock(self.__mutex)
-        self.__cnt.decim(self.__imageZoomPending)
+        self.__imageZoomPending = self.__cnt.decim(self.__imageZoomPending)
         self.__InProgress.append(_ImageZoomProcess._process_struct(self.__imageZoomPending.pop(0)))
         if not len(self.__imageZoomPending) :
             self.__actif = False
@@ -411,14 +414,13 @@ class _ImageZoomProcess(QubThreadProcess):
             if zoom.needZoom() :
                 try:
                     imageZoomed = zoom.getZoomedImage(imageOpencv)
-                    struct.plugNimage.append((plug,imageZoomed,struct.image))
+                    struct.plugNimage.append((plug,imageZoomed,struct.fullimage))
                 except:
-                    sys.excepthook(sys.exc_info()[0],
-                                   sys.exc_info()[1],
-                                   sys.exc_info()[2])
+                    import traceback
+                    traceback.print_exc()
 
             else :
-                struct.plugNimage.append((plug,struct.image,struct.image))
+                struct.plugNimage.append((plug,struct.image,struct.fullimage))
 
         aLock.lock()
         struct.end = True
@@ -465,10 +467,10 @@ if __name__ == "__main__":
             self.start(10)
 
         def __putImage(self) :
-            self.__pixmapManager.putImage(self.images[self.id % len(self.images)])
+            image = self.images[self.id % len(self.images)]
+            self.__pixmapManager.putImage(image,image)
             self.id += 1
                                       
-    a = qt.QApplication([])
     qt.QObject.connect(a,qt.SIGNAL("lastWindowClosed()"),a,qt.SLOT("quit()"))
 
     dialog = qt.QDialog()

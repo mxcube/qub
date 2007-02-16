@@ -131,7 +131,7 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
                 self.__postSetImage = []
                 aLock.unLock()
                 for image in images :
-                    if plug.setImage(image) :
+                    if plug.setImage(image,image) :
                         aLock.lock()
                         self.__plug = None
                         break
@@ -159,5 +159,5 @@ class QubStdData2ImagePlug :
     # - else <b>False</b> keep in the polling loop
     #
     #@param image a qt.QImage
-    def setImage(self,image) :
+    def setImage(self,imagezoomed,fullimage) :
         return True                     # (END)
