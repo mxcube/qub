@@ -12,8 +12,8 @@ import os.path
 from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 from Qub.Objects.QubPixmapDisplay import QubPixmapZoomPlug
 from Qub.Objects.QubDrawingManager import QubPointDrawingMgr
-from Qub.Objects.QubDrawingManager import QubLineDrawingManager
-from Qub.Objects.QubDrawingManager import Qub2PointSurfaceDrawingManager
+from Qub.Objects.QubDrawingManager import QubLineDrawingMgr
+from Qub.Objects.QubDrawingManager import Qub2PointSurfaceDrawingMgr
 from Qub.Objects.QubDrawingManager import QubPolygoneDrawingMgr
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasEllipse
@@ -23,7 +23,7 @@ from Qub.Objects.QubDrawingCanvasTools import QubCanvasCloseLinePolygone
 from Qub.Widget.QubWidgetSet import QubSlider,QubColorToolMenu
 from Qub.Icons.QubIcons import loadIcon
 from Qub.Objects.QubDrawingEvent import QubMoveNPressed1Point
-from Qub.Tools.QubSvg import QubSvgImageSave
+from Qub.Tools import QubImageSave
 
 ####################################################################
 ##########                                                ##########
@@ -76,8 +76,8 @@ class QubMeasureListDialog(qt.QDialog):
         ## Description tools table
         # (name,DrawingManager,DrawingObject,end draw callback)
         self.__tools = [('point',QubPointDrawingMgr,QubCanvasTarget,self.__endPointDrawing),
-                        ('distance',QubLineDrawingManager,qtcanvas.QCanvasLine,self.__endDistanceDrawing),
-                        ('rectangle',Qub2PointSurfaceDrawingManager,qtcanvas.QCanvasRectangle,self.__endSurfaceDrawing),
+                        ('distance',QubLineDrawingMgr,qtcanvas.QCanvasLine,self.__endDistanceDrawing),
+                        ('rectangle',Qub2PointSurfaceDrawingMgr,qtcanvas.QCanvasRectangle,self.__endSurfaceDrawing),
                         ('angle',QubPolygoneDrawingMgr,QubCanvasAngle,self.__endAngleDrawing),
                         ('polygon',QubPolygoneDrawingMgr,QubCanvasCloseLinePolygone,self.__defaultEnd)]
         
@@ -446,8 +446,7 @@ class QubSaveImageDialog(qt.QDialog):
             elif ext.lower() == ".jpeg" or ext.lower() ==".jpg" :
                 image.save(filename, "JPEG")
             elif ext.lower() == '.svg':
-                svg = QubSvgImageSave(image,self.vectorDrawing.getItems(),self.vectorDrawing.getVectorZoom())
-                svg.save(filename.latin1())
+                QubImageSave.save(filename.latin1(),image,self.vectorDrawing.getItems(),self.vectorDrawing.getVectorZoom(),'SVG')
             else :
                 dialog = qt.QErrorMessage(self.__parent)
                 dialog.message('File format not managed')

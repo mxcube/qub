@@ -59,9 +59,10 @@ class _DrawingEventNDrawingMgr(QubDrawingEvent):
     def __init__(self,aDrawingMgr,oneShot) :
         QubDrawingEvent.__init__(self)
         self._drawingMgr = weakref.ref(aDrawingMgr)
-        self._onShot = oneShot
+        self._oneShot = oneShot
     def getActionInfo(self) :
-        return self._drawingMgr().getActionInfo()
+        d = self._drawingMgr()
+        return d and d.getActionInfo() or None
     
 ##@brief A point event behaviour manager.
 #@ingroup DrawingEvent
@@ -73,15 +74,19 @@ class _DrawingEventNDrawingMgr(QubDrawingEvent):
 class QubMoveNPressed1Point(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,oneShot) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
-        self._drawingMgr().show()
+        aDrawingMgr.show()
         
     def mouseReleased(self,x,y) :
-        self._drawingMgr().move(x,y)
-        self._drawingMgr().endDraw()
-        return self._onShot
+        d = self._drawingMgr()
+        if d :
+            d.move(x,y)
+            d.endDraw()
+        return self._oneShot
     
     def mouseMove(self,x,y) :
-        self._drawingMgr().move(x,y)
+        d = self._drawingMgr()
+        if d :
+           d.move(x,y)
         return False                    # NOT END
 ##@brief The default point event behaviour manager
 #@ingroup DrawingEvent
@@ -97,19 +102,25 @@ class QubPressedNDrag1Point(_DrawingEventNDrawingMgr) :
         
     def mousePressed(self,x,y) :
         self.__buttonPressed = True
-        self._drawingMgr().show()
-        self._drawingMgr().move(x,y)
+        d = self._drawingMgr()
+        if d:
+            d.show()
+            d.move(x,y)
         return False                    # not END
         
     def mouseReleased(self,x,y) :
         self.__buttonPressed = False
-        self._drawingMgr().move(x,y)
-        self._drawingMgr().endDraw()
-        return self._onShot
+        d = self._drawingMgr()
+        if d:
+            d.move(x,y)
+            d.endDraw()
+        return self._oneShot
     
     def mouseMove(self,x,y) :
         if self.__buttonPressed :
-            self._drawingMgr().move(x,y)
+            d = self._drawingMgr()
+            if d:
+                d.move(x,y)
         return False                    # NOT END
 ##@brief Set 2 points with a pressed and drag
 #@ingroup DrawingEvent
@@ -127,20 +138,26 @@ class QubPressedNDrag2Point(_DrawingEventNDrawingMgr) :
 
     def mousePressed(self,x,y) :
         self.__buttonPressed = True
-        self._drawingMgr().moveFirstPoint(x,y)
-        self._drawingMgr().moveSecondPoint(x,y)
-        self._drawingMgr().show()
+        d = self._drawingMgr()
+        if d :
+            d.moveFirstPoint(x,y)
+            d.moveSecondPoint(x,y)
+            d.show()
         return False                    # not END
 
     def mouseReleased(self,x,y) :
         self.__buttonPressed = False
-        self._drawingMgr().moveSecondPoint(x,y)
-        self._drawingMgr().endDraw()
-        return self._onShot
+        d = self._drawingMgr()
+        if d :
+            d.moveSecondPoint(x,y)
+            d.endDraw()
+        return self._oneShot
 
     def mouseMove(self,x,y) :
         if self.__buttonPressed :
-            self._drawingMgr().moveSecondPoint(x,y)
+            d = self._drawingMgr()
+            if d :
+                d.moveSecondPoint(x,y)
         return False                    # not END
 
 ##@brief Set 2 points with 2 click
@@ -159,35 +176,41 @@ class Qub2PointClick(_DrawingEventNDrawingMgr) :
 
     def mousePressed(self,x,y) :
         self.__active = True
-        if not self.__pointNb :         # first press
-            self._drawingMgr().moveFirstPoint(x,y)
-            self._drawingMgr().moveSecondPoint(x,y)
-            self._drawingMgr().show()
-        else :                          # second press
-            self._drawingMgr().moveSecondPoint(x,y)
+        d = self._drawingMgr()
+        if d :
+            if not self.__pointNb :         # first press
+                d.moveFirstPoint(x,y)
+                d.moveSecondPoint(x,y)
+                d.show()
+            else :                          # second press
+                d.moveSecondPoint(x,y)
         return False
     
     def mouseReleased(self,x,y) :
         returnFlag = False
-        if not self.__pointNb :
-            self._drawingMgr().moveFirstPoint(x,y)
-            self._drawingMgr().moveSecondPoint(x,y)
-            self.__pointNb += 1
-        else :
-            self._drawingMgr().moveSecondPoint(x,y)
-            self._drawingMgr().endDraw()
-            self.__active = False
-            self.__pointNb = 0
-            returnFlag = self._onShot
+        d = self._drawingMgr()
+        if d :
+            if not self.__pointNb :
+                d.moveFirstPoint(x,y)
+                d.moveSecondPoint(x,y)
+                self.__pointNb += 1
+            else :
+                d.moveSecondPoint(x,y)
+                d.endDraw()
+                self.__active = False
+                self.__pointNb = 0
+                returnFlag = self._oneShot
         return returnFlag
     
     def mouseMove(self,x,y) :
         if self.__active :
-            if not self.__pointNb :
-                self._drawingMgr().moveFirstPoint(x,y)
-                self._drawingMgr().moveSecondPoint(x,y)
-            else :
-                self._drawingMgr().moveSecondPoint(x,y)
+            d = self._drawingMgr()
+            if d :
+                if not self.__pointNb :
+                    d.moveFirstPoint(x,y)
+                    d.moveSecondPoint(x,y)
+                else :
+                    d.moveSecondPoint(x,y)
         return False
 
 ##@brief Set N point with N click
@@ -208,26 +231,32 @@ class QubNPointClick(_DrawingEventNDrawingMgr) :
         self.__active = False
     
     def mousePressed(self,x,y) :
-        if self.__pointNb == 0 :
-            self._drawingMgr().show()
-        self._drawingMgr().move(x,y,self.__pointNb)
-        self.__active = True
-        
+        d = self._drawingMgr()
+        if d :
+            if self.__pointNb == 0 :
+                d.show()
+            d.move(x,y,self.__pointNb)
+            self.__active = True
+            
     def mouseReleased(self,x,y) :
-        aEndFlag = self._drawingMgr().move(x,y,self.__pointNb)
-        if aEndFlag :
-            self.__pointNb = 0; self.__active = False
-            self._drawingMgr().endDraw()
-        else: self.__pointNb += 1
-        return aEndFlag and self._onShot
+        d = self._drawingMgr()
+        if d :
+            aEndFlag = d.move(x,y,self.__pointNb)
+            if aEndFlag :
+                self.__pointNb = 0; self.__active = False
+                d.endDraw()
+            else: self.__pointNb += 1
+            return aEndFlag and self._oneShot
 
     def mouseDblClick(self,x,y) :
-        self._drawingMgr().endDraw()
+        d = self._drawingMgr()
+        if d : d.endDraw()
         return True
     
     def mouseMove(self,x,y) :
         if self.__active :
-            self._drawingMgr().move(x,y,self.__pointNb)
+            d = self._drawingMgr()
+            if d : d.move(x,y,self.__pointNb)
             
 ##@brief Modify a point
 #@ingroup DrawingEvent
@@ -244,7 +273,8 @@ class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
         
     def __del__(self) :
         if self._dirtyFlag :
-            self._drawingMgr().endDraw()
+            d = self._drawingMgr()
+            if d : d.endDraw()
         
     def setCursor(self,eventMgr) :
         eventMgr.setCursor(self._cursor)
@@ -262,7 +292,8 @@ class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
     def mouseReleased(self, x, y):
         self._modify(x, y)
         self._dirtyFlag = False
-        self._drawingMgr().endDraw()
+        d = self._drawingMgr()
+        if d : d.endDraw()
 
 ##@brief Modify a point by relative moving
 #@ingroup DrawingEvent
@@ -277,7 +308,8 @@ class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
 
     def __del__(self) :
         if self._dirtyFlag :
-            self._drawingMgr().endDraw()
+            d = self._drawingMgr()
+            if d : d.endDraw()
             
     def setCursor(self,eventMgr) :
         eventMgr.setCursor(self._cursor)
@@ -298,4 +330,5 @@ class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
     def mouseReleased(self, x, y):
         self._modify(x - self.__oldX, y - self.__oldY)
         self._dirtyFlag = False
-        self._drawingMgr().endDraw()
+        d = self._drawingMgr()
+        if d : d.endDraw()

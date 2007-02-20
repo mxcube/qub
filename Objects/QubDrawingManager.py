@@ -11,6 +11,18 @@ from Qub.Tools import QubWeakref
 #those class are used with the Qub::Objects::QubEventMgr::QubEventMgr to
 #manage drawing on canvas
 
+def QubAddDrawing(drawing, mngr_class, *args):
+    """Return drawing manager"""
+    objs = []
+    
+    mngr = mngr_class(drawing.canvas(), drawing.matrix())
+    for obj_class in args:
+        objs.append(obj_class(drawing.canvas()))
+        mngr.addDrawingObject(objs[-1])
+    drawing.addDrawingMgr(mngr)
+    
+    return (mngr,) + tuple(objs)
+
 ##@brief Base class of Drawing manager
 #
 #@ingroup DrawingManager
@@ -28,6 +40,7 @@ class QubDrawingMgr :
         self.__exceptList = []          # event Name with is not exclusive
         self.__eventName = ''
         self.__cantBeModify = True
+        self._endDrawCbk=None
         self._actionInfo = ''
         
     def __del__(self) :
@@ -36,7 +49,36 @@ class QubDrawingMgr :
         for link,canvas,matrix,objectlist in self._foreignObjects :
             for drawingObject in objectlist :
                 drawingObject.setCanvas(None)
-                
+
+
+    def __getattr__(self, attr):
+        objects_to_call = self._drawingObjects
+        for link,canvas,matrix,objectlist in self._foreignObjects:
+            objects_to_call += objectlist
+
+        objects_to_call = filter(None, [hasattr(x, attr) and x or None for x in objects_to_call])
+        
+        if len(objects_to_call):
+            class calleach:
+                def __init__(self, method, objs):
+                    self.method = method
+                    self.objs = objs
+                def __call__(self, *args, **kwargs):
+                    returnValues = []
+                    for obj in self.objs:
+                      m = getattr(obj, self.method)
+                    
+                      try:
+                         returnValues.append(m(*args))
+                      except Exception, err:
+                        # error description is in 'err'
+                        pass
+                    return returnValues
+            return calleach(attr, objects_to_call)
+        
+        raise AttributeError, attr
+            
+ 
     ##@brief add a drawing canvas object in this manager
     #
     #all canvas object must have the same management
@@ -220,34 +262,7 @@ class QubDrawingMgr :
     def endDraw(self) :
         if self._endDrawCbk is not None :
             self._endDrawCbk(self)
-            
-    ##@brief add on the fly a set methode for all drawing object
-    #
-    #add a methode named : methode_name if is define or the name of the call_back
-    #when call this methode will apply the call_back on each drawingObject
-    #@param call_back the drawingObject methode
-    #@param methode_name :
-    # - if set the methode added will have this name
-    # - else the methode added will have the name of the drawingObject methode
-    def addSetHandleMethodToEachDrawingObject(self,call_back,methode_name = '') :
-        self.__addHandleMethod(call_back,methode_name,self.__foreach_set)
 
-    ##@brief add on the fly a get methode for all drawing object execpt foreign
-    #
-    #@see addSetHandleMethodToEachDrawingObject
-    def addGetHandleMethodToEachDrawingObject(self,call_back,methode_name = '') :
-        self.__addHandleMethod(call_back,methode_name,self.__foreach_get)
-
-    ##@brief add the handle methode to drawingObjects
-    def __addHandleMethod(self,call_back,methode_name,loop_methode) :
-        newCallable = _foreach_callable(loop_methode,call_back)
-        if methode_name :
-            self.__dict__[methode_name] = newCallable
-        else :
-            try:
-                self.__dict__[call_back.im_func.func_name] = newCallable
-            except AttributeError:
-                self.__dict__[call_back.func_name] = newCallable
     ##@name Has to or may be redefine in subclass
     #@{
     #
@@ -318,30 +333,6 @@ class QubDrawingMgr :
                 self._foreignObjects.remove((link,canvas,matrix,objectlist))
                 break
 
-    ##@brief callback use by set methode created by addSetHandleMethodToEachDrawingObject
-    def __foreach_set(self,callback,*args,**keys) :
-        try :
-            for drawingObject in self._drawingObjects :
-                callback(drawingObject,*args,**keys)
-                
-            for link,canvas,matrix,objectlist in self._foreignObjects :
-                for drawingObject in objectlist :
-                    callback(drawingObject,*args,**keys)
-                    
-        except:
-            import traceback
-            traceback.print_exc()
-    ##@brief callback use by get methode created by addGetHandleMethodToEachDrawingObject
-    def __foreach_get(self,callback,*args,**keys) :
-        returnValues = []
-        try:
-            for drawingObject in self._drawingObjects :
-                value = callback(drawingObject,*args,**keys)
-                returnValues.append(value)
-        except:
-            import traceback
-            traceback.print_exc()
-        return returnValues
 ##@brief this class is a container of stand alone drawing object
 #
 #This class should be used with stand alone DrawingObject
@@ -431,7 +422,7 @@ class QubPointDrawingMgr(QubDrawingMgr) :
 ##@brief this class manage all drawing object
 #that can be define with a line
 #@ingroup DrawingManager
-class QubLineDrawingManager(QubDrawingMgr) :
+class QubLineDrawingMgr(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
         self._x1,self._y1 = 0,0
@@ -536,7 +527,7 @@ class QubLineDrawingManager(QubDrawingMgr) :
 
 ##@brief manage all object that can be define with a 2 points rectangle
 #@ingroup DrawingManager
-class Qub2PointSurfaceDrawingManager(QubDrawingMgr) :
+class Qub2PointSurfaceDrawingMgr(QubDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
         self._rect = qt.QRect(0,0,1,1)
@@ -799,25 +790,3 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         except:
             import traceback
             traceback.print_exc()
-            
-############################## Callable ##############################
-##@brief this class is used to create a methode on the fly
-#@see QubDrawingMgr::addSetHandleMethodToEachDrawingObject 
-class _foreach_callable :
-    def __init__(self,meth,callback) :
-        self.__objRef = weakref.ref(meth.im_self)
-        self.__func_meth = weakref.ref(meth.im_func)
-        try :
-            self.__cbk = weakref.ref(callback.im_func)
-        except AttributeError :
-            self.__cbk = weakref.ref(callback)
-
-    def __call__(self,*args,**keys) :
-        aReturnVal = None
-        try:
-            if self.__cbk() is not None :
-                aReturnVal = self.__func_meth()(self.__objRef(),self.__cbk(),*args,**keys)
-        except:
-            import traceback
-            traceback.print_exc()
-        return aReturnVal

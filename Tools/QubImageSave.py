@@ -3,9 +3,41 @@ import os.path
 import re
 import logging
 import qt
+
+
+def save(filepath, image, canvas = None, zoom=1, format="PNG"):
+    if format.lower() == 'svg' :
+        im = _SvgImageSave(image,canvas,zoom)
+        im.save(filepath)
+    else:
+        device = qt.QPixmap(image)
+        painter = qt.QPainter(device)    
+        zoom = 1.0 / zoom
+        painter.setWorldMatrix(qt.QWMatrix(zoom,0,0,zoom,0,0))
+
+        if canvas is not None :
+            if isinstance(canvas,list) :
+                itemsList = canvas
+            else:
+                itemsList = canvas.allItems()
+
+            for item in itemsList :
+                if item.isVisible() :
+                    if hasattr(item,'setScrollView') : # remove standalone items
+                        continue
+
+                    item.draw(painter)
+
+        painter.end()
+
+        img = device.convertToImage()
+
+        img.save(filepath, format)
+    
+    
 ##This class record image with svg format
 #
-class QubSvgImageSave :
+class _SvgImageSave :
     ##The constructor
     #
     #@param image the QImage you want to save
@@ -37,8 +69,11 @@ class QubSvgImageSave :
     #@param file_path the full file path
     def save(self,file_path) :
         old_path = os.getcwdu()
-        path,filename = os.path.split(file_path)
-        os.chdir(path)
+        try:
+            path,filename = os.path.split(file_path)
+            os.chdir(path)
+        except:
+            pass
         device = qt.QPicture()
         painter = qt.QPainter(device)
         

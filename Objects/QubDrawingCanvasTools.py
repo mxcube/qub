@@ -51,6 +51,8 @@ from Qub.Objects.QubDrawingConstraint import QubAngleConstraint
 #@ingroup DrawingCanvasTools
 #
 
+QubCanvasRectangle = qtcanvas.QCanvasRectangle
+
 ##@brief the Ellipse object
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasEllipse(qtcanvas.QCanvasEllipse):
@@ -220,6 +222,66 @@ class QubCanvasVLine(qtcanvas.QCanvasLine) :
         height = self.canvas().height()
         self.setPoints(x,0,x,height)
 
+class QubCanvasSlitbox(qtcanvas.QCanvasRectangle) :
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasRectangle.__init__(self,canvas)
+
+        if isinstance(canvas,QubCanvasSlitbox) :
+            self.__canvas = canvas._QubCanvasSlitbox__canvas
+            self.__hline = qtcanvas.QCanvasLine(canvas._QubCanvasSlitbox__hline)
+            self.__vline = qtcanvas.QCanvasLine(canvas._QubCanvasSlitbox__vline)
+            self.__slitbox_width = canvas._QubCanvasSlitbox__slitbox_width
+            self.__slitbox_height = canvas._QubCanvasSlitbox__slitbox_height
+        else:
+            self.__hline = qtcanvas.QCanvasLine(canvas)
+            self.__vline = qtcanvas.QCanvasLine(canvas)
+            self.__canvas = canvas
+            self.__slitbox_width = None
+            self.__slitbox_height = None
+            
+        
+    def update(self) :
+        (xMid,yMid) = (self.__canvas.width() / 2,self.__canvas.height() / 2)
+        self.__hline.setPoints(xMid - 20,yMid,xMid + 20,yMid)
+        self.__vline.setPoints(xMid,yMid - 20,xMid,yMid + 20)
+       
+        if self.__slitbox_width is None or self.__slitbox_height is None:
+            self.setSize(0,0)
+            self.setX(xMid)
+            self.setY(yMid)
+        else:
+            self.setSize(self.__slitbox_width, self.__slitbox_height)
+            self.setX(xMid - self.__slitbox_width/2)
+            self.setY(yMid - self.__slitbox_height/2)
+        
+        
+    def setCanvas(self,canvas) :
+        self.__canvas = canvas
+        self.__hline.setCanvas(canvas)
+        self.__vline.setCanvas(canvas)
+        
+    def show(self) :
+        qtcanvas.QCanvasRectangle.show(self)
+        self.__hline.show()
+        self.__vline.show()
+
+    def hide(self) :
+        qtcanvas.QCanvasRectangle.hide(self)
+        self.__hline.hide()
+        self.__vline.hide()
+
+    def setPen(self,pen) :
+        self.__hline.setPen(pen)
+        self.__vline.setPen(pen)
+
+    def setSlitboxPen(self, pen):
+        qtcanvas.QCanvasRectangle.setPen(self,pen)
+
+    def setSlitboxSize(self, w, h):
+        self.__slitbox_width, self.__slitbox_height = w, h
+        self.update()
+        
+        
 ##@brief this is a horizontal line draw on the width of the canvas
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasHLine(qtcanvas.QCanvasLine) :
@@ -1002,3 +1064,5 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
         return [(2,1,self.__contraintAngle)]
     def update(self) :
         self.__dirtyFlag = True
+
+

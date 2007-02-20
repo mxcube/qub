@@ -5,11 +5,16 @@ import math
 
 from Qub.Widget.QubAction import QubAction, QubImageAction, QubToggleImageAction
 from Qub.Widget.QubWidgetSet import QubColorToolButton, QubColorToolMenu
-from Qub.Objects.QubDrawingCanvasTools import QubCanvasEllipse
+
 from Qub.Icons.QubIcons import loadIcon
+
 from Qub.Objects.QubDrawingManager import QubPointDrawingMgr
-from Qub.Objects.QubDrawingManager import Qub2PointSurfaceDrawingManager
+from Qub.Objects.QubDrawingManager import Qub2PointSurfaceDrawingMgr
+from Qub.Objects.QubDrawingManager import QubContainerDrawingMgr
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasEllipse
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasBeam
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasScale
+
 
   
 ###############################################################################
@@ -723,8 +728,8 @@ class QubZoomRectangle(QubToggleImageAction) :
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self, qubImage)
 
-        self.__drawingMgr = Qub2PointSurfaceDrawingManager(qubImage.canvas(),
-                                                           qubImage.matrix())
+        self.__drawingMgr = Qub2PointSurfaceDrawingMgr(qubImage.canvas(),
+                                                       qubImage.matrix())
         zoomrect = qtcanvas.QCanvasRectangle(qubImage.canvas())
         pen = zoomrect.pen()
         pen.setStyle(qt.Qt.DashLine)
@@ -2093,8 +2098,6 @@ class QubHideRectangleSelection(QubRectangleSelection):
 #####################################################################
 ##########                  QubScaleAction                 ##########
 #####################################################################
-from Qub.Objects.QubDrawingCanvasTools import QubCanvasScale
-from Qub.Objects.QubDrawingManager import QubContainerDrawingMgr
 
 class QubScaleAction(QubToggleImageAction) :
     HORIZONTAL,VERTICAL,BOTH = (0x1,0x2,0x3)
@@ -2114,12 +2117,6 @@ class QubScaleAction(QubToggleImageAction) :
         self.__scale.addDrawingObject(scaleObject)
         qubImage.addDrawingMgr(self.__scale)
 
-        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setXPixelSize)
-        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setYPixelSize)
-        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setMode)
-        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setAutorizedValues)
-        self.__scale.addSetHandleMethodToEachDrawingObject(scaleObject.setColor)
-        
         self.__scale.setXPixelSize(self.__xPixelSize)
         self.__scale.setYPixelSize(self.__yPixelSize)
         self.__scale.setMode(self.__mode)
@@ -2184,11 +2181,6 @@ class QubRulerAction(QubToggleImageAction) :
             rulerObject = QubCanvasRuler(None)
             ruler.addDrawingObject(rulerObject)
 
-            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setPositionMode)
-            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setLabel)
-            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setCursorPosition)
-            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setLimits)
-            ruler.addSetHandleMethodToEachDrawingObject(rulerObject.setCanvas)
             if i :
                 ruler.setPositionMode(QubCanvasRuler.VERTICAL)
             else:

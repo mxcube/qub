@@ -54,13 +54,14 @@ class QubEventMgr:
             exclusive = aDrawingEvent.exclusive()
             if exclusive is not False :
                 excludeEvents = []
-                for pendingEvent in self.__pendingEvents[:] :
-                    if pendingEvent() is None : continue
-                    excludePendingEvent = pendingEvent().exclusive()
-                    if excludePendingEvent is not False and pendingEvent().name() not in exclusive :
-                        pendingEvent().setDubMode(True)
-                        self.__pendingEvents.remove(pendingEvent)
-                        excludeEvents.append(pendingEvent)
+                for pendingEventRef in self.__pendingEvents[:] :
+                    pendingEvent = pendingEventRef()
+                    if pendingEvent is None : continue
+                    excludePendingEvent = pendingEvent.exclusive()
+                    if excludePendingEvent is not False and pendingEvent.name() not in exclusive :
+                        pendingEvent.setDubMode(True)
+                        self.__pendingEvents.remove(pendingEventRef)
+                        excludeEvents.append(pendingEventRef)
                 if len(excludeEvents) :
                     self.__excludedEvent.append((weakref.ref(aDrawingEvent,self.__weakRefEventRemove),excludeEvents))
             self.__pendingEvents.append(weakref.ref(aDrawingEvent,self.__weakRefEventRemove))
@@ -87,8 +88,10 @@ class QubEventMgr:
                                      srcMatrix,destMatrix)
         self.addLinkEventMgr(linkEventMgr)
         anEventMgr.addLinkEventMgr(linkEventMgr)
-        for drawingMgr in self.__drawingMgr :
-            drawingMgr().addLinkEventMgr(linkEventMgr)
+        for drawingMgrRef in self.__drawingMgr :
+            drawingMgr = drawingMgrRef()
+            if drawingMgr:
+                drawingMgr.addLinkEventMgr(linkEventMgr)
     ##@brief unlink between an event manager
     def rmEventMgrLink(self,anEventMgr) :
         linkfind = None
@@ -133,7 +136,8 @@ class QubEventMgr:
                     self.__curentModifierMgr.mousePressed(event.x(),event.y())
             elif event.button() == qt.Qt.LeftButton :
                 for drawingEventRef in self.__pendingEvents[:] :
-                    if(drawingEventRef().mousePressed(event.x(),event.y())) :
+                    drawingEvent = drawingEventRef()
+                    if(drawingEvent and drawingEvent.mousePressed(event.x(),event.y())) :
                         self._rmDrawingEventRef(drawingEventRef)
 
             if evtMgr is None:          # event propagate
@@ -151,7 +155,8 @@ class QubEventMgr:
         try:
             self.__mouseX,self.__mouseY = event.x(),event.y()
             for drawingEventRef in self.__pendingEvents[:] :
-                if(drawingEventRef().mouseMove(event.x(),event.y())) :
+                drawingEvent = drawingEventRef()
+                if(drawingEvent and drawingEvent.mouseMove(event.x(),event.y())) :
                     self._rmDrawingEventRef(drawingEventRef)
 
             if(self.__curentModifierMgr is not None and
@@ -184,7 +189,8 @@ class QubEventMgr:
                     self.__curentModifierMgr.mouseReleased(event.x(),event.y())
                 else :
                     for drawingEventRef in self.__pendingEvents[:] :
-                        if(drawingEventRef().mouseReleased(event.x(),event.y())) :
+                        d = drawingEventRef()
+                        if(d and d.mouseReleased(event.x(),event.y())) :
                             self._rmDrawingEventRef(drawingEventRef)
             if evtMgr is None:          # event propagate
                 for link in self.__eventLinkMgrs :
@@ -198,8 +204,10 @@ class QubEventMgr:
     #this methode is called when the canvas was resized or when the view is scrolled
     def _update(self,evtMgr = None) :
         for drawingMgr in self.__drawingMgr :
+            d = drawingMgr()
             try:
-                drawingMgr().update()
+                if d :
+                    d.update()
             except:
                 import traceback
                 traceback.print_exc()
