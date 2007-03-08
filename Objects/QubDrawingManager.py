@@ -23,6 +23,22 @@ def QubAddDrawing(drawing, mngr_class, *args):
     
     return (mngr,) + tuple(objs)
 
+class _calleach:
+    def __init__(self, method, objs):
+        self.method = method
+        self.objs = objs
+    def __call__(self, *args, **kwargs):
+        returnValues = []
+        for obj in self.objs:
+          m = getattr(obj, self.method)
+
+          try:
+             returnValues.append(m(*args))
+          except Exception, err:
+            # error description is in 'err'
+            pass
+        return returnValues
+
 ##@brief Base class of Drawing manager
 #
 #@ingroup DrawingManager
@@ -50,8 +66,13 @@ class QubDrawingMgr :
             for drawingObject in objectlist :
                 drawingObject.setCanvas(None)
 
+    def __nonzero__(self):
+        return True
 
     def __getattr__(self, attr):
+        if attr.startswith("__"):
+            raise AttributeError, attr
+        
         objects_to_call = self._drawingObjects
         for link,canvas,matrix,objectlist in self._foreignObjects:
             objects_to_call += objectlist
@@ -59,22 +80,7 @@ class QubDrawingMgr :
         objects_to_call = filter(None, [hasattr(x, attr) and x or None for x in objects_to_call])
         
         if len(objects_to_call):
-            class calleach:
-                def __init__(self, method, objs):
-                    self.method = method
-                    self.objs = objs
-                def __call__(self, *args, **kwargs):
-                    returnValues = []
-                    for obj in self.objs:
-                      m = getattr(obj, self.method)
-                    
-                      try:
-                         returnValues.append(m(*args))
-                      except Exception, err:
-                        # error description is in 'err'
-                        pass
-                    return returnValues
-            return calleach(attr, objects_to_call)
+            return _calleach(attr, objects_to_call)
         
         raise AttributeError, attr
             
