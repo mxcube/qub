@@ -1,6 +1,7 @@
 import qt
 import weakref
 import itertools
+
 ##@brief This class is use as a event manager and dispatcher.
 #
 #it's centralise all events needed by drawing objects.
@@ -33,6 +34,8 @@ class QubEventMgr:
         ##the idle use for the action's info 
         self.__actionInfoIdle = qt.QTimer(self)
         qt.QObject.connect(self.__actionInfoIdle,qt.SIGNAL('timeout()'),self.__emitActionInfo)
+
+        
     ##@brief add a drawing manager
     #
     #@param aDrawingMgr a Qub::Objects::QubDrawingMgr::QubDrawingMgr
@@ -107,7 +110,7 @@ class QubEventMgr:
     #@return the scrollview of the object or None
     #
     def scrollView(self) :
-        return self.__scrollView
+        return self.__scrollView and self.__scrollView() or None
 
     ##@name methode called by the inheritance
     #@{
@@ -118,7 +121,7 @@ class QubEventMgr:
     #
     #this methode should be called by the inheritance if it's got a scrollView
     def _setScrollView(self,aScrollView) :
-        self.__scrollView = aScrollView
+        self.__scrollView = weakref.ref(aScrollView)
     ##@brief mouse has been pressed
     #
     #dispatch event via the drawing event
@@ -178,7 +181,7 @@ class QubEventMgr:
         except:
             import traceback
             traceback.print_exc()
-            
+
     ##@brief mouse has been released
     #
     #@see _mousePressed
@@ -347,6 +350,8 @@ class QubEventMgr:
             traceback.print_exc()
         self.__actionInfoIdle.stop()
 
+    def setInfo(self,text) :
+        self._realEmitActionInfo(text)
 
     #@brief This methode should be redefine
     #@param text the action's text information 
