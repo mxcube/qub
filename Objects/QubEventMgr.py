@@ -34,7 +34,7 @@ class QubEventMgr:
         ##the idle use for the action's info 
         self.__actionInfoIdle = qt.QTimer(self)
         qt.QObject.connect(self.__actionInfoIdle,qt.SIGNAL('timeout()'),self.__emitActionInfo)
-
+        self.__directInfo = ''
         
     ##@brief add a drawing manager
     #
@@ -336,8 +336,9 @@ class QubEventMgr:
     ##@brief manage the action's information
     #
     #@see Qub::Objects::QubDrawingManager::setActionInfo
-    def __emitActionInfo(self) :       
-        textList = []
+    def __emitActionInfo(self) :
+        if self.__directInfo : textList = [self.__directInfo]
+        else : textList = []
         try:
             for pendingRef in self.__pendingEvents :
                 text = pendingRef().getActionInfo()
@@ -351,7 +352,9 @@ class QubEventMgr:
         self.__actionInfoIdle.stop()
 
     def setInfo(self,text) :
-        self._realEmitActionInfo(text)
+        self.__directInfo = text
+        if not self.__actionInfoIdle.isActive() :
+            self.__actionInfoIdle.start(0)
 
     #@brief This methode should be redefine
     #@param text the action's text information 
