@@ -11,6 +11,9 @@ import sys
 
 from Qub.Widget.QubCursors import zoom_xpm, hselection_xpm, smove_point_xpm
 
+from Qub.Widget.QubView import QubView
+
+
 # TODO
 # - enableOutline() is deprecated ...
 #
@@ -48,7 +51,7 @@ class QubGraph(qwt.QwtPlot):
     It is possible to use marked curves (ie Curves defined by control points)
     """
     
-    MouseActions  = [None, "zoom", "hselection", "movepoint"]
+    MouseActions  = [None, "zoom", "hselection", "movepoint","follow_curve"]
     CursorMarkers = [None, "cross", "vline", "hline"]
 
     modeList = [None, "selectdiamond", "movediamond", "diamond",
@@ -61,7 +64,6 @@ class QubGraph(qwt.QwtPlot):
         qwt.QwtPlot.__init__(self, parent, name)
 
         ## parameters management:
-        self.parent      = parent
         self.contextMenu = None
 
         self.can = self.canvas()
@@ -238,7 +240,15 @@ class QubGraph(qwt.QwtPlot):
             if self.mode == "movepoint":
                 self.setCursorMarker(None)
                 self.enableOutline(0)
-                
+
+            if self.mode == "follow_curve": # QUICK AND DIRTY
+                self.__followMark = qwt.QwtPlotMarker(self)
+                self.__followMark.setLineStyle(qwt.QwtPlotMarker.VLine)
+                self.__followMark.setLinePen(qt.QPen(qt.Qt.red))
+                self.__followMark.setLabelAlignment(qt.Qt.AlignRight)
+                self.__followMarkId = self.insertMarker(self.__followMark)
+            
+
         else:
             print "error invalid mode in setMode"
 
@@ -256,6 +266,20 @@ class QubGraph(qwt.QwtPlot):
             if event.reason() == qt.QContextMenuEvent.Mouse:
                 self.contextMenu.exec_loop(qt.QCursor.pos())
 
+    def getGraph(self) :
+        graph = self.__class__(self)
+        curve = self.curve(1)
+        x = []
+        y = []
+        for i in range(curve.dataSize()) :
+            x.append(curve.x(i))
+            y.append(curve.y(i))
+        graph.MyCurve = curve.__class__(curve)
+        graph.setCurve(graph.MyCurve)
+        graph.MyCurve.setData(x,y)
+        graph.replot()
+        return graph
+    
     def setDefaults(self):
         """
         -
@@ -269,7 +293,7 @@ class QubGraph(qwt.QwtPlot):
         
         self.setTitle(" ")
         #self.setXLabel("X axis")
-        self.setYLabel("Y axis")
+        self.setYLabel("Data value")
         
         self.enableXBottomAxis(1)
         self.enableXTopAxis(0)
@@ -752,9 +776,6 @@ class QubGraph(qwt.QwtPlot):
             self._hsel.beginSelection(xdata, xpixel, h)
             # self._isHselecting  = True
             
-        if self.mode == None:
-            pass
-
     def _onMouseRightPressed(self, event):
         """
         """
@@ -813,7 +834,21 @@ class QubGraph(qwt.QwtPlot):
                 self._hsel.updateXpos( xdata, xpixel)
         else:
             redraw_selection = False
-            
+
+        if self.mode == "follow_curve": # QUICK AND DIRTY
+            curvId,distance,x,z,_ = self.closestCurve(xpixel,ypixel)
+            if isinstance(z,float) :
+                self.__followMark.setLabel('<b><font COLOR=red>x:%d z:%.2f</font></b>' % (x,z))
+            else:
+                self.__followMark.setLabel('<b><font COLOR=red>x:%d z:%d</font></b>' % (x,z))
+            self.__followMark.setXValue(x)
+            self.__followMark.setYValue(z)
+            if xpixel > self.canvas().width() / 2:
+                self.__followMark.setLabelAlignment(qt.Qt.AlignLeft)
+            else:
+                self.__followMark.setLabelAlignment(qt.Qt.AlignRight)
+            replot = True
+           
         # move the enhanced cursors
         if self.__updateCursorMarker(xdata, ydata, xpixel, ypixel):
             replot = 1
@@ -1115,6 +1150,26 @@ class QubGraph(qwt.QwtPlot):
                 
         return replot
 
+class QubGraphView(QubView) :
+    def __init__(self, parent = None, name = "",actions=[]):
+        QubView.__init__(self,parent,name)
+        from Qub.Print.QubPrintPreview import getPrintPreviewDialog
+        from Qub.Widget.QubActionSet import QubPrintPreviewAction
+        widget = QubGraph(parent=self,name=name)
+        self.setView(widget)
+
+    def __nonzero__(self) :
+        return True
+
+    def __getattr__(self,attr) :
+        if not attr.startswith('__') :
+            try:
+                return getattr(self.view(),attr)
+            except AttributeError,err:
+                raise AttributeError,'QubGraphView instance has not attribute %s' % attr
+        else:
+            raise AttributeError,'QubGraphView instance has not attribute %s' % attr
+
 class GraphRectMarker(qwt.QwtPlotMarker):
     """
     """
@@ -1246,7 +1301,7 @@ class QubGraphCurve(qwt.QwtPlotCurve):
     - Controlled : the point is mouse movable
     - Constraint : the point cannot move everywhere
     """
-    def __init__(self, graph, curveName, xset, yset = None):
+    def __init__(self, graph, curveName = '', xset = None, yset = None):
         """
         Constructor of the curve:
         - define the array used to manage a curve ( coordinates, constraints
@@ -1263,54 +1318,86 @@ class QubGraphCurve(qwt.QwtPlotCurve):
         X = range[1.. len(xset)].
 
         """
-
-        qwt.QwtPlotCurve.__init__(self, graph, curveName)
-
-        self._name = curveName
-
-
-        # fill the data arrays
-        if yset is None:
-            self._Y = xset
-            self._X = Numeric.arange(len(self._X), typecode = 'f')
-        else:
-            self._X = xset
-            self._Y = yset
-
-        # ???
-        self.savedPen = None 
-
-        if graph != None:
-            self.graph = graph
-            #self.graph.__legendAddCurve(self.graph.curveKeys[self._name])
-            self.graph.setActiveCurve(self._name)
-            
-        self.constraintXmin = Numeric.arrayrange(len(self._X), typecode = 'f')
-        self.constraintXmax = Numeric.arrayrange(len(self._X), typecode = 'f')
-        self.constraintYmin = Numeric.arrayrange(len(self._X), typecode = 'f')
-        self.constraintYmax = Numeric.arrayrange(len(self._X), typecode = 'f')
-
-        # properties of a point :
         
-        # isMovable contains True if this point can be moved (from outside too).
-        self.isMovable = Numeric.arrayrange(len(self._X), typecode = 'b')
-        
-        # isControlled contains True if this point can be moved by the mouse.
-        self.isControlled = Numeric.arrayrange(len(self._X), typecode = 'b')
+        if isinstance(graph,QubGraphCurve) :
+            self._name = graph._name
+            self.graph = graph.graph
+            qwt.QwtPlotCurve.__init__(self,self.graph,self._name)
+            self._Y = graph._Y
+            self._X = graph._X
 
-        # isConstraint contains True if this point cannot move everywhere.
-        self.isConstraint = Numeric.arrayrange(len(self._X), typecode = 'b')
+            self.constraintXmin = Numeric.array(graph.constraintXmin) 
+            self.constraintXmax = Numeric.array(graph.constraintXmax) 
+            self.constraintYmin = Numeric.array(graph.constraintYmin) 
+            self.constraintYmax = Numeric.array(graph.constraintYmax) 
 
-        # isMarked contains True if this point is represented by a marker.
-        self.isMarked = Numeric.arrayrange(len(self._X), typecode = 'b')
-        # markerIdx[i] is the index of the marker used to represent the point
-        # i of this curve
-        self.markerIdx = Numeric.arrayrange(len(self._X), typecode = 'i')
-        
-        self.isConstraint[:] = False
-        self.isControlled[:] = False
-        self.isMarked[:]     = False
-        self.isMovable[:]    = True
+            # properties of a point :
+
+            # isMovable contains True if this point can be moved (from outside too).
+            self.isMovable = Numeric.array(graph.isMovable) 
+
+            # isControlled contains True if this point can be moved by the mouse.
+            self.isControlled = Numeric.array(graph.isControlled) 
+
+            # isConstraint contains True if this point cannot move everywhere.
+            self.isConstraint = Numeric.array(graph.isConstraint) 
+
+            # isMarked contains True if this point is represented by a marker.
+            self.isMarked = Numeric.array(graph.isMarked) 
+            # markerIdx[i] is the index of the marker used to represent the point
+            # i of this curve
+            self.markerIdx = Numeric.array(graph.markerIdx) 
+
+        else :
+            if isinstance(graph,QubGraphView) :
+                graph = graph.view()
+            qwt.QwtPlotCurve.__init__(self, graph, curveName)
+
+            self._name = curveName
+
+
+            # fill the data arrays
+            if yset is None:
+                self._Y = xset
+                self._X = Numeric.arange(len(self._Y), typecode = 'f')
+            else:
+                self._X = xset
+                self._Y = yset
+
+            # ???
+            self.savedPen = None 
+
+            if graph != None:
+                self.graph = graph
+                #self.graph.__legendAddCurve(self.graph.curveKeys[self._name])
+                self.graph.setActiveCurve(self._name)
+
+            self.constraintXmin = Numeric.arrayrange(len(self._X), typecode = 'f')
+            self.constraintXmax = Numeric.arrayrange(len(self._X), typecode = 'f')
+            self.constraintYmin = Numeric.arrayrange(len(self._X), typecode = 'f')
+            self.constraintYmax = Numeric.arrayrange(len(self._X), typecode = 'f')
+
+            # properties of a point :
+
+            # isMovable contains True if this point can be moved (from outside too).
+            self.isMovable = Numeric.arrayrange(len(self._X), typecode = 'b')
+
+            # isControlled contains True if this point can be moved by the mouse.
+            self.isControlled = Numeric.arrayrange(len(self._X), typecode = 'b')
+
+            # isConstraint contains True if this point cannot move everywhere.
+            self.isConstraint = Numeric.arrayrange(len(self._X), typecode = 'b')
+
+            # isMarked contains True if this point is represented by a marker.
+            self.isMarked = Numeric.arrayrange(len(self._X), typecode = 'b')
+            # markerIdx[i] is the index of the marker used to represent the point
+            # i of this curve
+            self.markerIdx = Numeric.arrayrange(len(self._X), typecode = 'i')
+
+            self.isConstraint[:] = False
+            self.isControlled[:] = False
+            self.isMarked[:]     = False
+            self.isMovable[:]    = True
         
     def name(self):
         """

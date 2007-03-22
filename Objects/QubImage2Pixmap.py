@@ -1,3 +1,4 @@
+import weakref
 import qt
 if __name__ == "__main__":              # TEST
     a = qt.QApplication([])
@@ -33,7 +34,8 @@ class QubImage2Pixmap(qt.QObject) :
             self.__mutex = qt.QMutex()
             self.__PrevImageNeedZoom = None
             self.__imageZoomProcess = _ImageZoomProcess(self)
-            self.__cnt = cnt
+            self.__cnt = weakref.ref(cnt)
+
         ##@brief the link between QubImage2Pixmap and an other object which display Pixmap
         #@see Qub::Objects::QubPixmapDisplay::QubPixmapDisplay
         #@param aPlug must be inherited from QubImage2PixmapPlug
@@ -80,7 +82,9 @@ class QubImage2Pixmap(qt.QObject) :
                 #send event
                 event = qt.QCustomEvent(qt.QEvent.User)
                 event.event_name = "_startTimer"
-                qt.qApp.postEvent(self.__cnt,event)
+                cnt = self.__cnt()
+                if cnt :
+                    qt.qApp.postEvent(cnt,event)
 
         ##@brief need a refresh for somme reason
         def refresh(self) :
@@ -160,6 +164,9 @@ class QubImage2Pixmap(qt.QObject) :
     def __init__(self,skipSmooth = True) :
         qt.QObject.__init__(self)
         self.__idle = QubImage2Pixmap._Idle(self,skipSmooth)
+
+    def __del__(self) :
+        self.__idle.stop()
         
     ##@brief Asynchronous Image Put, the copy to pixmap will be made on idle
     def putImage(self,imageZoomed,fullimage) :
@@ -187,7 +194,7 @@ class QubImage2PixmapPlug :
     #on inherited class, you can set the interpolation. default is CV_INTER_LINEAR (bilinear interpolation)
     class Zoom :
         def __init__(self,cnt) :
-            self.__cnt = cnt
+            self.__cnt = weakref.ref(cnt)
             self.__zoom = (1,1)
             self.__ox,self.__oy = (0,0)
             self.__width,self.__height = (0,0)
@@ -219,7 +226,9 @@ class QubImage2PixmapPlug :
                 self.__zoom = (zoomx,zoomy)
                 self.__allimage = not keepROI
                 aLock.unLock()
-                self.__cnt.refresh()
+                cnt = self.__cnt()
+                if cnt:
+                    cnt.refresh()
         ##@brief set the ROI and the zoom
         #
         #the pixmap will be zoomed using the ROI and horizontal and vertical zoom
@@ -238,8 +247,10 @@ class QubImage2PixmapPlug :
                 self.__interpolationInUse = cv.CV_INTER_NN
             else :
                 self.__interpolationInUse = self._interpolation
-            aLock.unLock()    
-            self.__cnt.refresh()
+            aLock.unLock()
+            cnt = self.__cnt()
+            if cnt:
+                cnt.refresh()
         ##@return if zoom is with ROI or not
         def isRoiZoom(self) :
             return not self.__allimage
@@ -340,8 +351,10 @@ class QubImage2PixmapPlug :
         return True
     ##@brief need a pixmap refresh
     def refresh(self) :
-        if self._mgr is not None :
-            self._mgr.refresh()
+        if self._mgr:
+            mgr = self._mgr()
+            if mgr:
+                mgr.refresh()
     ##@brief this is the end ... of the plug. after this call, the plug will be removed from every polling.
     def setEnd(self) :
         self.__endFlag = True
@@ -352,7 +365,7 @@ class QubImage2PixmapPlug :
     ##@brief set the container of this plug
     #@param aMgr actually is a QubPixmapDisplay
     def setManager(self,aMgr) :
-        self._mgr = aMgr
+        self._mgr = weakref.ref(aMgr)
 #Private
 class _ImageZoomProcess(QubThreadProcess):
     class _process_struct :
@@ -365,19 +378,23 @@ class _ImageZoomProcess(QubThreadProcess):
     def __init__(self,cnt) :
         QubThreadProcess.__init__(self)
         self.__end = False
-        self.__cnt = cnt
+        self.__cnt = weakref.ref(cnt)
         self.__mutex = qt.QMutex()
         self.__actif = False
         self.__imageZoomPending = []
         self.__InProgress = []
-         
+
     def getFunc2Process(self) :
         aLock = QubLock(self.__mutex)
-        self.__imageZoomPending = self.__cnt.decim(self.__imageZoomPending)
-        self.__InProgress.append(_ImageZoomProcess._process_struct(self.__imageZoomPending.pop(0)))
-        if not len(self.__imageZoomPending) :
-            self.__actif = False
-            aLock.unLock()
+        cnt = self.__cnt()
+        if cnt:
+            self.__imageZoomPending = cnt.decim(self.__imageZoomPending)
+            self.__InProgress.append(_ImageZoomProcess._process_struct(self.__imageZoomPending.pop(0)))
+            if not len(self.__imageZoomPending) :
+                self.__actif = False
+                aLock.unLock()
+                self._threadMgr.pop(self,False)
+        else:
             self._threadMgr.pop(self,False)
         return self.zoomProcess
 
@@ -397,7 +414,10 @@ class _ImageZoomProcess(QubThreadProcess):
             self._threadMgr.push(self)
             
     def zoomProcess(self) :
-        plugs = self.__cnt.getPlugs()
+        cnt = self.__cnt()
+        if not cnt: return
+        
+        plugs = cnt.getPlugs()
         aLock = QubLock(self.__mutex)
         struct = None
         for s in self.__InProgress :
@@ -436,7 +456,7 @@ class _ImageZoomProcess(QubThreadProcess):
             self.__InProgress[0:lastid + 1] = []
         aLock.unLock()
         for plugnimage in tmplist:
-            self.__cnt.appendPendingList(plugnimage)
+            cnt.appendPendingList(plugnimage)
 
                          ####### TEST #######
 if __name__ == "__main__":

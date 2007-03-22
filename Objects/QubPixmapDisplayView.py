@@ -14,16 +14,17 @@ from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 #@see Qub::Widget::QubView::QubView
 class QubPixmapDisplayView(QubView):
     def __init__(self,
-                parent=None, name=None, actions=None,flags=qt.Qt.WDestructiveClose):
-        QubView.__init__(self, parent, name, flags)
+                parent=None, name=None, actions=None):
+        QubView.__init__(self, parent, name, 0)
         
         widget = QubPixmapDisplay(self, name)
-        
         self.setView(widget)
-        
         if actions is not None:
             self.addAction(actions)
-            
+
+    def __del__(self) :
+        self.setView(None)
+        
     ##@brief Set the Qpixmap to be displayed and tells the
     #Qub::Objects::QubPixmapDisplay::QubPixmapDisplay widget to
     #display it

@@ -38,6 +38,8 @@ IO::IO()
 {
     m_bShm = false;
     d = new Data;
+    d->ximage = NULL;
+    d->shmsize = 0;
     
 #ifdef HAVE_MITSHM
     int ignore;

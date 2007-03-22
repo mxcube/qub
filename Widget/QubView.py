@@ -62,10 +62,11 @@ class QubView(qt.QWidget):
         add widget "widget" as QubView view object
         """
         self.__view = widget
-        if self.__toolbar is None:
-            self.__vlayout.insertWidget(0, self.__view)
-        else:
-            self.__vlayout.insertWidget(1, self.__view)
+        if self.__view :
+            if self.__toolbar is None:
+                self.__vlayout.insertWidget(0, self.__view)
+            else:
+                self.__vlayout.insertWidget(1, self.__view)
         
     def view(self):
         """

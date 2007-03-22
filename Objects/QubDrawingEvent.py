@@ -75,7 +75,7 @@ class QubMoveNPressed1Point(_DrawingEventNDrawingMgr) :
     def __init__(self,aDrawingMgr,oneShot) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
         aDrawingMgr.show()
-        
+
     def mouseReleased(self,x,y) :
         d = self._drawingMgr()
         if d :
@@ -88,6 +88,35 @@ class QubMoveNPressed1Point(_DrawingEventNDrawingMgr) :
         if d :
            d.move(x,y)
         return False                    # NOT END
+##@brief A point event behaviour manager.
+#@ingroup DrawingEvent
+#
+#Behaviour description:
+# -# show drawing after first click
+# -# move the drawing object on mouse move and call the endDraw callback
+class QubFollowMouseOnClick(_DrawingEventNDrawingMgr) :
+    def __init__(self,aDrawingMgr,oneShot) :
+        _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
+        self.__mousePressed = False
+        
+    def mousePressed(self,x,y) :
+        self.__mousePressed = True
+        d = self._drawingMgr()
+        if d :
+            d.show()
+
+    def mouseReleased(self,x,y) :
+        self.mouseMove(x,y)
+        self.__mousePressed = False
+        return self._oneShot
+    
+    def mouseMove(self,x,y) :
+        d = self._drawingMgr()
+        if self.__mousePressed and d :
+           d.move(x,y)
+           d.endDraw()
+        return False                    # NOT END
+    
 ##@brief The default point event behaviour manager
 #@ingroup DrawingEvent
 #
@@ -263,10 +292,9 @@ class QubNPointClick(_DrawingEventNDrawingMgr) :
 #
 #This is the default event behaviour manger to modify point
 class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
-    def __init__(self,aDrawingMgr,aEventmgr,modifyCBK,
+    def __init__(self,aDrawingMgr,modifyCBK,
                  cursor = qt.QCursor(qt.Qt.SizeAllCursor)) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,False)
-        self._eventmgr = aEventmgr
         self._cursor = cursor
         self._modify = modifyCBK
         self._dirtyFlag = False
@@ -298,10 +326,9 @@ class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
 ##@brief Modify a point by relative moving
 #@ingroup DrawingEvent
 class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
-    def __init__(self,aDrawingMgr,aEventmgr,modifyCBK,
+    def __init__(self,aDrawingMgr,modifyCBK,
                  cursor = qt.QCursor(qt.Qt.SizeAllCursor)) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,False)
-        self._eventmgr = aEventmgr
         self._cursor = cursor
         self._modify = modifyCBK
         self._dirtyFlag = False

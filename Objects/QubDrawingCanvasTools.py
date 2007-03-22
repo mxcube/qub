@@ -1065,4 +1065,48 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
     def update(self) :
         self.__dirtyFlag = True
 
+##@brief a simple zoom dependent rectangle
+#
+#the width and height of this rectangle is the width and height of the full zoom (1:1)
+class QubCanvasHomotheticRectangle(qtcanvas.QCanvasRectangle) :
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasRectangle.__init__(self,canvas)
+        if isinstance(canvas,QubCanvasHomotheticRectangle) :
+            self.__width = canvas._QubCanvasHomotheticRectangle__width
+            self.__height = canvas._QubCanvasHomotheticRectangle__height
+        else:
+            self.__width,self.__height = 1,1
+        self.__dirtyFlag = True
+        self.__oldMatrixValues = None
+        self.__matrix = None
+        
+    def setWidthNHeight(self,width,height) :
+        self.__width,self.__height = width,height
+        self.__dirtyFlag = True
+        
+    def setMatrix(self,matrix) :
+        self.__matrix = matrix
+        self.__dirtyFlag = True
+
+    def move(self,x,y) :
+        rect = self.rect()
+        rect.moveCenter(qt.QPoint(x,y))
+        qtcanvas.QCanvasRectangle.move(self,rect.x(),rect.y())
+        
+    def drawShape(self,painter) :
+        if self.__matrix :
+            matrixValues = (self.__matrix.m11(),self.__matrix.m22()) # USE ONLY ZOOM
+        else:
+            matrixValues = None
+        if self.__dirtyFlag or matrixValues != self.__oldMatrixValues:
+            self.__dirtyFlag = False
+            self.__oldMatrixValues = matrixValues
+            p = qt.QPoint(self.__width,self.__height)
+            if self.__matrix:
+                matrix = qt.QWMatrix(self.__matrix.m11(),0,0,self.__matrix.m22(),0,0)
+                p = matrix.map(p)
+            qtcanvas.QCanvasRectangle.setSize(self,p.x(),p.y())
+        qtcanvas.QCanvasRectangle.drawShape(self,painter)
+            
+
 

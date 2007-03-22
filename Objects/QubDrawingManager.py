@@ -14,13 +14,11 @@ from Qub.Tools import QubWeakref
 def QubAddDrawing(drawing, mngr_class, *args):
     """Return drawing manager"""
     objs = []
-    
     mngr = mngr_class(drawing.canvas(), drawing.matrix())
     for obj_class in args:
         objs.append(obj_class(drawing.canvas()))
         mngr.addDrawingObject(objs[-1])
     drawing.addDrawingMgr(mngr)
-    
     return (mngr,) + tuple(objs)
 
 class _calleach:
@@ -94,18 +92,19 @@ class QubDrawingMgr :
     def addDrawingObject(self,aDrawingObject) :
         try :
             self._drawingObjects.append(aDrawingObject)
-            if hasattr(aDrawingObject,'setScrollView') and self._eventMgr is not None :
-                aDrawingObject.setScrollView(self._eventMgr.scrollView())
+            eventMgr = self._eventMgr and self._eventMgr() or None
+            if hasattr(aDrawingObject,'setScrollView') and eventMgr is not None :
+                aDrawingObject.setScrollView(eventMgr.scrollView())
             if hasattr(aDrawingObject,'setMatrix') :
                 aDrawingObject.setMatrix(self._matrix)
             for link,canvas,matrix,objectlist in self._foreignObjects :
                 newObject = aDrawingObject.__class__(None)
                 newObject.setCanvas(canvas)
                 if hasattr(newObject,'setScrollView') :
-                    otherMgr = link().getOtherMgr(self._eventMgr)
+                    otherMgr = link().getOtherMgr(eventMgr)
                     newObject.setScrollView(otherMgr.scrollView())
                 if hasattr(newObject,'setMatrix') :
-                    otherMgr = link().getOtherMgr(self._eventMgr)
+                    otherMgr = link().getOtherMgr(eventMgr)
                     newObject.setMatrix(matrix)
                 objectlist.append(newObject)
         except:
@@ -216,13 +215,14 @@ class QubDrawingMgr :
     #
     #, now this object will listen events -> mouse move,click
     def startDrawing(self) :
-        if self._eventMgr is not None :
+        eventMgr = self._eventMgr and self._eventMgr() or None
+        if eventMgr is not None :
             self._lastEvent = self._getDrawingEvent()
             if self._lastEvent is not None :
                 self._lastEvent.setExceptExclusiveListName(self.__exceptList)
                 self._lastEvent.setExclusive(self.__exclusive)
                 self._lastEvent.setName(self.__eventName)
-                self._eventMgr.addDrawingEvent(self._lastEvent)
+                eventMgr.addDrawingEvent(self._lastEvent)
 
     ##@brief ends the events listening
     #@see startDrawing
@@ -234,7 +234,7 @@ class QubDrawingMgr :
     #@param cbk is the addresse of a function or a methode with this signature
     #<b>bool cbk(self,Qub::Objects::QubDrawingMgr::QubDrawingMgr)</b>
     def setEndDrawCallBack(self,cbk) :
-        self._endDrawCbk = cbk
+        self._endDrawCbk = QubWeakref.createWeakrefMethod(cbk)
 
     ##@brief change the drawing procedure beavior
     ##@see Qub::Objects::QubDrawingEvent::QubDrawingEvent
@@ -302,24 +302,26 @@ class QubDrawingMgr :
                 return self._getModifyClass(x,y)
 
     def setEventMgr(self,anEventMgr) :
-        self._eventMgr = anEventMgr
+        self._eventMgr = weakref.ref(anEventMgr)
         for drawingObject in self._drawingObjects :
             if hasattr(drawingObject,'setScrollView') :
-                drawingObject.setScrollView(self._eventMgr.scrollView())
+                drawingObject.setScrollView(anEventMgr.scrollView())
     ##@brief add a link between two event manager
     #@see __linkRm
     def addLinkEventMgr(self,aLinkEventMgr) :
         try:
-            canvas,matrix = aLinkEventMgr.getCanvasNMatrix(self._eventMgr)
+            eventMgr = self._eventMgr and self._eventMgr() or None
+            if eventMgr is None : return
+            canvas,matrix = aLinkEventMgr.getCanvasNMatrix(eventMgr)
             newObjects = []
             for drawing in self._drawingObjects :
                 nObject = drawing.__class__(None)
                 nObject.setCanvas(canvas)
                 if hasattr(nObject,'setScrollView') :
-                    otherMgr = aLinkEventMgr.getOtherMgr(self._eventMgr)
+                    otherMgr = aLinkEventMgr.getOtherMgr(eventMgr)
                     nObject.setScrollView(otherMgr.scrollView())
                 if hasattr(nObject,'setMatrix') :
-                    otherMgr = aLinkEventMgr.getOtherMgr(self._eventMgr)
+                    otherMgr = aLinkEventMgr.getOtherMgr(eventMgr)
                     nObject.setMatrix(matrix)
                 newObjects.append(nObject)
             self._foreignObjects.append((weakref.ref(aLinkEventMgr,QubWeakref.createWeakrefMethod(self.__linkRm)),
@@ -410,7 +412,7 @@ class QubPointDrawingMgr(QubDrawingMgr) :
     def _getModifyClass(self,x,y) :
         rect = self.boundingRect()
         if rect.contains(x,y) : 
-            return QubModifyAbsoluteAction(self,self._eventMgr,self.move)
+            return QubModifyAbsoluteAction(self,self.move)
 
     def _drawForeignObject(self) :
         try:
@@ -514,9 +516,9 @@ class QubLineDrawingMgr(QubDrawingMgr) :
             x2,y2 = self._matrix.map(x2,y2)
             
         if(abs(x - x1) < 5 and abs(y - y1) < 5) :
-            return QubModifyAbsoluteAction(self,self._eventMgr,self.moveFirstPoint)
+            return QubModifyAbsoluteAction(self,self.moveFirstPoint)
         elif(abs(x - x2) < 5 and abs(y - y2) < 5) :
-            return QubModifyAbsoluteAction(self,self._eventMgr,self.moveSecondPoint)
+            return QubModifyAbsoluteAction(self,self.moveSecondPoint)
 
     ##@brief methode to draw object from other canvas
     def _drawForeignObject(self) :
@@ -655,24 +657,24 @@ class Qub2PointSurfaceDrawingMgr(QubDrawingMgr) :
         (x1,y1,x2,y2) = rect.coords()
         if(abs(x - x1) < 5) :           # TOP LEFT OR BOTTOM LEFT
             if(abs(y - y1) < 5) :       # TOP LEFT
-                return QubModifyAbsoluteAction(self,self._eventMgr,
+                return QubModifyAbsoluteAction(self,
                                        self.moveFirstPoint,
                                        qt.QCursor(qt.Qt.SizeFDiagCursor))
             elif(abs(y - y2) < 5) :     # BOTTOM LEFT
-                return QubModifyAbsoluteAction(self,self._eventMgr,
+                return QubModifyAbsoluteAction(self,
                                        self.moveBottomLeft,
                                        qt.QCursor(qt.Qt.SizeBDiagCursor))
         elif(abs(x - x2) < 5) :         # TOP RIGHT OR BOTTOM RIGHT
             if(abs(y - y1) < 5) :       # TOP RIGHT
-                return QubModifyAbsoluteAction(self,self._eventMgr,
+                return QubModifyAbsoluteAction(self,
                                        self.moveTopRight,
                                        qt.QCursor(qt.Qt.SizeBDiagCursor))
             elif(abs(y - y2) < 5) :
-                return QubModifyAbsoluteAction(self,self._eventMgr,
+                return QubModifyAbsoluteAction(self,
                                        self.moveSecondPoint,
                                        qt.QCursor(qt.Qt.SizeFDiagCursor))
         elif (rect.contains(x, y)):
-                return QubModifyRelativeAction(self,self._eventMgr,
+                return QubModifyRelativeAction(self,
                                        self.moveRelativeRectangle)
             
     ##@brief methode to draw object from other canvas
@@ -782,7 +784,7 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
                 func = self.move.im_func
                 tmpfunc = new.function(func.func_code,func.func_globals,'tmpmove',(self,0,0,i))
                 callBack = new.instancemethod(tmpfunc,self,QubPolygoneDrawingMgr)
-                return QubModifyAbsoluteAction(self,self._eventMgr,callBack)
+                return QubModifyAbsoluteAction(self,callBack)
 
     ##@brief methode to draw object from other canvas
     def _drawForeignObject(self,point_id) :

@@ -1,3 +1,4 @@
+import weakref
 import qt
 import sys
 import types
@@ -22,7 +23,8 @@ class QubAction(qt.QObject):
     ACTION_LIST, indexing by the name of the action and containing the class
     name.
     """
-    def __init__(self, *args, **keys) :
+    def __init__(self,name = None,place = 'toolbar',show = True,
+                 group = '',index = -1,**keys) :
      
         """
         Constructor method
@@ -39,16 +41,7 @@ class QubAction(qt.QObject):
         """
         
         qt.QObject.__init__(self)
-        name = keys.get('name',None)
-        place = keys.get('place',"toolbar")
-        show = keys.get('show',1)
-        group = keys.get('group',"")
-        index = keys.get('index',-1)
-        
-        if name is None:
-            self._name = "default"
-        else:
-            self._name  = name
+        self._name  = name
         
         self.__place    = place
         self.__show     = show
@@ -203,7 +196,7 @@ class QubToggleAction(QubAction):
     The name of the action will be used to find the icon file.
     Signal "StateChanged"
     """
-    def __init__(self,*args, **keys):
+    def __init__(self,initState = False,*args, **keys):
         """
         Constructor method.
         name ... :  string name of the action. Will be used to get the icon
@@ -217,9 +210,10 @@ class QubToggleAction(QubAction):
                     automatically created and the action is added to it
         index .. :  Position of the selection widget of the action in its
                     group.
+        initState : set the init state ie: if True Toggle is On
         """
-        QubAction.__init__(self, *args, **keys)
-
+        QubAction.__init__(self,*args, **keys)
+        self.__initState = initState
         
     def addToolWidget(self, parent):
         """
@@ -235,7 +229,8 @@ class QubToggleAction(QubAction):
             self.connect(self._widget, qt.SIGNAL("toggled(bool)"),
                          self.setState)
             qt.QToolTip.add(self._widget, "%s"%self._name)
-        
+            if self.__initState :
+                self._widget.toggle()
         return self._widget
         
     def addMenuWidget(self, menu):
@@ -313,7 +308,7 @@ class QubImageAction(QubAction):
     QubImage Object.
     Main adds on are slots for drawings.
     """
-    def __init__(self, *args, **keys):
+    def __init__(self,qubImage=None,autoConnect=False, **keys):
         """
         Constructor method
         name ... :  string name of the action
@@ -330,18 +325,19 @@ class QubImageAction(QubAction):
         index .. :  Position of the selection widget of the action in its
                     group
         """
-        name = keys.get("name",None)
-        qubImage = keys.get("qubImage",None)
-        autoConnect = keys.get("autoConnect",False)
-        place = keys.get("place","toolbar")
-        show = keys.get("show",1)
-        group = keys.get("group","")
-        index = keys.get("index",-1)
+##        name = keys.get("name",None)
+##        qubImage = keys.get("qubImage",None)
+##        autoConnect = keys.get("autoConnect",False)
+##        place = keys.get("place","toolbar")
+##        show = keys.get("show",1)
+##        group = keys.get("group","")
+##        index = keys.get("index",-1)
         
         #QubAction.__init__(self, name, place, show, group, index)
-        QubAction.__init__(self, *args, **keys)
-       
-        self._qubImage = None
+        QubAction.__init__(self,**keys)
+        if qubImage: self._qubImage = weakref.ref(qubImage)
+        else: self._qubImage = None
+        
         self._sigConnected = False
         self._autoConnect = autoConnect
         
@@ -366,21 +362,22 @@ class QubImageAction(QubAction):
             connect = True
         else:
             connect = self._sigConnected
+
+        oldQImage = self._qubImage and self._qubImage() or None
         
-        if self._qubImage is not None and qubImage is not None and \
-           self._qubImage != qubImage:
+        if oldQImage and qubImage and oldQImage != qubImage:
             """
             disconnect action from previous qubImage
             """
-            self.signalDisconnect(self._qubImage)
+            self.signalDisconnect(oldQImage)
             self._qubImage = None
 
         if qubImage is not None:
-            self._qubImage = qubImage
+            self._qubImage = weakref.ref(qubImage)
             if connect:
-                self.signalConnect(self._qubImage)
+                self.signalConnect(qubImage)
             else:
-                self.signalDisconnect(self._qubImage)
+                self.signalDisconnect(qubImage)
 
     def signalConnect(self, view):
         """
@@ -463,7 +460,7 @@ class QubToggleImageAction(QubImageAction):
     in the menubar of the QubView.
     The name of the action will be used to find the icon file.
     """
-    def __init__(self,*args, **keys):
+    def __init__(self,**keys):
         """
         Constructor method.
         name ... :  string name of the action.
@@ -480,7 +477,7 @@ class QubToggleImageAction(QubImageAction):
         index .. :  Position of the selection widget of the action in its
                     group.
         """
-        QubImageAction.__init__(self, *args, **keys)
+        QubImageAction.__init__(self,**keys)
 
         
     def addToolWidget(self, parent):

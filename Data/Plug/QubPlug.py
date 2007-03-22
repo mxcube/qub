@@ -46,10 +46,18 @@ class QubPlug :
         """
         self.__endFlag = True
 
-    def newobject(self,*args) :
+    def newObject(self,*args) :
+        """
+        This methode is call when a new object is available
+        """
+        pass
+
+    def newContainerObject(self,*args) :
         """
         This methode is call when the container detect a new source
         """
+        pass
+    
     def update(self,*args) :
         """
         This methode is call on timer be the polling until it
@@ -59,6 +67,12 @@ class QubPlug :
         return True
 
     def destroy(self,*args) :
+        """
+        This methode is call when an object is destroy
+        """
+        return False
+    
+    def containerDestroy(self,*args) :
         """
         This methode is call when the container is destroy
         sould return True if the plug manage that event

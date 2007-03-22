@@ -1,3 +1,4 @@
+import weakref
 from Qub.Data.Plug.QubPlugManager import QubPlugManager
 
 class QubSource :
@@ -9,25 +10,31 @@ class QubSource :
             newObject = self.createObject(key,*args)
 
             if newObject is not None:
-                self._dataObjects[key] = newObject
+                self._dataObjects[key] = weakref.ref(newObject,self._objectDeleteCBK)
 
             return newObject
 
-        return self._dataObjects[key]
+        return self._dataObjects[key]()
     
     def objects(self) :
-        return self._dataObjects.values()
+        values = []
+        for value in self._dataObjects.values() :
+            values.append(value())
+        return values
     
     def createObject(self, key, *args):
         return None
 
-    def removeObject(self,key) :
-        self._dataObjects.pop(key)
-
+    def _objectDeleteCBK(self,objectref) :
+        for key,obj in self._dataObjects.iteritems():
+            if obj == objectref:
+                self._dataObjects.pop(key)
+                break
+        
 class QubSpecMotherSource(QubSource) :
     def __init__(self,container,name,aPollplug,aCallEachTimeFlag = False) :
         QubSource.__init__(self)
-        self._cnt = container
+        self._cnt = container and weakref.ref(container)
         self._name = name
         self._pollplug = aPollplug
         self._plugmgr = QubPlugManager(self,aPollplug,aCallEachTimeFlag)
@@ -36,8 +43,11 @@ class QubSpecMotherSource(QubSource) :
             container.plug(aPollplug)
             
     def __del__(self) :
-        self.__cnt.removeObject(self._name)
-
+        self.setDestroy()
+        
+    def container(self) :
+        return self._cnt()
+    
     def name(self) :
         return self._name
             
@@ -47,15 +57,11 @@ class QubSpecMotherSource(QubSource) :
     def unplug(self,aQubPlug) :
         self._plugmgr.unplug(aQubPlug)
  
-    def removeObjectInContainer(self) :
-        self.__cnt.removeObject(self._name)
- 
     def setDestroy(self) :
         self._isDead = True
         self._pollplug.setEnd()
-        self.removeObjectInContainer()
 
     def getDeletednNewFromDataName(self,dataNameArray) :
         arrayNameSet = set(dataNameArray)
-        createdName = set([x.name() for x in self._dataObjects.values()])
+        createdName = set([x().name() for x in self._dataObjects.values()])
         return (createdName - arrayNameSet,arrayNameSet - createdName)

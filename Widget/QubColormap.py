@@ -1,6 +1,4 @@
 import qt
-import sys
-import os
 import Numeric
 
 import spslut
@@ -9,11 +7,12 @@ from Qub.Icons.QubIcons import loadIcon
 from Qub.Widget.QubImage import QubImage
 from Qub.Widget.QubGraph import QubGraph, QubGraphCurve
 
-        
+from Qub.Tools.QubWeakref import createWeakrefMethod
+
 ################################################################################
 ####################                QubAction               ####################
 ################################################################################
-class QubColormapDialog(qt.QDialog):
+class QubColormapDialog(qt.QWidget):
     """
     Creates a dialog box to change a colormap.
     It allows to change colormaps (Greyscale, Reverse Grey, Temperature,
@@ -23,39 +22,27 @@ class QubColormapDialog(qt.QDialog):
     When any of these parameters change, the signal "ColormapChanged" is
     sent with the parameters colormap, autoscale, minValue, maxValue
     """
-    def __init__(self, parent=None, name=None):
+    def __init__(self, parent=None, name="Colormap"):
         """
         Constructor method
         Create the layout of the colormap dialog widget using default value
         """
-        qt.QDialog.__init__(self, parent)
+        qt.QWidget.__init__(self, parent,name)
+        self.setIcon(loadIcon('colormap.png'))
+        self.__dataMin = 0
+        self.__dataMax = 255
         
-        self.parent = parent
+        self.__colormapSps = [("Greyscale",spslut.GREYSCALE),
+                              ("Reverse Grey",spslut.REVERSEGREY),
+                              ("Temperature",spslut.TEMP),
+                              ("Red",spslut.RED),
+                              ("Green",spslut.GREEN),
+                              ("Blue",spslut.BLUE),
+                              ("Many",spslut.MANY)]
 
-        self.colormap = 0
-        self.colormapList = ["Greyscale", "Reverse Grey", "Temperature",
-                                 "Red", "Green", "Blue", "Many"]
-        self.colormapSps = [spslut.GREYSCALE, spslut.REVERSEGREY, spslut.TEMP,
-                             spslut.RED, spslut.GREEN, spslut.BLUE, spslut.MANY]
-
+        self.__lutType = [('Linear',spslut.LINEAR),('Logarithm',spslut.LOG)]
                          
-        parentName = self.parent.name()
-        file  = os.path.basename(parentName)
-        self.title = "COLORMAP for " + file
-        self.setCaption(self.title)
-
-        """
-        default values
-        """
-        self.dataMin   = 0
-        self.dataMax   = 199
-        self.minValue  = 50
-        self.maxValue  = 150
-
-        self.autoscale   = False
-        self.autoscale90 = False
-
-        self.colormapData = Numeric.resize(Numeric.arange(200), (50,200))
+        
         """
         main layout (VERTICAL)
         """
@@ -64,33 +51,31 @@ class QubColormapDialog(qt.QDialog):
         vlayout.setSpacing(10)
 
         """
-        layout 1 (HORIZONTAL)
-            - combo for colormap names
-            - QubImage to view chosen colormap
+        combo for colormap
         """
-        hlayout1 = qt.QHBoxLayout(vlayout, -1, "layout 1")
-        hlayout1.setSpacing(10)
+        colormapData = Numeric.resize(Numeric.arange(60), (10,60))
+        self.__colormapCombo = qt.QComboBox(self)
+        for colormapName,colormapType in self.__colormapSps:
+            (image_str, size, minmax) = spslut.transform(colormapData ,
+                                                         (1,0), 
+                                                         (spslut.LINEAR, 3.0),
+                                                         "BGRX", 
+                                                         colormapType,
+                                                         1, 
+                                                         (0, 0))
+            image = qt.QImage(image_str,size[0],size[1],32,None,0,
+                          qt.QImage.IgnoreEndian)
+            self.__colormapCombo.insertItem(qt.QPixmap(image),colormapName)
+        self.connect(self.__colormapCombo, qt.SIGNAL("activated(int)"),
+                     self.__colormapTypeChanged)
+        vlayout.addWidget(self.__colormapCombo)
 
-        """
-        combo for colormap names
-        """
-        self.colormapCombo = qt.QComboBox(self)
-        for colormap in self.colormapList:
-            self.colormapCombo.insertItem(colormap)
-        self.connect(self.colormapCombo, qt.SIGNAL("activated(int)"),
-                     self.colormapChanged)
-        hlayout1.addWidget(self.colormapCombo)
-
-        """
-        QubImage to view chosen colormap
-        """
-        self.colormapImage = QubImage(self)
-        self.colormapImage.setScrollbarMode("FillScreen")
-        self.colormapImage.setMinimumHeight(1.5*self.colormapCombo.sizeHint().height())
-        hlayout1.addWidget(self.colormapImage)
-        
-        self._updateColormap()
-        
+        self.__lutTypeCombo = qt.QComboBox(self)
+        for lutTypeName,lutType in self.__lutType:
+            self.__lutTypeCombo.insertItem(lutTypeName)
+        vlayout.addWidget(self.__lutTypeCombo)
+        self.connect(self.__lutTypeCombo, qt.SIGNAL("activated(int)"),
+                     self.__lutTypeChanged)
         """
         layout 2 (HORIZONTAL)
             - min value label
@@ -102,20 +87,21 @@ class QubColormapDialog(qt.QDialog):
         """
         min value label
         """
-        self.minLabel  = qt.QLabel("Minimum", self)
-        hlayout2.addWidget(self.minLabel)
+        self.__minLabel  = qt.QLabel("Minimum", self)
+        hlayout2.addWidget(self.__minLabel)
         
         """
         min label text
         """
         hlayout2.addSpacing(5)
         hlayout2.addStretch(1)
-        self.minText  = qt.QLineEdit(self)
-        self.minText.setFixedWidth(150)
-        self.minText.setAlignment(qt.Qt.AlignRight)
-        self.connect(self.minText, qt.SIGNAL("returnPressed()"),
-                     self.minTextChanged)
-        hlayout2.addWidget(self.minText)
+        self.__minText  = qt.QLineEdit(self)
+        self.__minText.setValidator(qt.QDoubleValidator(self.__minText))
+        self.__minText.setFixedWidth(150)
+        self.__minText.setAlignment(qt.Qt.AlignRight)
+        self.connect(self.__minText, qt.SIGNAL("returnPressed()"),
+                     self.__minTextChanged)
+        hlayout2.addWidget(self.__minText)
         
         """
         layout 3 (HORIZONTAL)
@@ -128,20 +114,22 @@ class QubColormapDialog(qt.QDialog):
         """
         max value label
         """
-        self.maxLabel  = qt.QLabel("Maximum", self)
-        hlayout3.addWidget(self.maxLabel)
+        self.__maxLabel  = qt.QLabel("Maximum", self)
+        hlayout3.addWidget(self.__maxLabel)
         
         """
         max label text
         """
         hlayout3.addSpacing(5)
         hlayout3.addStretch(1)
-        self.maxText  = qt.QLineEdit(self)
-        self.maxText.setFixedWidth(150)
-        self.maxText.setAlignment(qt.Qt.AlignRight)
-        self.connect(self.maxText, qt.SIGNAL("returnPressed()"),
-                     self.maxTextChanged)
-        hlayout3.addWidget(self.maxText)
+        self.__maxText  = qt.QLineEdit(self)
+        self.__maxText.setValidator(qt.QDoubleValidator(self.__maxText))
+        self.__maxText.setFixedWidth(150)
+        self.__maxText.setAlignment(qt.Qt.AlignRight)
+        
+        self.connect(self.__maxText, qt.SIGNAL("returnPressed()"),
+                     self.__maxTextChanged)
+        hlayout3.addWidget(self.__maxText)
         
         """
         hlayout 4 (HORIZONTAL)
@@ -153,21 +141,21 @@ class QubColormapDialog(qt.QDialog):
         """
         graph
         """
-        self.colormapGraph  = QubGraph(self)
+        self.__colormapGraph  = QubGraph(self)
         
         """
         remove Y axis label
         set X axis label
         remove curves legends
         """
-        self.colormapGraph.enableYLeftAxis(0)
-        self.colormapGraph.setXLabel("Data Values")
-        self.colormapGraph.useLegend(False)
+        self.__colormapGraph.enableYLeftAxis(0)
+        self.__colormapGraph.setXLabel("Data Values")
+        self.__colormapGraph.useLegend(False)
 
         """
         set the curve _/-
         """
-        self.colormapCurve = QubGraphCurve (self.colormapGraph,
+        self.colormapCurve = QubGraphCurve (self.__colormapGraph,
                                             "ColormapCurve",
                                             [0, 10, 20, 30],
                                             [-10, -10, 10, 10 ]
@@ -181,16 +169,16 @@ class QubColormapDialog(qt.QDialog):
         self.colormapCurve.setPointMarked(0)
         self.colormapCurve.setPointMarked(3)
 
-        self.colormapGraph.setCurve(self.colormapCurve)
+        self.__colormapGraph.setCurve(self.colormapCurve)
 
-        self.colormapGraph.setMinimumSize(qt.QSize(250,200))
+        self.__colormapGraph.setMinimumSize(qt.QSize(250,200))
 
-        self.connect (self.colormapGraph, qt.PYSIGNAL("PointMoved"),
+        self.connect (self.__colormapGraph, qt.PYSIGNAL("PointMoved"),
                       self._graphMove)
-        self.connect (self.colormapGraph, qt.PYSIGNAL("PointReleased"),
+        self.connect (self.__colormapGraph, qt.PYSIGNAL("PointReleased"),
                       self._graphRelease)
 
-        hlayout4.addWidget(self.colormapGraph)
+        hlayout4.addWidget(self.__colormapGraph)
         
         """
         hlayout 5 (HORIZONTAL)
@@ -204,205 +192,121 @@ class QubColormapDialog(qt.QDialog):
         """
         autoscale
         """
-        self.autoscaleToggle = qt.QPushButton("Autoscale", self)
-        self.autoscaleToggle.setToggleButton(True)
-        self.connect(self.autoscaleToggle, qt.SIGNAL("toggled(bool)"),
-                     self.autoscaleChanged)
-        hlayout5.addWidget(self.autoscaleToggle)
+        self.__autoscaleToggle = qt.QPushButton("Autoscale", self)
+        self.__autoscaleToggle.setToggleButton(True)
+        self.connect(self.__autoscaleToggle, qt.SIGNAL("toggled(bool)"),
+                     self.__autoscaleChanged)
+        hlayout5.addWidget(self.__autoscaleToggle)
 
         """
         scale 90%
         """
-        self.scale90Button = qt.QPushButton("90%", self)
-        self.connect(self.scale90Button, qt.SIGNAL("clicked()"),
-                     self.scale90Changed)
-        hlayout5.addWidget(self.scale90Button)
+        self.__scale90Button = qt.QPushButton("90%", self)
+        self.connect(self.__scale90Button, qt.SIGNAL("clicked()"),
+                     self.__scale90Changed)
+        hlayout5.addWidget(self.__scale90Button)
 
         """
         full scale
         """
-        self.fullscaleButton = qt.QPushButton("Full", self)
-        self.connect(self.fullscaleButton, qt.SIGNAL("clicked()"),
-                     self.fullscaleChanged)
-        hlayout5.addWidget(self.fullscaleButton)
+        self.__fullscaleButton = qt.QPushButton("Full", self)
+        self.connect(self.__fullscaleButton, qt.SIGNAL("clicked()"),
+                     self.__fullscaleChanged)
+        hlayout5.addWidget(self.__fullscaleButton)
 
-        """
-        update dialog with default values
-        """
-        self._update()
-        
         """
         colormap window can not be resized
         """
         self.setFixedSize(vlayout.minimumSize())
+        self.__refreshCallback = None
+        self.__colormap = None
 
+    ##@brief setCaptionPrefix
+    def setCaptionPrefix(self,prefix) :
+        self.setCaption(prefix)
+        
+    ##@brief this methode set the callback fro refresh when colormap has changed
+    def setColormapNRefreshCallBack(self,colormap,cbk) :
+        self.__colormap = colormap
+        self.__refreshCallback = createWeakrefMethod(cbk)
     #############################################
     ### COLORMAP
     #############################################
-    def colormapChanged(self, colormap):
+    def __colormapTypeChanged(self, colormapID):
         """
         type of colormap has changed
             - update the colormap dialog
             - send the "ColormapChanged" signal
         """
-        self._setColormap(colormap)
-        self._update()
-        self._sendColormap()
-
-    def _setColormap(self, colormap):
-        """
-        set colormap parameter
-        """
-        self.colormap = colormap
-
-    def _updateColormap(self):
-        """
-        update the test image
-        update the selection in the combo list
-        """
-        
-        """
-        update the test image
-        """
-        self.colormapImage.setPixmap(self._colormapPixmap())
-        
-        """
-        update the selection in the combo
-        """
-        self.colormapCombo.setCurrentItem(self.colormap)
-
-    def _colormapPixmap(self):
-        """
-        Build a ixmap with the test image array of the choosen colormap
-        """
-        (image_str, size, minmax) = spslut.transform(self.colormapData ,
-                                        (1,0), 
-                                        (spslut.LINEAR, 3.0),
-                                        "BGRX", 
-                                        self.colormapSps[self.colormap],
-                                        1, 
-                                        (0, 199))            
-        image = qt.QImage(image_str,size[0],size[1],32,None,0,
-                          qt.QImage.IgnoreEndian)
-        pixmap = qt.QPixmap()
-        pixmap.convertFromImage(image)         	      
-        return pixmap        
-
-
+        if self.__colormap:
+            self.__colormap.setColorMapType(self.__colormapSps[colormapID][1])
+            self.__refreshImage()
+    #############################################
+    ### LUT
+    #############################################
+    def __lutTypeChanged(self,lutID) :
+        if self.__colormap:
+            self.__colormap.setLutType(self.__lutType[lutID][1])
+            self.__refreshImage()
     #############################################
     ### MIN/MAX VALUES
     #############################################
-    def minTextChanged(self):
+    def __minTextChanged(self):
         """
         min value changed
             - update the colormap dialog
             - send the "ColormapChanged" signal
         """
-        val = float(str(self.minText.text()))
-        
-        self._setText(val, self.maxValue)
-        self._update()
-        self._sendColormap()
+        if self.__colormap :
+            minVal,maxVal = colormap.minMax()
+            val,_ = self.__minText.text().toFloat()
+            colormap.setMinMax(val,maxVal)
+            self.__refreshImage()
 
-    def maxTextChanged(self):
+    def __maxTextChanged(self):
         """
         max value changed
             - update the colormap dialog
             - send the "ColormaChanged" signal
         """
-        val = float(str(self.maxText.text()))
-        
-        self._setText(self.minValue, val)
-        self._update()
-        self._sendColormap()
-
-    def _setText(self, colorMin, colorMax):
-        """
-        check and set min/max color parameters
-        """
-        val = colorMin
-        if val > self.dataMax:
-            val = self.dataMax
-        if val < self.dataMin:
-            val = self.dataMin
-        
-        self.minValue = val
-        
-        val = colorMax
-        if val > self.dataMax:
-            val = self.dataMax
-        if val < self.dataMin:
-            val = self.dataMin
-        
-        self.maxValue = val
-    
-    def _updateText(self):
-        """
-        update text widget for min and max values using self.minValue
-        and self.maxValue
-        """
-        self.minText.setText("%g"%self.minValue)
-        self.maxText.setText("%g"%self.maxValue)
-
+        if self.__colormap:
+            minVal,maxVal = colormap.minMax()
+            val,_ = self.__maxText.text().toFloat()
+            colormap.setMinMax(minVal,val)
+            self.__refreshImage()
+            
     #############################################
     ### SCALES
     #############################################
-    def autoscaleChanged(self, val):
+    def __autoscaleChanged(self, val):
         """
         autoscale value changed
             - update the colormap dialog
             - send the "ColormaChanged" signal
         """
-        self._setAutoscale(val) 
-        self._update()
-        self._sendColormap()
-    
-    def _setAutoscale(self, autoscale):
-        self.autoscale = autoscale
-        if self.autoscale:
-            self.minValue = self.dataMin
-            self.maxValue = self.dataMax
+        for widget in [self.__colormapGraph,self.__scale90Button,self.__fullscaleButton,
+                       self.__minText,self.__maxText] :
+            widget.setEnabled(not val)
+        if self.__colormap:
+            self.__colormap.setAutoscale(val)
+            self.__refreshImage()
             
-    def _updateAutoscale(self):
-        """
-        update colormap dialog according to self.autoscale value
-        """
-        self.autoscaleToggle.setOn(self.autoscale)
-        if self.autoscale:
-            self.maxText.setEnabled(0)
-            self.minText.setEnabled(0)
-            self.colormapGraph.setEnabled(0)
-            self.scale90Button.setEnabled(0)
-            self.fullscaleButton.setEnabled(0)
-        else:
-            self.maxText.setEnabled(1)
-            self.minText.setEnabled(1)
-            self.colormapGraph.setEnabled(1)
-            self.scale90Button.setEnabled(1)
-            self.fullscaleButton.setEnabled(1)
-        
-    def scale90Changed(self):
+    def __scale90Changed(self):
         """
         set min value to be the min value of the data and max value to be
         the value corresponding to 90% of the different value of the data
         """
-        self.minValue = self.dataMin
-        self.maxValue = 0.9 * self.dataMax       
-        
-        self._update()
+        if self.__colormap:
+            self.__colormap.setMinMax(self.__dataMin,0.9 * self.__dataMax)
+            self.__refreshImage()
 
-        self._sendColormap()
-
-    def fullscaleChanged(self):
+    def __fullscaleChanged(self):
         """
         set min/max value of the colormap to the min/max value of the data
         """
-        self.minValue = self.dataMin
-        self.maxValue = self.dataMax
-        
-        self._update()
-             
-        self._sendColormap()
+        if self.__colormap:
+            self.__colormap.setMinMax(self.__dataMin,self.__dataMax)
+            self.__refreshImage()
         
 
     #############################################
@@ -413,16 +317,8 @@ class QubColormapDialog(qt.QDialog):
         user is moving a point given by args[0] to the position given
         by(args[1],args[2])
         """
-        (curve, point , x ,y) = (args[0], args[1], args[2], args[3])
-
-        if point == 1:
-            self.minValue = x
-        if point == 2:
-            self.maxValue = x
-            
-        self._update()
-
-    
+        self._graphRelease(*args)
+        
     def _graphRelease(self, *args):
         """
         user is release mouse on point given by (args[1],args[2]) for
@@ -432,106 +328,75 @@ class QubColormapDialog(qt.QDialog):
         """
         (curve, point , x ,y) = (args[0], args[1], args[2], args[3])
 
-        if point == 1:
-            self.minValue = x
-        if point == 2:
-            self.maxValue = x
-            
-        self._update()
-
-        self._sendColormap()
+        if self.__colormap :
+            minVal,maxVal = self.__colormap.minMax()
+            if point == 1:
+                self.__colormap.setMinMax(x,maxVal)
+            elif point == 2:
+                self.__colormap.setMinMax(minVal,x)
+            self.__refreshImage()
         
-    def _updateGraph(self):
-        """
-        update graph with object values
-        """
-        
-        """
-        calculate visible part of the graph outside data values (margin)
-        """
-        marge = (abs(self.dataMax) + abs(self.dataMin)) / 6.0
-        minmd = self.dataMin - marge
-        maxpd = self.dataMax + marge
-        self.colormapGraph.setZoom(minmd-marge/2, maxpd, -11.5, 11.5)
+    def update(self,data):
+        colormap = self.__colormap
+        if colormap and data:
+            data = Numeric.ravel(data)
+            self.__dataMin,self.__dataMax = min(data),max(data)
+                     ####### GRAPH UPDATE #######
+            """
+            calculate visible part of the graph outside data values (margin)
+            """
+            marge = (abs(self.__dataMax) + abs(self.__dataMin)) / 6.0
+            minmd = self.__dataMin - marge
+            maxpd = self.__dataMax + marge
+            self.__colormapGraph.setZoom(minmd-marge/2, maxpd, -11.5, 11.5)
 
-        """
-        tells where points can move:
-            first and last : do not move
-            second and third: cannot move in Y dir.,can move
-                              in X dir. between datamin and datamax
-        """ 
-        self.colormapCurve.defConstraints(1, self.dataMin, self.dataMax, -10, -10)
-        self.colormapCurve.defConstraints(2, self.dataMin, self.dataMax,  10,  10)
+            """
+            tells where points can move:
+                first and last : do not move
+                second and third: cannot move in Y dir.,can move
+                                  in X dir. between datamin and datamax
+            """ 
+            self.colormapCurve.defConstraints(1, self.__dataMin, self.__dataMax, -10, -10)
+            self.colormapCurve.defConstraints(2, self.__dataMin, self.__dataMax,  10,  10)
 
-        """
-        move points to their values
-        """
+            """
+            move points to their values
+            """
+            if colormap.autoscale() :
+                minValue,maxValue = self.__dataMin,self.__dataMax
+            else:
+                minValue,maxValue = colormap.minMax()
+            self.__colormapGraph.deplace(self.colormapCurve, 0, minmd, -10)
+            self.__colormapGraph.deplace(self.colormapCurve, 1, minValue, -10)
+            self.__colormapGraph.deplace(self.colormapCurve, 2, maxValue, 10)
+            self.__colormapGraph.deplace(self.colormapCurve, 3, maxpd, 10)
 
-        self.colormapGraph.deplace(self.colormapCurve, 0, minmd, -10)
-        self.colormapGraph.deplace(self.colormapCurve, 1, self.minValue, -10)
-        self.colormapGraph.deplace(self.colormapCurve, 2, self.maxValue, 10)
-        self.colormapGraph.deplace(self.colormapCurve, 3, maxpd, 10)
+            self.__colormapGraph.replot()
+                         ####### TEXT UPDATE #######
+            self.__minText.setText('%d' % minValue)
+            self.__maxText.setText('%d' % maxValue)
 
-        self.colormapGraph.replot()
+            colormapType = self.__colormapSps[self.__colormapCombo.currentItem()]
+            if colormapType[1] != colormap.colorMapType():
+                for i,(colorTypeName,colorType) in enumerate(self.__colormapSps):
+                    if colorType == colormap.colorType() :
+                        self.__colormapCombo.setCurrentItem(i)
+                        break
 
-    #############################################
-    ### GENERAL
-    #############################################
-    def setParam(self, colormap=None, colorMin=None, colorMax=None,
-                 dataMin=None, dataMax=None, autoscale=None):
-        """
-        set parameters which are not none
-        update the colormap dialog
-        send "ColormapChanged" signal
-        """
-        update = 0
-        
-        if colormap is not None and colormap in range(len(self.colormapList)):
-            self._setColormap(colormap)
-            update = 1
-            
-        if dataMin is not None:
-            self.dataMin = dataMin
-            update = 1
-            
-        if dataMax is not None:
-            self.dataMax = dataMax
-            update = 1
-            
-        if colorMin is not None:
-            self._setText(colorMin, self.maxValue)
-            update = 1
-            
-        if colorMax is not None:
-            self._setText(self.minValue, colorMax)
-            update = 1
-            
-        if autoscale is not None:
-            self._setAutoscale(autoscale)
-            update = 1
-            
-        if update:
-            self._update()
-            
-    def _update(self):
-        """
-        update all colormap dialog widget with default values
-        """
-        self._updateColormap()
-        self._updateText()
-        self._updateAutoscale()
-        self._updateGraph()
-        
-    def _sendColormap(self):
-        try:
-            self.emit(qt.PYSIGNAL("ColormapChanged"),
-                        (self.colormap, self.autoscale,
-                         self.minValue, self.maxValue))
-        except:
-            sys.excepthook(sys.exc_info()[0],
-                           sys.exc_info()[1],
-                           sys.exc_info()[2])
+            lutType = self.__lutType[self.__lutTypeCombo.currentItem()]
+            if lutType[1] != colormap.lutType() :
+                for i,(lutTypeName,lutType) in enumerate(self.__lutType):
+                    if lutType == colormap.lutType() :
+                        self.__lutTypeCombo.setCurrentItem(i)
+                        break
 
+            self.__autoscaleToggle.setOn(colormap.autoscale())
+            
+    def __refreshImage(self) :
+        if self.__refreshCallback :
+            self.__refreshCallback()
+            
+ 
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
@@ -678,6 +543,7 @@ class QubMain(qt.QMainWindow):
 ##  MAIN   
 if  __name__ == '__main__':
     import EdfFile
+    import sys
     from Qub.Widget.QubImageView import QubImageView
     
     app = qt.QApplication(sys.argv)

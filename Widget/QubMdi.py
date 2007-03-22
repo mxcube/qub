@@ -1,10 +1,22 @@
+import itertools
+import weakref
 import qt
 import os
 import sys
 
 from Qub.Icons.QubIcons import loadIcon
 
-        
+def QubMdiCheckIfParentIsMdi(parent) :
+    mdiParent = parent
+    mainWindow = None
+    while mdiParent :
+        if isinstance(mdiParent,qt.QWorkspace) :
+            if mainWindow not in mdiParent.windowList() :
+                break
+        mainWindow = mdiParent
+        mdiParent = mdiParent.parent()
+    if not mdiParent: mainWindow = None
+    return (mdiParent,mainWindow)
 ################################################################################
 ####################                  QubMdi                ####################
 ################################################################################
@@ -18,7 +30,8 @@ class QubMdi(qt.QWorkspace):
                 
         self.setScrollBarsEnabled(1)
         self.__connectFollow()
-        
+        self.__mdiTreeChild = {}        # Tree of all main window and sub windows (key == mainWindow,val = list of window)
+        self.__childWindowCbks = []
     """
     MDI WINDOW MANAGER                      
     """
@@ -29,7 +42,8 @@ class QubMdi(qt.QWorkspace):
 
         self.cascade()
         for window in self.windowList():
-            window.resize(0.7 * self.width(), 0.7 * self.height())
+            if window.isShown() :
+                window.resize(0.7 * self.width(), 0.7 * self.height())
 		    
         self.__connectFollow()
 
@@ -43,43 +57,56 @@ class QubMdi(qt.QWorkspace):
     def windowHorizontal(self):
         """
         """
-        if not len(self.windowList()): 
-            return
-
-        windowHeight=float(self.height())/len(self.windowList())
-        i=0
-        for window in self.windowList():
+        shownWindow = [x for x in itertools.ifilter(lambda w : w.isShown(),self.windowList())]
+        windowHeight=float(self.height())/len(shownWindow)
+        for i,window in enumerate(shownWindow) :
             window.parentWidget().showNormal()
             window.parentWidget().setGeometry(0, int(windowHeight*i),
                                         self.width(),int(windowHeight))
             window.parentWidget().raiseW()
-            i+=1
-
+                
         self.update()
 
     def windowVertical(self):
         """
         """
-        if not len(self.windowList()):
-            return
-
-        windowWidth = float(self.width()) / len(self.windowList())
-        i=0
-        for window in self.windowList():
+        shownWindow = [x for x in itertools.ifilter(lambda w : w.isShown(),self.windowList())]
+        windowWidth = float(self.width()) / len(shownWindow)
+        for i,window in enumerate(shownWindow) :
             window.parentWidget().showNormal()
             window.parentWidget().setGeometry(int(windowWidth*i),0,
-                                            int(windowWidth),self.height())
+                                              int(windowWidth),self.height())
             window.parentWidget().raiseW()
-            i+=1
             
         self.update()
 
-    def windowFullScreen(self):
-        """
-        """
-        if len(self.windowList()):
-            self.activeWindow().showMaximized()
 
+    def addNewChildOfMainWindow(self,mainWindow,child) :
+        mainWindowRef = weakref.ref(mainWindow,self.__closeMainWindowCbk)
+        subWindowList = self.__mdiTreeChild.get(mainWindowRef,[])
+        if child:
+            subWindowList.append(child)
+        self.__mdiTreeChild[mainWindowRef] = subWindowList
+        for cbk in self.__childWindowCbks:
+            cbk(self.__mdiTreeChild)
+        
+    def addRefreshOnChildWindows(self,cbk) :
+        self.__childWindowCbks.append(cbk)
+
+    def __closeMainWindowCbk(self,mainWindowsRef) :
+        try:
+            for subWindow in self.__mdiTreeChild[mainWindowsRef] :
+                try:
+                    subWindow.close(True)
+                except:
+                    import traceback
+                    traceback.print_exc()
+            self.__mdiTreeChild.pop(mainWindowsRef)
+            for cbk in self.__childWindowCbks:
+                cbk(self.__mdiTreeChild)
+        except KeyError:
+            pass
+        
     def __connectFollow(self):
         """
         """
@@ -150,22 +177,6 @@ class QubMdi(qt.QWorkspace):
         
         self.menuWindow.insertSeparator()
 
-        num= 0
-        self.menuWindowMap= {}
-        for window in self.windowList():
-            auxStr = "&%d %s"%(num, str(window.caption()))
-            idx = self.menuWindow.insertItem(auxStr,
-                                             self.__activateWindowMenu)
-            self.menuWindowMap[idx] = window
-            num += 1
-            if  window == self.activeWindow():
-                self.menuWindow.setItemChecked(idx, 1)
-
-    def __activateWindowMenu(self, idx):
-        """
-        """
-        self.menuWindowMap[idx].setFocus()
-
     """
     WINDOW TOOLBAR                      
     """
@@ -175,19 +186,13 @@ class QubMdi(qt.QWorkspace):
         self.winToolBar= qt.QToolBar(mainwin, "wintoolbar")
         self.winToolBar.setLabel("MDI")
         
-        icon = qt.QIconSet(loadIcon("fullscreen.png"))
-        self.fullscreen = qt.QToolButton(icon, "Full Screen", "Full Screen",
-                                self, 
-                                qt.SLOT("windowFullScreen()"),
-                                self.winToolBar,
-                                "fullscreen")
-                                
-        icon = qt.QIconSet(loadIcon("nofullscreen.png"))
-        self.winToolButton = qt.QToolButton(icon, "Tile", "Tile",
-                                        self,
-                                        qt.SLOT("onWinToolAction()"),
-                                        self.winToolBar,
-                                        "wintile")
+        self.fullscreen = qt.QToolButton(self.winToolBar,"Full Screen")
+        self.fullscreen.setIconSet(qt.QIconSet(loadIcon("fullscreen.png")))
+        qt.QObject.connect(self.fullscreen,qt.SIGNAL("clicked()"),self.windowFullScreen)
+        
+        self.winToolButton = qt.QToolButton(self.winToolBar,"Tile")
+        self.winToolButton.setIconSet(qt.QIconSet(loadIcon("nofullscreen.png")))
+        qt.QObject.connect(self.winToolButton,qt.SIGNAL("clicked()"),self.onWinToolAction)
         self.winToolMenu= qt.QPopupMenu(self.winToolButton)
         self.winToolMenu.setCheckable(1)
         self.winToolMenuText = ["Cascade", "Tile", "Tile Horizontally", "Tile Vertically"]
@@ -207,18 +212,18 @@ class QubMdi(qt.QWorkspace):
             self.winToolMenu.setItemChecked(midx, midx==idx)
         act= self.winToolMenuIndex.index(idx)
         self.winToolButton.setTextLabel(self.winToolMenuText[act])
-        if act==0:	self.winToolMenuAction= self.windowCascade
-        elif act==1:	self.winToolMenuAction= self.windowTile
-        elif act==2:	self.winToolMenuAction= self.windowHorizontal
-        elif act==3:	self.winToolMenuAction= self.windowVertical
+        cbks = [self.windowCascade,self.windowTile,self.windowHorizontal,self.windowVertical]
+        self.winToolMenuAction = cbks[act]
         self.onWinToolAction()
 
     def onWinToolAction(self):
         """
         """
-        apply(self.winToolMenuAction, ())
+        self.winToolMenuAction()
     
-        
+    def windowFullScreen(self) :
+        window = self.activeWindow()
+        if window: window.showMaximized()
 ################################################################################
 ####################             QubMdiChild                ####################
 ################################################################################
@@ -227,7 +232,7 @@ class QubMdiChild(qt.QWidget):
     Parent window must be a QWorkspace
     """
     def __init__(self, parent=None, name=None, master=None,
-                      flags=qt.Qt.WDestructiveClose):
+                 flags=qt.Qt.WDestructiveClose,**keys):
         
         """
         """
@@ -275,7 +280,101 @@ class QubMdiChild(qt.QWidget):
                        sys.exc_info()[1],
                        sys.exc_info()[2])
         
-    
+class QubMdiTree(qt.QListView) :
+    def __init__(self,mdi,parent = None,name = "",f = 0) :
+        qt.QListView.__init__(self,parent,name,f)
+        self.__openCbk = None
+        self.__mdi = mdi
+        self.addColumn('Windows')
+        mdi.addRefreshOnChildWindows(self.__refresh)
+        self.__timer = qt.QTimer(self)
+        qt.QObject.connect(self.__timer,qt.SIGNAL('timeout()'),self.__checkWindowState)
+        self.__timer.start(1500)
+        qt.QObject.connect(self,qt.SIGNAL('clicked(QListViewItem*)'),self.__clickedCBK)
+
+    def __refresh(self,windowList) :
+        try:
+            currentWindow = set()
+            for item in self.__getIterator():
+                if not windowList.has_key(item.window):
+                    self.takeItem(item)
+                    continue
+                else:
+                    try:
+                        name = item.window().caption()
+                        item.setText(0,name)
+                    except AttributeError:
+                        pass
+
+                    currentWindow.add(item.window)
+            newWindow = set(windowList.keys())
+            newWindow = newWindow.difference(currentWindow)
+            for window in newWindow :
+                try:
+                    name = window().caption()
+                    icon = window().icon()
+                except AttributeError:
+                    continue
+                item = qt.QListViewItem(self)
+                item.window = window
+                item.setText(0,name)
+                item.setOpen(True)
+                if icon:
+                    item.setPixmap(0,icon)
+            for mainWindow,wList in windowList.iteritems():
+                for mainItem in self.__getIterator() :
+                    if mainItem.window == mainWindow :
+                        for subWindow in wList:
+                            findFlag = False
+                            for subItem in self.__getIterator(mainItem) :
+                                if subItem.window == subWindow:
+                                    findFlag = True
+                                    break
+                            if not findFlag :
+                                try:
+                                    name = subWindow.name()
+                                except AttributeError:
+                                    continue
+                                subItem = qt.QListViewItem(item)
+                                subItem.window = subWindow
+                                subItem.setText(0,name)
+                                subItem.setVisible(False)
+                                if subWindow.icon():
+                                    subItem.setPixmap(0,subWindow.icon())
+                        break
+        except:
+            import traceback
+            traceback.print_exc()
+
+    def __checkWindowState(self) :
+        for item in self.__getIterator(None) :
+            self.__recurseCheckState(item)
+
+    def __recurseCheckState(self,parentIterator) :
+        if parentIterator:
+            for item in self.__getIterator(parentIterator) :
+                item.setVisible(item.window.isShown())
+                self.__recurseCheckState(item)
+                
+    def __getIterator(self,parentIterator = None) :
+        if parentIterator is not None :
+            Item = parentIterator.firstChild()
+        else :
+            Item = self.firstChild()
+        while Item :
+            NextItem = Item.nextSibling()
+            yield Item
+            Item = NextItem
+
+    def __clickedCBK(self,item) :
+        try:
+            if isinstance(item.window,qt.QWidget) :
+                item.window.setFocus()
+            else:
+                item.window().setFocus()
+        except ValueError:
+            return
+
 #############################################################################
 ##########                                                         ##########
 ##########                         MAIN                            ##########

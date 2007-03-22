@@ -42,8 +42,13 @@ points_inclusion(PyObject *self, PyObject *args)
   aPolygone[nb_polygone_point].x = aPolygone[0].x;
   aPolygone[nb_polygone_point].y = aPolygone[0].y;
  
+
+
   std::list<int> aResultList;
+  Py_BEGIN_ALLOW_THREADS;
   Polygone::points_inclusion(aPoint,aPolygone,aResultList,aWindingFlag);
+  Py_END_ALLOW_THREADS;
+
   PyObject *aPythonReturnList = PyList_New(points_number);
   int i;
   std::list<int>::iterator l;

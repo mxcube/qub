@@ -1,3 +1,4 @@
+import weakref
 from Qub.Data.Plug.QubPlug import QubPlug
 
 class QubPlugManager :
@@ -8,7 +9,7 @@ class QubPlugManager :
     def __init__(self,source,pollplug,calleachtimeflag = False,timeout = 1000) :
         self.__plugs = []
         self.__pollplug = pollplug
-        self.__source = source
+        self.__sourceRef = weakref.ref(source)
         pollplug.setNextPlugMgr(self)
         self.__timeout = timeout
         self.__calleachtime = calleachtimeflag
@@ -17,7 +18,7 @@ class QubPlugManager :
         return len(self.__plugs)
     
     def source(self) :
-        return self.__source
+        return self.__sourceRef
     
     def plug(self,aQubPlug) :
         """
@@ -58,7 +59,7 @@ class QubPlugManager :
         timeout = self.__timeout
         if not timeout :
             timeout = 1
-        for i,plug in enumerate(self.__plugs) :
+        for plug in self.__plugs :
             if not plug.isEnd() :
                 if plug.isActive() :
                     nbActivePlug += 1
@@ -73,7 +74,8 @@ class QubPlugManager :
                     if(timerInterval > plug.timeLeft) :
                         timerInterval = plug.timeLeft
             else:
-                self.__plugs[i:i] = []
+                try: self.__plugs.remove(plug)
+                except: pass
 
         nbPlug = len(self.__plugs)
         if not nbPlug or not nbActivePlug:
@@ -83,38 +85,49 @@ class QubPlugManager :
             self.__pollplug.changeInterval(self.__timeout)
         return not nbPlug or not nbActivePlug
   
-    def destroy(self,*args) :
+    def containerDestroy(self,*args) :
         """
         Methode called when container is destroy
         """
-        for i,plug in enumerate(self.__plugs) :
+        for plug in self.__plugs :
+            if not plug.isEnd() :
+                if plug.containerDestroy(*args) :
+                    plug.rmPlugMgr(self)
+                    self.__plugs.remove(plug)
+        aEndFlag = not len(self.__plugs)
+        if aEndFlag :
+            self.__pollplug.stop()
+        return aEndFlag
+    
+    def destroy(self,*args) :
+        """
+        Methode called when container is object of a container is destroy
+        """
+        for plug in self.__plugs :
             if not plug.isEnd() :
                 if plug.destroy(*args) :
                     plug.rmPlugMgr(self)
-                    self.__plugs[i:i] = []
+                    self.__plugs.remove(plug)
         aEndFlag = not len(self.__plugs)
         if(aEndFlag) :
             self.__pollplug.stop()
         return aEndFlag
 
-    def newObject(self,*args) :
+    def newContainerObject(self,*args) :
         """
         Methode called when new container object may be available
         """
         nbActivePlug = 0
-        for i,plug in enumerate(self.__plugs) :
+        for plug in self.__plugs :
             if not plug.isEnd() :
                 if plug.isActive() :
                     nbActivePlug += 1
-                    plug.newObject(*args)
+                    plug.newContainerObject(*args)
             else :
-                self.__plugs[i:i] = []
+                self.__plugs.remove(plug)
 
         nbPlug = len(self.__plugs)
         if not nbPlug or not nbActivePlug:
             self.__pollplug.stop()
-        elif(timerInterval != self.__timeout) :
-            self.__timeout = timerInterval
-            self.__pollplug.changeInterval(self.__timeout)
         return not nbPlug or not nbActivePlug
              

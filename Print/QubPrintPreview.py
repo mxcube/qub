@@ -594,6 +594,20 @@ class PrintCanvasPixmap(PrintCanvasImage):
         img = img.scaleWidth(self.width())
         painter.drawImage(self.x(), self.y(), img)
 
+class PrintCanvasGraph(PrintCanvasRectangle) :
+    def __init__(self,x,y,graph,canvas) :
+        PrintCanvasRectangle.__init__(self,x,y,300,200,canvas,False)
+        self.__graph = graph
+        
+    def printTo(self,painter) :
+        PrintCanvasRectangle.printTo(self,painter)
+        self.__graph.printPlot(painter,qt.QRect(self.x(),self.y(),self.width(),self.height()),
+                               qwt.QwtPlotPrintFilter())
+
+    def draw(self,painter) :
+        PrintCanvasRectangle.draw(self,painter)
+        self.printTo(painter)
+    
 class PrintCanvasVectorNPixmap(PrintCanvasPixmap) :
     """
     Class witch draw vector and pixmap
@@ -905,8 +919,20 @@ class PrintCanvasView(qtcanvas.QCanvasView):
                            sys.exc_info()[2])
 
 
+##@brief create a singleton printpreview dialog
+__thePrintPreviewDialog = None
+def getPrintPreviewDialog() :
+    global __thePrintPreviewDialog
+    if not __thePrintPreviewDialog :
+        __thePrintPreviewDialog = QubPrintPreview(None)
+        __thePrintPreviewDialog.resize(400,500)
+        printer = qt.QPrinter()
+        printer.setOutputToFile(1)
+        printer.setOutputFileName('/tmp/print_file.ps')
+        __thePrintPreviewDialog.setPrinter(printer)
+        __thePrintPreviewDialog.update()
+    return __thePrintPreviewDialog
 
-            
 ################################################################################
 ##################             QubPrintPreview               ###################
 ################################################################################
@@ -1098,6 +1124,13 @@ class QubPrintPreview(qt.QDialog):
         """
         (x,y) = self.canvasView.getMargin()
         self.__addItem(PrintCanvasImage(x+1, y+1, image, self.canvas))
+
+    def addGraph(self,graph) :
+        """
+        add a graph to the print preview canvas
+        """
+        (x,y) = self.canvasView.getMargin()
+        self.__addItem(PrintCanvasGraph(x+1, y+1, graph,self.canvas))
 
     def addPixmap(self, pixmap):
         """

@@ -10,12 +10,13 @@ def save(filepath, image, canvas = None, zoom=1, format="PNG"):
         im = _SvgImageSave(image,canvas,zoom)
         im.save(filepath)
     else:
-        device = qt.QPixmap(image)
-        painter = qt.QPainter(device)    
-        zoom = 1.0 / zoom
-        painter.setWorldMatrix(qt.QWMatrix(zoom,0,0,zoom,0,0))
 
         if canvas is not None :
+            device = qt.QPixmap(image)
+            painter = qt.QPainter(device)    
+            zoom = 1.0 / zoom
+            painter.setWorldMatrix(qt.QWMatrix(zoom,0,0,zoom,0,0))
+
             if isinstance(canvas,list) :
                 itemsList = canvas
             else:
@@ -28,10 +29,11 @@ def save(filepath, image, canvas = None, zoom=1, format="PNG"):
 
                     item.draw(painter)
 
-        painter.end()
+            painter.end()
 
-        img = device.convertToImage()
-
+            img = device.convertToImage()
+        else:
+            img = image
         img.save(filepath, format)
     
     
