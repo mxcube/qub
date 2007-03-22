@@ -186,6 +186,25 @@ class QubMdi(qt.QWorkspace):
         self.winToolBar= qt.QToolBar(mainwin, "wintoolbar")
         self.winToolBar.setLabel("MDI")
         
+        MainWindow = self.parent()
+        while MainWindow:
+            if hasattr(MainWindow,'addDockWindow') :
+                break
+            MainWindow = MainWindow.parent()
+        if MainWindow:
+            self.__windowDocWindow = qt.QDockWindow(self)
+            self.__windowDocWindow.setCloseMode(qt.QDockWindow.Always)
+            windowToolBox = qt.QToolBox(self.__windowDocWindow)
+            self.__windowDocWindow.setWidget(windowToolBox)
+            self.__windowDocWindow.setCaption('Opened window')
+            windowToolBox.addItem(QubMdiTree(self,windowToolBox),'Opened window')
+            MainWindow.addDockWindow(self.__windowDocWindow,qt.Qt.DockLeft)
+            self.__windowDocWindow.hide()
+
+            self.__windowControl = qt.QToolButton(self.winToolBar,"Opened Window")
+            self.__windowControl.setIconSet(qt.QIconSet(loadIcon("gears.png")))
+            qt.QObject.connect(self.__windowControl,qt.SIGNAL("clicked()"),self.__showWindowToolBox)
+
         self.fullscreen = qt.QToolButton(self.winToolBar,"Full Screen")
         self.fullscreen.setIconSet(qt.QIconSet(loadIcon("fullscreen.png")))
         qt.QObject.connect(self.fullscreen,qt.SIGNAL("clicked()"),self.windowFullScreen)
@@ -204,7 +223,7 @@ class QubMdi(qt.QWorkspace):
         self.winToolMenuAction= self.windowTile
         self.winToolButton.setPopup(self.winToolMenu)
         self.winToolButton.setPopupDelay(0)
-	
+        
     def onWinToolMenu(self, idx):
         """
         """
@@ -224,6 +243,11 @@ class QubMdi(qt.QWorkspace):
     def windowFullScreen(self) :
         window = self.activeWindow()
         if window: window.showMaximized()
+
+    def __showWindowToolBox(self) :
+        self.__windowDocWindow.show()
+        self.__windowDocWindow.dock()
+
 ################################################################################
 ####################             QubMdiChild                ####################
 ################################################################################

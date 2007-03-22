@@ -258,7 +258,7 @@ class QubDataDisplay(qt.QWidget) :
             
 class _ShmDataPlug(QubPlug) :
     def __init__(self,specShm,updateToggle,cnt) :
-        QubPlug.__init__(self)
+        QubPlug.__init__(self,100)
         self.__dataReceiver = None
         self.__specShm = specShm
         self.__cnt = weakref.ref(cnt)

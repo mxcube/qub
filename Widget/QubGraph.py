@@ -1152,7 +1152,7 @@ class QubGraph(qwt.QwtPlot):
 
 class QubGraphView(QubView) :
     def __init__(self, parent = None, name = "",actions=[]):
-        QubView.__init__(self,parent,name)
+        QubView.__init__(self,parent,name,0)
         from Qub.Print.QubPrintPreview import getPrintPreviewDialog
         from Qub.Widget.QubActionSet import QubPrintPreviewAction
         widget = QubGraph(parent=self,name=name)

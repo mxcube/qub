@@ -47,7 +47,7 @@ try :
                 pollplug = QubSpecSource2Version(self)
                 return QubSpecVersion(self,key,pollplug)
             return None
-    
+
 except :
             print "No polling possible"
 

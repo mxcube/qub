@@ -41,6 +41,13 @@ class QubPlugManager :
             aQubPlug.rmPlugMgr(self)
             if not len(self.__plugs) :
                 self.__pollplug.stop()
+            else:
+                timerInterval = 1000000
+                for plug in self.__plugs:
+                    if(timerInterval > plug.timeout()) :
+                        timerInterval = plug.timeout()
+                self.__timeout = timerInterval
+                self.__pollplug.changeInterval(self.__timeout)
                 
     def startPolling(self,timeout) :
         if(self.__pollplug.isActive()) :
@@ -76,6 +83,7 @@ class QubPlugManager :
             else:
                 try: self.__plugs.remove(plug)
                 except: pass
+
 
         nbPlug = len(self.__plugs)
         if not nbPlug or not nbActivePlug:

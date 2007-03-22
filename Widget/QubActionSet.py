@@ -661,7 +661,7 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
      def _refreshGraph(self) :
          import Numeric
          self._idle.stop()
-         if self._columnId >= 0 and self._data:
+         if self._columnId >= 0 and self._data is not None:
              nbCol,xzoom = self._lineWidth,1
              if self._zoom :
                  xzoom,_ = self._zoom.zoom()
