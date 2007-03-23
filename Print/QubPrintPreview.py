@@ -594,19 +594,21 @@ class PrintCanvasPixmap(PrintCanvasImage):
         img = img.scaleWidth(self.width())
         painter.drawImage(self.x(), self.y(), img)
 
-class PrintCanvasGraph(PrintCanvasRectangle) :
+class PrintCanvasGraph(PrintCanvasImage) :
     def __init__(self,x,y,graph,canvas) :
         PrintCanvasRectangle.__init__(self,x,y,300,200,canvas,False)
         self.__graph = graph
+        pixmap = qt.QPixmap(300,200)
+        pixmap.fill()
+        painter = qt.QPainter(pixmap)
+        self.__graph.printPlot(painter,qt.QRect(0,0,self.width(),self.height()),qwt.QwtPlotPrintFilter())
+        PrintCanvasImage.__init__(self,x,y,pixmap.convertToImage() ,canvas)
         
     def printTo(self,painter) :
         PrintCanvasRectangle.printTo(self,painter)
         self.__graph.printPlot(painter,qt.QRect(self.x(),self.y(),self.width(),self.height()),
                                qwt.QwtPlotPrintFilter())
-
-    def draw(self,painter) :
-        PrintCanvasRectangle.draw(self,painter)
-        self.printTo(painter)
+        
     
 class PrintCanvasVectorNPixmap(PrintCanvasPixmap) :
     """

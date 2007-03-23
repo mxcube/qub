@@ -368,7 +368,6 @@ class QubLineDataSelectionAction(QubToggleImageAction):
         self._line = None
         self._lineWidth = 1
         self._zoom = None
-        self._captionPrefix = None
         self._idle = qt.QTimer()
         qt.QObject.connect(self._idle,qt.SIGNAL('timeout()'),self._refreshGraph)
         mdiManager,mainWindow = QubMdiCheckIfParentIsMdi(parent)
@@ -400,8 +399,8 @@ class QubLineDataSelectionAction(QubToggleImageAction):
 
     ##brief set the caption prefix of the window graph
     def setCaptionPrefix(self,captionPrefix) :
-        self._captionPrefix = captionPrefix
-
+        self._graph.setCaption(captionPrefix)
+        
     ##@brief set the data array
     def setData(self,data) :
         self._data = data
