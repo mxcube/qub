@@ -331,6 +331,7 @@ class QubSaveImageWidget(qt.QWidget):
             self.__buttonFile = buttonFile
             self.__dialog = weakref.ref(dialog)
             self.__dataZoom = None
+            self.__snapFlag = False
             
         def setPixmap(self,pixmap,image) :
             self.__inPollFlag = False
@@ -349,9 +350,19 @@ class QubSaveImageWidget(qt.QWidget):
             if not self.__buttonFile.isEnabled() :
                 self.__buttonFile.setEnabled(True)
             self.__lastImage = image
+            if self.__snapFlag:
+                self.__snapFlag = False
+                try:
+                    dialog = self.__dialog()
+                    if dialog:
+                        dialog.snapCBK()
+                except:
+                    import traceback
+                    traceback.print_exc()
             return True # One Shot 
 
-        def refresh(self) :
+        def refresh(self,withSnap = False) :
+            self.__snapFlag = self.__snapFlag or withSnap
             if self._mgr is not None and not self.__inPollFlag :
                 self.__inPollFlag = True
                 mgr = self._mgr()
@@ -493,6 +504,9 @@ class QubSaveImageWidget(qt.QWidget):
         index = list(QubSaveImageWidget.OUTPUT_FORMATS).index('png')
         self.__imageFormat.setCurrentItem(index)
 
+    def takeSnap(self) :
+        self.__imagePlug.refresh(True)
+
     ##@brief Called when the Save button is pressed
     def snapCBK(self):
         directory = self.__fileDirectory.text().latin1()
@@ -533,6 +547,9 @@ class QubSaveImageWidget(qt.QWidget):
         self.__imagePlug.setInPoll()
         image2pixmap.plug(self.__imagePlug)
 
+    ##@brief set the save path
+    def setSavePath(self,path) :
+        self.__fileDirectory.setText(path)
     ## It use the refresh the old image with the current
     def refresh(self) :
         self.__imagePlug.refresh()
@@ -565,11 +582,8 @@ class QubSaveImageWidget(qt.QWidget):
         if d is not None and len(d)>0:
             self.__fileDirectory.setText(d)
 
-    def resetButtonClicked(self):
+    def __resetButtonClicked(self):
         self.__fileIndex.setText('1')
-
-    def __resetButtonClicked(self) :
-        pass
 
 ####################################################################
 ##########                                                ##########

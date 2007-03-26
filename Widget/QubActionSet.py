@@ -181,18 +181,22 @@ class QubButtonAction(QubAction):
 ###############################################################################
 ####################          QubPrintPreviewAction        ####################
 ###############################################################################
+
+##@brief This action send the pixmap of its associated view to a PrinPreview Widget.
+#
+#It creates a pushbutton in the toolbar/contextmenu.
+#It uses the "getPPP" method of the "view" to get the pixmap.
 class QubPrintPreviewAction(QubAction):
-    """
-    This action send the pixmap of its associated view to a PrinPreview Widget.
-    It creates a pushbutton in the toolbar/contextmenu.
-    It uses the "getPPP" method of the "view" to get the pixmap.
-    """
-    def __init__(self,**keys):
+    #@brief constructor
+    #
+    #@param withVectorMenu add a popup on the action to choose if user whant to print with or without vector
+    def __init__(self,withVectorMenu = False,**keys):
         QubAction.__init__(self,**keys)
 
         self._preview = None
-        
         self._item = None
+        self.__withVector = False
+        self.__withVectorMenu = withVectorMenu
         
     def addToolWidget(self, parent):
         """
@@ -206,8 +210,15 @@ class QubPrintPreviewAction(QubAction):
                                  self.addPixmapToPP)
             qt.QToolTip.add(self._widget, "add this window to print preview")
             
+            if self.__withVectorMenu:
+                popMenu = qt.QPopupMenu(self._widget)
+                self._widget.setPopup(popMenu)
+                self._widget.setPopupDelay(0)
+                vectorToogle = qt.QCheckBox('With vectors',popMenu)
+                qt.QObject.connect(vectorToogle,qt.SIGNAL('toggled(bool)'),self.__vectorCBK)
+                popMenu.insertItem(vectorToogle)
         return self._widget
-        
+    
     def addMenuWidget(self, menu):
         """
         Create context menu item pushbutton
@@ -218,19 +229,8 @@ class QubPrintPreviewAction(QubAction):
                                       self.addPixmapToPP)
         
     def addStatusWidget(self, parent):
-        """
-        create print preview pushbutton in the toolbar of the view
-        """
-        if self._widget is None:
-            self._widget = qt.QToolButton(parent, "addtoppbutton")
-            self._widget.setAutoRaise(True)
-            self._widget.setIconSet(qt.QIconSet(loadIcon("addpreview.png")))
-            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
-                                 self.addPixmapToPP)
-            qt.QToolTip.add(self._widget, "add this window to print preview")
-
-        return self._widget
-         
+        return self.addToolWidget(self,parent)
+    
     def addPixmapToPP(self):
         """
         if the print preview widget parameter is set, show the print preview
@@ -241,7 +241,7 @@ class QubPrintPreviewAction(QubAction):
             if view is not None:
                 if hasattr(view, "getPPP"):
                     self._preview.show()
-                    if hasattr(view,'canvas') and isinstance(view.canvas(),qtcanvas.QCanvas) :
+                    if self.__withVector and hasattr(view,'canvas') and isinstance(view.canvas(),qtcanvas.QCanvas) :
                         self._preview.addCanvasVectorNPixmap(view.canvas(),view.getPPP())
                     else:
                         self._preview.addPixmap(view.getPPP())
@@ -260,6 +260,8 @@ class QubPrintPreviewAction(QubAction):
     def previewConnect(self, preview):
         self._preview = preview
 
+    def __vectorCBK(self,onOff) :
+        self.__withVector = onOff
   
 ###############################################################################
 ###############################################################################
@@ -952,7 +954,8 @@ class QubZoomListAction(QubAction):
         self.__lastIdSelected = 0
         
         self._actionZoomMode = None
-        
+
+        self._name = 'zoomlist'
     def viewConnect(self, qubImage):
         """
         connect actio0n with the QubImage object on which it will be applied
@@ -1982,7 +1985,92 @@ class QubBrightnessContrastAction(QubAction):
 
     def setCamera(self, camera):
         self.__dialog.setCamera(camera)
-                
+
+###############################################################################
+#                         QubSaveImageAction                                  #
+###############################################################################
+class QubSaveImageAction(QubAction) :
+    def __init__(self,**keys) :
+        QubAction.__init__(self,**keys)
+        self.__dialog = None
+        self.__connectCBK = None
+        self.__configureOnClick = False
+        
+    def addToolWidget(self,parent) :
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent,"saveButton")
+            self._widget.setAutoRaise(True)
+            self._widget.setIconSet(qt.QIconSet(loadIcon('save.png')))
+            if self.__configureOnClick :
+                qt.QObject.connect(self._widget,qt.SIGNAL("clicked()"),self.__showSaveDialog)
+                qt.QToolTip.add(self._widget, "show snapshoot dialog")
+            else:
+                qt.QObject.connect(self._widget, qt.SIGNAL("clicked()"),self.__saveImage)
+                qt.QToolTip.add(self._widget, "save a snapshoot")
+                popupMenu = qt.QPopupMenu(self._widget)
+                self._widget.setPopup(popupMenu)
+                self._widget.setPopupDelay(0)
+                configButton = qt.QPushButton('configure...',popupMenu)
+                qt.QObject.connect(configButton,qt.SIGNAL('clicked()'),self.__showSaveDialog)
+                popupMenu.insertItem(configButton)
+        return self._widget
+
+    def addMenuWidget(self,menu) :
+        if self.__configureOnClick:
+            self._menu = menu
+            self._item = menu.insertItem(qt.QIconSet(loadIcon('save.png')), qt.QString('configure...'),
+                                         self.__showSaveDialog)
+        else:
+            popupMenu = qt.QPopupMenu(menu)
+
+            popupMenu.insertItem(qt.QIconSet(loadIcon('save.png')),'Save',
+                                 self.__saveImage)
+
+            configButton = qt.QPushButton('configure...',popupMenu)
+            qt.QObject.connect(configButton,qt.SIGNAL('clicked()'),self.__showSaveDialog)
+            popupMenu.insertItem(configButton)
+
+            self._item = menu.insertItem(qt.QIconSet(loadIcon('snapshot.png')),'Snap',popupMenu)
+            self._menu = menu
+        
+    def viewConnect(self,view) :
+        if self.__connectCBK is not None:
+            try:
+                self.__connectCBK(self,view)
+            except:
+                import traceback
+                traceback.print_exc()
+            if hasattr(self.__dialog,"refresh") :
+                self.__dialog.refresh()
+    def setDialog(self,dialog) :
+        """ Interface to manage the dialogue window.
+        this interface must have the methode :
+             -> show()
+             -> raiseW()
+             -> takeSnap()
+        """
+        self.__dialog = dialog
+
+    ##@brief set if the button show the configure dialog on click instead of snapping an image
+    #
+    #@param aFlag :
+    # - if <b>True</b> show the configure dialog on click
+    # - if <b>False</b> snap on click and add a popup menu to show the configure dialog
+    def setConfigureOnClick(self,aFlag) :
+        self.__configureOnClick = aFlag
+        
+    def setConnectCallBack(self,cbk) :
+        self.__connectCBK = createWeakrefMethod(cbk)
+
+    def __showSaveDialog(self) :
+        if self.__dialog:
+            self.__dialog.show()
+            self.__dialog.raiseW()
+
+    def __saveImage(self) :
+        if self.__dialog:
+            self.__dialog.takeSnap()
+        
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################

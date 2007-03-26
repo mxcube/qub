@@ -309,15 +309,17 @@ class QubCanvasScale(qtcanvas.QCanvasRectangle) :
             self.__autorizeValues = list(canvas._QubCanvasScale__autorizeValues)
 
             self.__canvas = canvas._QubCanvasScale__canvas
+            self.__pen = qt.QPen(canvas._QubCanvasScale__pen)
         else:
-            color = qt.QColor('green')
+            color = qt.Qt.green
+            self.__pen = qt.QPen(color,4)
             self.__hLine = qtcanvas.QCanvasLine(canvas)
-            self.__hLine.setPen(qt.QPen(color,4))
+            self.__hLine.setPen(self.__pen)
             self.__hText = QubCanvasText(canvas)
             self.__hText.setColor(color)
 
             self.__vLine = qtcanvas.QCanvasLine(canvas)
-            self.__vLine.setPen(qt.QPen(color,4))
+            self.__vLine.setPen(self.__pen)
             self.__vText = QubCanvasText(canvas)
             self.__vText.setColor(color)
 
@@ -481,12 +483,15 @@ class QubCanvasScale(qtcanvas.QCanvasRectangle) :
     def isVisible(self) :
         return self.__globalShow
 
-    def setColor(self,color) :
-        self.__hLine.setPen(qt.QPen(color,4))
-        self.__hText.setColor(color)
+    def pen(self) :
+        return self.__pen
 
-        self.__vLine.setPen(qt.QPen(color,4))
-        self.__vText.setColor(color)
+    def setPen(self,pen) :
+        self.__hLine.setPen(pen)
+        self.__hText.setColor(pen.color())
+
+        self.__vLine.setPen(pen)
+        self.__vText.setColor(pen.color())
 
     def __getUnitNAuthValue(self,size) :
         for unit in self.__unit :

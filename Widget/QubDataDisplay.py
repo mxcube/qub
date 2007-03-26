@@ -126,7 +126,7 @@ class QubDataDisplay(qt.QWidget) :
         actions.append(colorMapAction)
 
                      ####### PRINT ACTION #######
-        printAction = QubPrintPreviewAction(name="print",group="admin")
+        printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
         printAction.previewConnect(getPrintPreviewDialog())
         actions.append(printAction)
                               ####### SAVE IMAGE #######

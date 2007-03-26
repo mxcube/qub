@@ -49,7 +49,9 @@ class QubView(qt.QWidget):
         self.__view      = None
         self.__statusbar = None
         self.__actionList = {}
- 
+        self.__defaultContextMenu = None
+        self.__actionPending4ContextMenu = []
+        
     ##################################################
     ## PRIVATE METHODS   
     ################################################## 
@@ -149,7 +151,7 @@ class QubView(qt.QWidget):
             """
             if action.place() == "toolbar":
                 if self.toolbar() is None:
-                    widget = QubViewToolbar(self)
+                    widget = QubViewToolbar(self,self.__defaultContextMenu)
                     self.setToolbar(widget)
                 self.__toolbar.addAction(action)                
                 
@@ -159,6 +161,12 @@ class QubView(qt.QWidget):
                     self.setStatusbar(widget)
                 self.__statusbar.addAction(action)
 
+            if action.place() == 'contextmenu' :
+                if not self.__actionPending4ContextMenu :
+                    event = qt.QCustomEvent(qt.QEvent.User)
+                    event.event_name = "_appendActionInContextMenu"
+                    qt.qApp.postEvent(self,event)
+                self.__actionPending4ContextMenu.append(action)
             """
             connect new action to QubView view
             """
@@ -186,6 +194,15 @@ class QubView(qt.QWidget):
             
         return None
         
+    def customEvent(self,event) :
+        if event.event_name == "_appendActionInContextMenu" :
+            for action in self.__actionPending4ContextMenu:
+                if self.__toolbar is None :
+                    self.__defaultContextMenu = qt.QPopupMenu(self)
+                else:
+                    self.__defaultContextMenu = self.__toolbar.contextMenu()
+                action.addMenuWidget(self.__defaultContextMenu)
+            self.__actionPending4ContextMenu = []
 
 ################################################################################
 ####################              QubViewToolbar            ####################
@@ -199,7 +216,7 @@ class QubViewToolbar(qt.QDockArea):
     It manages switch of container (group) of action widgets between toolbar
     and context menu
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None,contextMenu = None):
         """
         constructor method
             Creates dockArea
@@ -210,8 +227,9 @@ class QubViewToolbar(qt.QDockArea):
         self.__groupList  = {}
         self.__groupIndex = {}
         
-        if parent is not None: 
-            self.__contextMenu = qt.QPopupMenu(parent)
+        if parent is not None:
+            if contextMenu is None : self.__contextMenu = qt.QPopupMenu(parent)
+            else: self.__contextMenu = contextMenu
             self.__contextMenu.setCheckable(1)
         
             self.connectContextMenu(parent.view())
@@ -362,6 +380,9 @@ class QubViewToolbar(qt.QDockArea):
             if hasattr(widget, "setContextMenu"):
                 widget.setContextMenu(self.__contextMenu)
 
+    def contextMenu(self) :
+        return self.__contextMenu
+    
     def addAction(self, action):
         """
         Get the "group" the action belongs to.
