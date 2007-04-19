@@ -5,7 +5,7 @@ import qt
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
 from Qub.CTools import datafuncs
-from Qub.CTools.pixmaptools import LUT
+from Qub.CTools import pixmaptools
 
 ##@brief This class manage the transform RawData to QImage
 #
@@ -169,9 +169,9 @@ class QubRawData2ImagePlug:
     ##@brief the Colormap class
     class Colormap:
         def __init__(self,cnt) :
-            self.__lutType = LUT.LINEAR
-            self.__palette = LUT.Palette(LUT.Palette.GREYSCALE)
-            self.__colorMapType = LUT.Palette.GREYSCALE
+            self.__lutType = pixmaptools.LUT.LINEAR
+            self.__palette = pixmaptools.LUT.Palette(pixmaptools.LUT.Palette.GREYSCALE)
+            self.__colorMapType = pixmaptools.LUT.Palette.GREYSCALE
             self.__autoscale = True
             self.__min = 0
             self.__max = 255
@@ -368,12 +368,12 @@ class _DataZoomProcess(QubThreadProcess) :
                     colormap = plug.colormap()
                     try:
                         if colormap.autoscale() :
-                            image ,(minVal,maxVal) = LUT.map_on_min_max_val(dataArray,colormap.palette(),
+                            image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(dataArray,colormap.palette(),
                                                                             colormap.lutType())
                         else:
-                            image,(minVal,maxVal) = LUT.map(dataArray,colormap.palette(),
+                            image,(minVal,maxVal) = pixmaptools.LUT.map(dataArray,colormap.palette(),
                                                             colormap.lutType(),*colormap.minMax())
-                    except LUT.LutError,err :
+                    except pixmaptools.LutError,err :
                         print err.msg()
                         return
                     if zoom.needZoom() :
@@ -393,7 +393,7 @@ class _DataZoomProcess(QubThreadProcess) :
                 if fullImage is None and plugs :
                     plug = plugs[0]
                     colormap = plug.colormap()
-                    fullImage,(minVal,maxVal) = LUT.map_on_min_max_val(s.data ,colormap.palette(),
+                    fullImage,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(s.data ,colormap.palette(),
                                                                        colormap.lutType())
                 aLock.lock()
                 struct.end = True
