@@ -240,6 +240,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
     int column,row; \
     column = src->dimensions[1]; \
     row = src->dimensions[0]; \
+    PyObject *aRImage;\
     switch(src->descr->type_num) \
     { \
 	case NPY_BYTE: \
@@ -310,8 +311,8 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 	      return NULL; \
           } \
      }\
- Py_DECREF(src);
-
+ Py_DECREF(src);\
+ Py_DECREF(aRImage);
 %End
 
  static SIP_PYTUPLE map_on_min_max_val(SIP_PYOBJECT,Palette&,mapping_meth);
@@ -322,7 +323,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 #define MAP_IMAGE(TYPE)\
  TYPE aMin,aMax;\
  QImage aMappedImage = LUT::map_on_min_max_val((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
- PyObject *aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
+ aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
 MAP_FUNCTION
 %End
 
@@ -335,7 +336,7 @@ MAP_FUNCTION
  TYPE aMin = (TYPE)a3;\
  TYPE aMax = (TYPE)a4;\
  QImage aMappedImage = LUT::map((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
- PyObject *aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
+ aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
 MAP_FUNCTION
 %End
 };
