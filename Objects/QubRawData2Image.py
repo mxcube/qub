@@ -373,7 +373,7 @@ class _DataZoomProcess(QubThreadProcess) :
                         else:
                             image,(minVal,maxVal) = LUT.map(dataArray,colormap.palette(),
                                                             colormap.lutType(),*colormap.minMax())
-                    except LutError,err :
+                    except LUT.LutError,err :
                         print err.msg()
                         return
                     if zoom.needZoom() :
