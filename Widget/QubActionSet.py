@@ -8,7 +8,6 @@ import Numeric
 
 import Qwt5 as qwt
 
-import spslut
 
 from Qub.Tools.QubWeakref import createWeakrefMethod
 
@@ -46,6 +45,7 @@ from Qub.Widget.QubDialog import QubBrightnessContrastDialog
 from Qub.Print.QubPrintPreview import getPrintPreviewDialog
 
 from Qub.CTools import datafuncs
+from Qub.CTools import pixmaptools
 
 ###############################################################################
 ###############################################################################
@@ -1662,16 +1662,9 @@ class QubSubDataViewAction(QubToggleImageAction) :
             else:
                 valueFormatString = '%s<td>%s%d%s</td>'
             self.__dataCrop = Numeric.take(Numeric.take(self.__data,range(ymin,ymax)),range(xmin,xmax),axis=1)
-            (image_str, size, minmax) = spslut.transform(self.__dataCrop ,
-                                                         (1,0), 
-                                                         (self.__colormap.lutType(), 1.0),
-                                                         "BGRX", 
-                                                         self.__colormap.colorMapType(),
-                                                         1, 
-                                                         (0,0))
-            if not image_str: return
-            image = qt.QImage(image_str,size[0],size[1],32,None,0,
-                              qt.QImage.IgnoreEndian)
+            image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(self.__dataCrop,self.__colormap.palette(),
+                                                                        self.__colormap.lutType())
+            if not image.width() or not image.height(): return
             self._widget.setPixmap(qt.QPixmap(image.scale(20,20)))
             tooltipstring = '<table><tr><th><b>rows/col</b></th>'
             xOn,yOn = self.__xOn / 2,self.__yOn / 2
