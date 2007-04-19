@@ -366,13 +366,16 @@ class _DataZoomProcess(QubThreadProcess) :
                                 height,width = s.data.shape
                                 dataArray = datafuncs.down_size(s.data,0,0,width,height,xzoom,yzoom)
                     colormap = plug.colormap()
-                    if colormap.autoscale() :
-                        image ,(minVal,maxVal) = LUT.map_on_min_max_val(dataArray,colormap.palette(),
-                                                                        colormap.lutType())
-                    else:
-                        image,(minVal,maxVal) = LUT.map(dataArray,colormap.palette(),
-                                                        colormap.lutType(),*colormap.minMax())
-
+                    try:
+                        if colormap.autoscale() :
+                            image ,(minVal,maxVal) = LUT.map_on_min_max_val(dataArray,colormap.palette(),
+                                                                            colormap.lutType())
+                        else:
+                            image,(minVal,maxVal) = LUT.map(dataArray,colormap.palette(),
+                                                            colormap.lutType(),*colormap.minMax())
+                    except LutError,err :
+                        print err.msg()
+                        return
                     if zoom.needZoom() :
                         xzoom,yzoom = zoom.zoom()
                         if xzoom > 1. or yzoom > 1. :
