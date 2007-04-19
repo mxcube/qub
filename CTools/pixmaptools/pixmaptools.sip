@@ -309,7 +309,8 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
               Py_DECREF(src); \
 	      return NULL; \
           } \
-     }
+     }\
+ Py_DECREF(src);
 
 %End
 
