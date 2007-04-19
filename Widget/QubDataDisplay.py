@@ -132,7 +132,7 @@ class QubDataDisplay(qt.QWidget) :
                                            show = 1,group = "image")
         actions.append(zoomActionList)
                      ####### ZOOM Action #######
-        zoomFitOrFill = QubZoomAction(place = "toolbar",keepROI = True,group = "image")
+        zoomFitOrFill = QubZoomAction(place = "toolbar",group = "image")
         actions.append(zoomFitOrFill)
                    ####### LINK ZOOM ACTION #######
         zoomFitOrFill.setList(zoomActionList)
