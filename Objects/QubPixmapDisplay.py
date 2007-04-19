@@ -20,6 +20,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
                                       qt.Qt.WNoAutoErase|qt.Qt.WStaticContents) 
                                            
         QubEventMgr.__init__(self)
+        self.setFocusPolicy(qt.QWidget.WheelFocus)
         self._setScrollView(self)
         self.__name = name
         self.__plug = None
@@ -60,7 +61,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
         self.connect(self.__idle,qt.SIGNAL('timeout()'),self.__emitViewPortUpdate)
 
         self.__foregroundColor = qtcanvas.QCanvasView.foregroundColor(self)
-        
+
     ##@name Mouse Events
     #@{
 
@@ -79,11 +80,15 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
     #tells the actions
     #if right button is set, this press is for context menu only
     def contentsMousePressEvent(self, event):
+        if not self.hasFocus() :
+            self.setFocus()
+      
         if event.button() != qt.Qt.RightButton:   
             self.emit(qt.PYSIGNAL("MousePressed"), (event,))
             self.canvas().update()        
 
         self._mousePressed(event)
+             
     ##@brief Mouse has been release
     #
     #tells the actions
@@ -120,8 +125,6 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
     ##@brief manged enter event
     #
     #on enter, take the focus for wheel an key event
-    def enterEvent(self,event) :
-        self.setFocus()
     ##@brief leave event dispatch
     def leaveEvent(self,event) :
         self._leaveEvent(event)

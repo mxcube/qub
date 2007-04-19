@@ -120,7 +120,11 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
             #send event
             event = qt.QCustomEvent(qt.QEvent.User)
             event.event_name = "_postSetImage"
-            qt.qApp.postEvent(self,event)
+            try:
+                qt.qApp.lock()
+                qt.qApp.postEvent(self,event)
+            finally:
+                qt.qApp.unlock()
             
     def customEvent(self,event) :
         if event.event_name == "_postSetImage" :

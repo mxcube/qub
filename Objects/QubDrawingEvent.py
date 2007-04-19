@@ -16,6 +16,11 @@ class QubDrawingEvent :
         # if False self.__exceptList is not considered
         self.__exclusive = exclusive
         
+    def rawKeyPressed(self,keyevent) :
+        pass
+    def rawKeyReleased(self,keyevent) :
+        pass
+    
     def mousePressed(self,x,y) :
         pass
     def mouseReleased(self,x,y) :
@@ -63,7 +68,17 @@ class _DrawingEventNDrawingMgr(QubDrawingEvent):
     def getActionInfo(self) :
         d = self._drawingMgr()
         return d and d.getActionInfo() or None
-    
+
+    def rawKeyPressed(self,keyevent) :
+        drawingMgr = self._drawingMgr()
+        if drawingMgr:
+            drawingMgr.rawKeyPressed(keyevent)
+            
+    def rawKeyReleased(self,keyevent) :
+        drawingMgr = self._drawingMgr()
+        if drawingMgr:
+            drawingMgr.rawKeyReleased(keyevent)
+
 ##@brief A point event behaviour manager.
 #@ingroup DrawingEvent
 #

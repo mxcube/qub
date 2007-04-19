@@ -1,11 +1,11 @@
 import itertools
 import weakref
 import qt
-import spslut
 
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
 from Qub.CTools import datafuncs
+from Qub.CTools.pixmaptools import LUT
 
 ##@brief This class manage the transform RawData to QImage
 #
@@ -37,17 +37,20 @@ class QubRawData2Image(qt.QObject) :
     ##@brief add a raw data in the pending queue
     #
     #For all data zoom and colormap is done in a thread
-    def putRawData(self,data,aLockFlag = True) :
-        aLock = QubLock(self.__mutex,aLockFlag)
+    def putRawData(self,data) :
+        aLock = QubLock(self.__mutex)
         self.__PrevData = data
         if self.__plugs :
+            aLock.unLock()
             self.__dataZoomProcess.putRawData(data)
 
        
     ##@brief need a refresh for some reason
     def refresh(self) :
         aLock = QubLock(self.__mutex)
-        self.putRawData(self.__PrevData,False)
+        data = self.__PrevData
+        aLock.unLock()
+        self.__dataZoomProcess.putRawData(data)
 
     def extendSendList(self,fullimageNPlugs) :
         aLock = QubLock(self.__mutex)
@@ -55,7 +58,12 @@ class QubRawData2Image(qt.QObject) :
         aLock.unLock()
         event = qt.QCustomEvent(qt.QEvent.User)
         event.event_name = "_postSetImage"
-        qt.qApp.postEvent(self,event)
+        try:
+            qt.qApp.lock()
+            qt.qApp.postEvent(self,event)
+        finally:
+            qt.qApp.unlock()
+
         
     ##@brief it use for the communication between the main thread and other
     #@todo the methode is needed by QT3 because it's not MT-Safe,
@@ -161,8 +169,9 @@ class QubRawData2ImagePlug:
     ##@brief the Colormap class
     class Colormap:
         def __init__(self,cnt) :
-            self.__lutType = spslut.LINEAR
-            self.__colorMapType = spslut.GREYSCALE
+            self.__lutType = LUT.LINEAR
+            self.__palette = LUT.Palette(LUT.Palette.GREYSCALE)
+            self.__colorMapType = LUT.Palette.GREYSCALE
             self.__autoscale = True
             self.__min = 0
             self.__max = 255
@@ -206,7 +215,7 @@ class QubRawData2ImagePlug:
         def setColorMapType(self,aColormapType) :
             aLock = QubLock(self.__mutex)
             self.__colorMapType = aColormapType
-
+            self.__palette.fillPalette(aColormapType)
 
         ##@return lut type
         #@see setLutType
@@ -223,6 +232,10 @@ class QubRawData2ImagePlug:
             aLock = QubLock(self.__mutex)
             self.__lutType = lutType
 
+        ##@brief get the palette object
+        #
+        def palette(self) :
+            return self.__palette
             
     ##@brief constuctor
     def __init__(self) :
@@ -312,8 +325,10 @@ class _DataZoomProcess(QubThreadProcess) :
 
     def putRawData(self,aData) :
         aLock = QubLock(self.__mutex)
-        while len(self.__dataProcessPending) > 16 : # SIZE QUEUE LIMIT
-            self.__cond.wait(self.__mutex)
+        if len(self.__dataProcessPending) > 32 : # SIZE QUEUE LIMIT
+            return # TODO MAY BE A LOG MESSAGE
+        elif len(self.__dataProcessPending) > 16 :
+            self.__cond.wait(self.__mutex,1000)
         self.__dataProcessPending.append(aData)
         if not self.__actif :
             self.__actif = True
@@ -351,17 +366,12 @@ class _DataZoomProcess(QubThreadProcess) :
                                 height,width = s.data.shape
                                 dataArray = datafuncs.down_size(s.data,0,0,width,height,xzoom,yzoom)
                     colormap = plug.colormap()
-                    (image_str, size, minmax) = spslut.transform(dataArray ,
-                                                                 (1,0), 
-                                                                 (colormap.lutType(), 1.0),
-                                                                 "BGRX", 
-                                                                 colormap.colorMapType(),
-                                                                 colormap.autoscale(), 
-                                                                 colormap.minMax())
-                    image = qt.QImage(image_str,size[0],size[1],32,None,0,
-                                      qt.QImage.IgnoreEndian)
-                    image.data_str = image_str
-
+                    if colormap.autoscale() :
+                        image ,(minVal,maxVal) = LUT.map_on_min_max_val(dataArray,colormap.palette(),
+                                                                        colormap.lutType())
+                    else:
+                        image,(minVal,maxVal) = LUT.map(dataArray,colormap.palette(),
+                                                        colormap.lutType(),*colormap.minMax())
 
                     if zoom.needZoom() :
                         xzoom,yzoom = zoom.zoom()
@@ -380,16 +390,8 @@ class _DataZoomProcess(QubThreadProcess) :
                 if fullImage is None and plugs :
                     plug = plugs[0]
                     colormap = plug.colormap()
-                    (image_str, size, minmax) = spslut.transform(s.data ,
-                                                                 (1,0), 
-                                                                 (colormap.lutType(), 1.0),
-                                                                 "BGRX", 
-                                                                 colormap.colorMapType(),
-                                                                 1, 
-                                                                 colormap.minMax())
-                    fullImage = qt.QImage(image_str,size[0],size[1],32,None,0,
-                                          qt.QImage.IgnoreEndian)
-                    fullImage.data_str = image_str
+                    fullImage,(minVal,maxVal) = LUT.map_on_min_max_val(s.data ,colormap.palette(),
+                                                                       colormap.lutType())
                 aLock.lock()
                 struct.end = True
                 tmplist = []

@@ -54,7 +54,9 @@ class QubDrawingMgr :
         self.__exceptList = []          # event Name with is not exclusive
         self.__eventName = ''
         self.__cantBeModify = True
-        self._endDrawCbk=None
+        self._endDrawCbk = None
+        self._keyPressedCbk = None
+        self._keyReleasedCbk = None
         self._actionInfo = ''
         
     def __del__(self) :
@@ -232,10 +234,25 @@ class QubDrawingMgr :
     ##@brief set the end callback drawing procedure
     #
     #@param cbk is the addresse of a function or a methode with this signature
-    #<b>bool cbk(self,Qub::Objects::QubDrawingMgr::QubDrawingMgr)</b>
+    #<b>cbk(self,Qub::Objects::QubDrawingMgr::QubDrawingMgr)</b>
     def setEndDrawCallBack(self,cbk) :
         self._endDrawCbk = QubWeakref.createWeakrefMethod(cbk)
 
+    ##@brief set the keyPressed callback
+    #
+    #@param cbk is the addresse of a function or a methode with this signature
+    #<b>cbk(self,keyEvent)</b>
+    def setKeyPressedCallBack(self,cbk) :
+        self._keyPressedCbk = QubWeakref.createWeakrefMethod(cbk)
+
+    ##@brief set the keyPressed callback
+    #
+    #@param cbk is the addresse of a function or a methode with this signature
+    #<b>cbk(self,keyEvent)</b>
+    def setKeyReleasedCallBack(self,cbk) :
+        self._keyReleasedCbk = QubWeakref.createWeakrefMethod(cbk)
+
+    
     ##@brief change the drawing procedure beavior
     ##@see Qub::Objects::QubDrawingEvent::QubDrawingEvent
     def setDrawingEvent(self,event) :
@@ -268,7 +285,15 @@ class QubDrawingMgr :
     def endDraw(self) :
         if self._endDrawCbk is not None :
             self._endDrawCbk(self)
-
+    ##@brief key pressed callback
+    def rawKeyPressed(self,keyevent) :
+        if self._keyPressedCbk:
+            self._keyPressedCbk(keyevent)
+    ##@brief key pressed callback
+    def rawKeyReleased(self,keyevent) :
+        if self._keyReleasedCbk:
+            self._keyReleasedCbk(keyevent)
+    
     ##@name Has to or may be redefine in subclass
     #@{
     #

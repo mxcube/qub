@@ -84,8 +84,11 @@ class QubImage2Pixmap(qt.QObject) :
                 event.event_name = "_startTimer"
                 cnt = self.__cnt()
                 if cnt :
-                    qt.qApp.postEvent(cnt,event)
-
+                    try:
+                        qt.qApp.lock()
+                        qt.qApp.postEvent(cnt,event)
+                    finally:
+                        qt.qApp.unlock()
         ##@brief need a refresh for somme reason
         def refresh(self) :
             aLock = QubLock(self.__mutex)

@@ -1,7 +1,6 @@
-import qwt
 import qt
 import qtcanvas
-
+import Qwt5 as qwt
 from Qub.Print.QubPrintEditors import QubTitleEditor
 
 __revision__="$Revision$"
@@ -596,17 +595,16 @@ class PrintCanvasPixmap(PrintCanvasImage):
 
 class PrintCanvasGraph(PrintCanvasImage) :
     def __init__(self,x,y,graph,canvas) :
-        PrintCanvasRectangle.__init__(self,x,y,300,200,canvas,False)
-        self.__graph = graph
         pixmap = qt.QPixmap(300,200)
         pixmap.fill()
         painter = qt.QPainter(pixmap)
-        self.__graph.printPlot(painter,qt.QRect(0,0,self.width(),self.height()),qwt.QwtPlotPrintFilter())
+        graph.print_(painter,qt.QRect(0,0,pixmap.width(),pixmap.height()),qwt.QwtPlotPrintFilter())
         PrintCanvasImage.__init__(self,x,y,pixmap.convertToImage() ,canvas)
-        
+        painter.end()
+        self.__graph = graph
+                
     def printTo(self,painter) :
-        PrintCanvasRectangle.printTo(self,painter)
-        self.__graph.printPlot(painter,qt.QRect(self.x(),self.y(),self.width(),self.height()),
+        self.__graph.print_(painter,qt.QRect(self.x(),self.y(),self.width(),self.height()),
                                qwt.QwtPlotPrintFilter())
         
     
@@ -784,7 +782,7 @@ class PrintCanvasView(qtcanvas.QCanvasView):
         Remove all printable items in canvas
         """
         itemToRemove = self.getPrintItems()
-        
+
         for item in itemToRemove:
             item.remove()
             self.__active_item = None

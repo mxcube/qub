@@ -225,6 +225,12 @@ class QubEventMgr:
     def _keyPressed(self,keyevent,evtMgr = None) :
         if keyevent.key() == qt.Qt.Key_Shift :
             self.__checkObjectModify(self.__mouseX,self.__mouseY,evtMgr)
+
+        for drawingEventRef in self.__pendingEvents[:] :
+            d = drawingEventRef()
+            if d and d.rawKeyPressed(keyevent) :
+                self._rmDrawingEventRef(drawingEventRef)
+                
         if evtMgr is None:          # event propagate
             for link in self.__eventLinkMgrs :
                 link.keyPressed(keyevent,self)
@@ -240,6 +246,12 @@ class QubEventMgr:
                 else:
                     self.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
                 self.__curentModifierMgr = None
+
+        for drawingEventRef in self.__pendingEvents[:] :
+            d = drawingEventRef()
+            if d and d.rawKeyReleased(keyevent) :
+                self._rmDrawingEventRef(drawingEventRef)
+
         if evtMgr is None:          # event propagate
             for link in self.__eventLinkMgrs :
                 link.keyReleased(keyevent,self)

@@ -31,6 +31,7 @@ from Qub.Widget.QubAction import QubToggleAction
 from Qub.Widget.QubColormap import QubColormapDialog
 
 from Qub.Widget.QubDialog import QubSaveImageWidget,QubSaveImageDialog
+from Qub.Widget.QubDialog import QubDataStatWidget,QubDataStatDialog
 
 from Qub.Print.QubPrintPreview import getPrintPreviewDialog
 
@@ -107,6 +108,24 @@ class QubDataDisplay(qt.QWidget) :
                 print "Number of Record",self.__file.GetNumImages()
                 dataArray = self.__file.GetData(0)
 
+                     ####### PRINT ACTION #######
+        printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
+        printAction.previewConnect(getPrintPreviewDialog())
+        actions.append(printAction)
+                      ####### SAVE IMAGE #######
+        self.__saveDialog = None
+        saveAction = QubOpenDialogAction(parent=mainWidget,label='Save image',name="save", iconName='save',group="admin")
+        saveAction.setConnectCallBack(self._save_dialog_new)
+        actions.append(saveAction)
+                     ####### STAT ACTION #######
+        mdiParent,mainWindow = QubMdiCheckIfParentIsMdi(self)
+        if mdiParent :
+            self.__dataStat = QubDataStatWidget(parent = mdiParent)
+            mdiParent.addNewChildOfMainWindow(mainWindow,self.__dataStat)
+        else: self.__dataStat = QubDataStatDialog(parent = mainWidget)
+        dataStatAction = QubOpenDialogAction(parent=mainWidget,name='Data statistic',iconName='histogram',group='admin')
+        dataStatAction.setDialog(self.__dataStat)
+        actions.append(dataStatAction)
                        ####### ZOOM LIST #######
         zoomActionList = QubZoomListAction(place = "toolbar",
                                            initZoom = 1,zoomValList = [0.1,0.25,0.5,0.75,1,1.5,2],
@@ -118,22 +137,12 @@ class QubDataDisplay(qt.QWidget) :
                    ####### LINK ZOOM ACTION #######
         zoomFitOrFill.setList(zoomActionList)
         zoomActionList.setActionZoomMode(zoomFitOrFill)
-
+                   ####### COLORMAP ACTION #######
         self.__colormapDialog = None
         colorMapAction = QubOpenDialogAction(parent=self,name='colormap',iconName='colormap',
                                              label='ColorMap',group="color")
         colorMapAction.setConnectCallBack(self.__colorMap_dialog_new)
         actions.append(colorMapAction)
-
-                     ####### PRINT ACTION #######
-        printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
-        printAction.previewConnect(getPrintPreviewDialog())
-        actions.append(printAction)
-                              ####### SAVE IMAGE #######
-        self.__saveDialog = None
-        saveAction = QubOpenDialogAction(parent=mainWidget,label='Save image',name="save", iconName='save',group="admin")
-        saveAction.setConnectCallBack(self._save_dialog_new)
-        actions.append(saveAction)
                ####### CHANGE FOREGROUND COLOR #######
         fcoloraction = QubForegroundColorAction(name="color", group="selection")
         actions.append(fcoloraction)
@@ -157,13 +166,17 @@ class QubDataDisplay(qt.QWidget) :
         self.__ImageNViewPlug.setDataPositionValue(self.__dataPositionValueAction)
         actions.append(self.__dataPositionValueAction)
 
-
-        self.__mainView.addAction(actions)
+        try:
+            self.__mainView.addAction(actions)
+        except:
+            import traceback
+            traceback.print_exc()
         self.__setCaption(captionName)
         if dataArray :
             self.__rawData2Image.putRawData(dataArray)
             self.setData(dataArray)
 
+        
     def __del__(self) :
         if self.__dataPlug:
             self.__specShm.unplug(self.__dataPlug)
@@ -174,6 +187,7 @@ class QubDataDisplay(qt.QWidget) :
         self.__hLineSelection.setData(data)
         self.__vLineSelection.setData(data)
         self.__lineSelection.setData(data)
+        self.__dataStat.setData(data)
         
     ##@brief Caption Window
     def __setCaption(self,name) :
@@ -183,6 +197,7 @@ class QubDataDisplay(qt.QWidget) :
         self.__lineSelection.setCaptionPrefix(name)
         self.__colormapDialog.setCaptionPrefix(name)
         self.__saveDialog.setCaptionPrefix(name)
+        self.__dataStat.setCaption(name)
         
     def resizeEvent(self,event):
         try:
@@ -205,15 +220,6 @@ class QubDataDisplay(qt.QWidget) :
         else:
             self.close(1)
         ev.accept()
-
-##        import gc
-##        for variable in [self.__rawData2Image] :
-##            print variable
-##            for obj in gc.get_referrers(variable) :
-##                print obj
-##                print '---------------'
-##            import sys
-##            print sys.getrefcount(variable)
 
     def __refresh(self) :
         self.__idle.stop()

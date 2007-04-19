@@ -4,6 +4,12 @@ import qtcanvas
 import sys
 import math
 
+import Numeric
+
+import Qwt5 as qwt
+
+import spslut
+
 from Qub.Tools.QubWeakref import createWeakrefMethod
 
 from Qub.Widget.QubAction import QubAction, QubImageAction, QubToggleImageAction
@@ -24,16 +30,22 @@ from Qub.Objects.QubDrawingCanvasTools import QubCanvasScale
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasHomotheticRectangle
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasHLine
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasVLine
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasRuler
 
-
+from Qub.Objects.QubDrawingEvent import QubDrawingEvent
 from Qub.Objects.QubDrawingEvent import QubFollowMouseOnClick
 from Qub.Objects.QubDrawingEvent import QubMoveNPressed1Point
 
-from Qub.Widget.QubGraph import QubGraphView,QubGraphCurve
+from Qub.Widget.Graph.QubGraph import QubGraphView
+from Qub.Widget.Graph.QubGraphCurve import QubGraphCurve
 
 from Qub.Widget.QubMdi import QubMdiCheckIfParentIsMdi
 
+from Qub.Widget.QubDialog import QubBrightnessContrastDialog
+
 from Qub.Print.QubPrintPreview import getPrintPreviewDialog
+
+from Qub.CTools import datafuncs
 
 ###############################################################################
 ###############################################################################
@@ -362,14 +374,15 @@ class QubZoomRectangle(QubToggleImageAction) :
 ####################            QubLineSelection           ####################
 ###############################################################################
 class QubLineDataSelectionAction(QubToggleImageAction):
-    def __init__(self,parent = None,name='line',graphLegend='Line Selection',autoConnect=True,**keys):
+    def __init__(self,parent = None,name='line',graphLegend='Line',autoConnect=True,**keys):
         QubToggleImageAction.__init__(self,parent=parent,name=name,autoConnect=autoConnect,**keys)
-        import Numeric
         self._points = None
         self._data = None
         self._line = None
         self._lineWidth = 1
+        self._average = True
         self._zoom = None
+        self._graphLegend = graphLegend
         self._idle = qt.QTimer()
         qt.QObject.connect(self._idle,qt.SIGNAL('timeout()'),self._refreshGraph)
         mdiManager,mainWindow = QubMdiCheckIfParentIsMdi(parent)
@@ -380,14 +393,32 @@ class QubLineDataSelectionAction(QubToggleImageAction):
         else:
             self._graph = QubGraphView(parent,name = graphLegend)
 
-        self._curve = QubGraphCurve(self._graph,graphLegend,Numeric.arange(1))
-        self._graph.setCurve(self._curve)
-        self._graph.setMode('follow_curve')
+        self._curve = QubGraphCurve(graphLegend)
+        self._curve.attach(self._graph)
 
-                                     ####### PRINT ACTION #######
+                     ####### PRINT ACTION #######
         self.__printAction = QubPrintPreviewAction(name="print",group="admin")
         self.__printAction.previewConnect(getPrintPreviewDialog())
-        self._graph.addAction([self.__printAction])
+                 ####### MEASURE CURVE MARKER #######
+        self.__curveMeasure = QubFollowGraphCurveAction(curve=self._curve,name="measure",group="tools")
+                         ####### ZOOM #######
+        self.__zoom = QubGraphZoomAction(graph=self._graph,name="zoom",group="tools")
+
+        self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom])
+
+        self._graph.setAxisTitle(self._graph.yLeft,'Data value')
+        self._graph.enableAxis(self._graph.xTop)
+        
+    def addToolWidget(self,parent) :
+        widget = QubToggleImageAction.addToolWidget(self,parent)
+        popupMenu = qt.QPopupMenu(self._widget)
+        widget.setPopup(popupMenu)
+        widget.setPopupDelay(0)
+        averageButton = qt.QCheckBox('Average',popupMenu)
+        averageButton.setChecked(True)
+        qt.QObject.connect(averageButton,qt.SIGNAL('toggled(bool)'),self.__averageCBK)
+        popupMenu.insertItem(averageButton)
+        return widget
 
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self,qubImage)
@@ -435,12 +466,14 @@ class QubLineDataSelectionAction(QubToggleImageAction):
 
     def _refreshIdle(self) :
         if not self._idle.isActive() :
+            if self._points and self._data is not None:
+                self._graph.show()
             self._idle.start(0)
 
     def _refreshGraph(self) :
-        import Numeric
-        from Qub.CTools import datafuncs
         self._idle.stop()
+        if not self._graph.isShown() : return
+
         if self._points and self._data is not None:
             if self._zoom: xzoom,yzoom = self._zoom.zoom()
             else: xzoom,yzoom = 1,1
@@ -459,7 +492,7 @@ class QubLineDataSelectionAction(QubToggleImageAction):
             if endy - starty < 0 : angle = -angle
 
             if abs(distx) > abs(disty) :
-                if self._zoom :
+                if self._average and self._zoom :
                     _,yzoom = self._zoom.zoom()
                     if yzoom < 1. :
                         nbLine = (1 / yzoom) * self._lineWidth
@@ -469,8 +502,11 @@ class QubLineDataSelectionAction(QubToggleImageAction):
                 xs = Numeric.arange(startx,startx + int(math.ceil(math.sqrt(distx ** 2 + disty ** 2))),1)
                 abscis = xs
                 lines = Numeric.array([[x,y] for y in ys for x in xs])
+                self._graph.setAxisTitle(self._graph.xBottom,'X value')
+                self._graph.setAxisTitle(self._graph.xTop,'Y value')
+                self._graph.setAxisScale(self._graph.xTop,starty,endy)
             else:
-                if self._zoom:
+                if self._average and self._zoom:
                     xzoom,_ = self._zoom.zoom()
                     if xzoom < 1.:
                         nbLine = (1 / xzoom) * self._lineWidth
@@ -481,6 +517,9 @@ class QubLineDataSelectionAction(QubToggleImageAction):
                 angle -= math.pi / 2
                 abscis = ys
                 lines = Numeric.array([[x,y] for x in xs for y in ys])
+                self._graph.setAxisTitle(self._graph.xBottom,'Y value')
+                self._graph.setAxisTitle(self._graph.xTop,'X value')
+                self._graph.setAxisScale(self._graph.xTop,startx,endx)
 
             rotation = Numeric.array([[math.cos(-angle),-math.sin(-angle)],
                                      [math.sin(-angle),math.cos(-angle)]])
@@ -501,25 +540,28 @@ class QubLineDataSelectionAction(QubToggleImageAction):
 
             self._curve.setData(abscis,average)
             self._graph.replot()
-            self._graph.show()
-            self._graph.raiseW()
+            self._graph.setTitle('%s X(%d,%d) Y(%d,%d)' % (self._graphLegend,startx,endx,starty,endy))
 
+    def __averageCBK(self,aFlag) :
+        self._average = aFlag
+        self._refreshIdle()
 ###############################################################################
 #######              QubHLineDataSelectionAction                        #######
 ###############################################################################
 ##@brief Action acting on QubImage widget
 #Horizontal Data selection line
 class QubHLineDataSelectionAction(QubToggleImageAction):
-    def __init__(self,parent=None,name='hline',graphLegend='Horizontal Line Selection',autoConnect=True,**keys):
+    def __init__(self,parent=None,name='hline',graphLegend='Horizontal Line',autoConnect=True,**keys):
         QubToggleImageAction.__init__(self,parent = parent,name=name,autoConnect=autoConnect,**keys)
-        import Numeric
         self._line = None
         self._helpLine = None
         self._data = None
         self._lineWidth = 1
+        self._average = True
         self._columnId,self._lineId = -1,-1
         self._zoom = None
         self._captionPrefix = None
+        self._graphLegend = graphLegend
         self._idle = qt.QTimer()
         qt.QObject.connect(self._idle,qt.SIGNAL('timeout()'),self._refreshGraph)
         mdiManager,mainWindow = QubMdiCheckIfParentIsMdi(parent)
@@ -529,21 +571,39 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
             mdiManager.addNewChildOfMainWindow(mainWindow,self._graph)
         else:
             self._graph = QubGraphView(parent,name = graphLegend)
-        self._curve = QubGraphCurve(self._graph,graphLegend,Numeric.arange(1))
-        self._graph.setCurve(self._curve)
-        self._graph.setMode('follow_curve')
-
-                                     ####### PRINT ACTION #######
+        self._curve = QubGraphCurve(graphLegend)
+        self._curve.attach(self._graph)
+        
+                     ####### PRINT ACTION #######
         self.__printAction = QubPrintPreviewAction(name="print",group="admin")
         self.__printAction.previewConnect(getPrintPreviewDialog())
-        self._graph.addAction([self.__printAction])
-
+                 ####### MEASURE CURVE MARKER #######
+        self.__curveMeasure = QubFollowGraphCurveAction(curve=self._curve,name="measure",group="tools")
+                         ####### ZOOM #######
+        self.__zoom = QubGraphZoomAction(graph=self._graph,name="zoom",group="tools")
+        
+        self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom])
+        self._graph.setAxisTitle(self._graph.yLeft,'Data value')
+        self._graph.setAxisTitle(self._graph.xBottom,'X value')
+        
+    def addToolWidget(self,parent) :
+        widget = QubToggleImageAction.addToolWidget(self,parent)
+        popupMenu = qt.QPopupMenu(self._widget)
+        widget.setPopup(popupMenu)
+        widget.setPopupDelay(0)
+        averageButton = qt.QCheckBox('Average',popupMenu)
+        averageButton.setChecked(True)
+        qt.QObject.connect(averageButton,qt.SIGNAL('toggled(bool)'),self.__averageCBK)
+        popupMenu.insertItem(averageButton)
+        return widget
+    
     def viewConnect(self, qubImage):
         QubToggleImageAction.viewConnect(self, qubImage)
         self._line,_ = QubAddDrawing(qubImage,QubPointDrawingMgr,QubCanvasHLine)
         self._line.setEventName('HLineDataSelection')
         self._line.setExceptExclusiveListName(['HLineDataSelection_help','VLineDataSelection','VLineDataSelection_help'])
         self._line.setEndDrawCallBack(self._lineSelect)
+        self._line.setKeyPressedCallBack(self.__rawKeyPressed)
         self._line.setDrawingEvent(QubFollowMouseOnClick)
 
         self._helpLine,_ = QubAddDrawing(qubImage,QubPointDrawingMgr,QubCanvasHLine)
@@ -556,7 +616,6 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
     def changeLineWidth(self,width) :
         self._lineWidth = width
         self._initDrawing()
-        
     ##brief set the caption prefix of the window graph
     def setCaptionPrefix(self,captionPrefix) :
          self._captionPrefix = captionPrefix
@@ -580,7 +639,7 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                 line.stopDrawing()
                 line.hide()
                 self._lineId = -1      # desactive refresh
-                
+                self._columnId = -1
     def _initDrawing(self) :
         qubImage = self._qubImage()
         if qubImage:
@@ -591,16 +650,34 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
         self._columnId,self._lineId = drawingMgr.point()
         self._refreshIdle()
         
+    def __rawKeyPressed(self,keyevent) :
+        if self._data is not None:
+            key = keyevent.key()
+            if key == qt.Qt.Key_Up :
+                self._lineId -= 1
+                if self._lineId <= 0: self._lineId = 0
+            elif key == qt.Qt.Key_Down :
+                self._lineId += 1
+                nbLine,_ = self._data.shape
+                if self._lineId > nbLine: self._lineId = nbLine
+            self._line.setPoint(self._columnId,self._lineId)
+            canvas = self._line.canvas()[0]
+            canvas.update()
+            self._refreshIdle()
+            
     def _refreshIdle(self) :
         if not self._idle.isActive() :
+            if self._columnId >= 0 and self._lineId >= 0 and self._data is not None:
+                self._graph.show()
             self._idle.start(0)
 
     def _refreshGraph(self) :
-        import Numeric
         self._idle.stop()
+        if not self._graph.isShown() : return
+        
         if self._lineId >= 0 and self._data is not None:
             nbLine,yzoom = self._lineWidth,1
-            if self._zoom :
+            if self._average and self._zoom :
                 _,yzoom = self._zoom.zoom()
                 if yzoom < 1.:
                     nbLine = (1 / yzoom) * self._lineWidth
@@ -616,12 +693,12 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                  lines[0] = lines[0] * startFrac
                  endFrac = endPos - math.floor(endPos)
                  lines[-1] = lines[-1] * endFrac
-		 caption = '%s (start,end lines : %.2f,%.2f)' % (self._captionPrefix,startPos,endPos)
+		 caption = '(start,end lines : %.2f,%.2f)' % (startPos,endPos)
             else:
                  if nbLine > 1:
-                      caption = '%s (start,end lines : %d,%d)' % (self._captionPrefix,self._lineId,self._lineId + nbLine - 1)
+                      caption = '(start,end lines : %d,%d)' % (self._lineId,self._lineId + nbLine - 1)
                  else:
-                      caption = '%s (line : %d)' % (self._captionPrefix,self._lineId)
+                      caption = '(line : %d)' % (self._lineId)
                  try :
                      lines = [x for x in Numeric.take(self._data,range(self._lineId,self._lineId + nbLine))]
                  except IndexError,err:
@@ -633,15 +710,18 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
             yVales = yVales / nbLine
             self._curve.setData(Numeric.arange(len(yVales)),yVales)
             self._graph.replot()
-            self._graph.show()
-            self._graph.raiseW()
-            self._graph.setCaption(caption)
+            self._graph.setTitle('%s %s' % (self._graphLegend,caption))
+            self._graph.setCaption('%s %s' % (self._captionPrefix,caption))
 
+    def __averageCBK(self,aFlag) :
+        self._average = aFlag
+        self._refreshIdle()
+        
 ###############################################################################
 #######              QubVLineDataSelectionAction                        #######
 ###############################################################################
 class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
-     def __init__(self,parent=None,name='vline',graphLegend='Vertical Line Selection',autoConnect=True,**keys):
+     def __init__(self,parent=None,name='vline',graphLegend='Vertical Line',autoConnect=True,**keys):
          QubHLineDataSelectionAction.__init__(self,parent = parent,name=name,graphLegend=graphLegend,autoConnect=autoConnect,**keys)
 
      def viewConnect(self,qubImage) :
@@ -650,6 +730,7 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
          self._line.setEventName('VLineDataSelection')
          self._line.setExceptExclusiveListName(['VLineDataSelection_help','HLineDataSelection','HLineDataSelection_help'])
          self._line.setEndDrawCallBack(self._lineSelect)
+         self._line.setKeyPressedCallBack(self.__rawKeyPressed)
          self._line.setDrawingEvent(QubFollowMouseOnClick)
          
          self._helpLine,_ = QubAddDrawing(qubImage,QubPointDrawingMgr,QubCanvasVLine)
@@ -658,13 +739,30 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
          self._helpLine.setExceptExclusiveListName(['VLineDataSelection','HLineDataSelection','HLineDataSelection_help'])
           
          self._initDrawing()
+         self._graph.setAxisTitle(self._graph.xBottom,'Y value')
+
+     def __rawKeyPressed(self,keyevent) :
+         if self._data is not None:
+             key = keyevent.key()
+             if key == qt.Qt.Key_Left :
+                 self._columnId -= 1
+                 if self._columnId <= 0: self._columnId = 0
+             elif key == qt.Qt.Key_Right :
+                 self._columnId += 1
+                 _,nbColumn = self._data.shape
+                 if self._columnId > nbColumn: self._columnId = nbColumn
+             self._line.setPoint(self._columnId,self._lineId)
+             canvas = self._line.canvas()[0]
+             canvas.update()
+             self._refreshIdle()
 
      def _refreshGraph(self) :
-         import Numeric
          self._idle.stop()
+         if not self._graph.isShown() : return
+
          if self._columnId >= 0 and self._data is not None:
              nbCol,xzoom = self._lineWidth,1
-             if self._zoom :
+             if self._average and self._zoom :
                  xzoom,_ = self._zoom.zoom()
                  if xzoom < 1.:
                      nbCol = (1 / xzoom) * self._lineWidth
@@ -679,12 +777,12 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
                  columns[0] = columns[0] * startFrac
                  endFrac = endPos - math.floor(endPos)
                  columns[-1] = columns[-1] * endFrac
-                 caption = '%s (start,end columns : %.2f,%.2f)' % (self._captionPrefix,startPos,endPos)
+                 caption = '(start,end columns : %.2f,%.2f)' % (startPos,endPos)
              else:
                  if nbCol > 1:
-                     caption = '%s (start,end columns : %d,%d)' % (self._captionPrefix,self._columnId,self._columnId + nbCol - 1)
+                     caption = '(start,end columns : %d,%d)' % (self._columnId,self._columnId + nbCol - 1)
                  else:
-                     caption = '%s (column : %d)' % (self._captionPrefix,self._columnId)
+                     caption = '(column : %d)' % (self._columnId)
                  try:
                      columns = [x for x in Numeric.transpose(Numeric.take(self._data,range(self._columnId,self._columnId + nbCol),axis = 1))]
                  except IndexError,err:
@@ -694,10 +792,9 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
                  xVales = xVales + column
              xVales = xVales / nbCol
              self._curve.setData(Numeric.arange(len(xVales)),xVales)
+             self._graph.setTitle('%s %s' % (self._graphLegend,caption))
              self._graph.replot()
-             self._graph.show()
-             self._graph.raiseW()
-             self._graph.setCaption(caption)
+             self._graph.setCaption('%s %s' %(self._captionPrefix,caption))
 
 ###############################################################################
 #####################          QubCircleSelection        ######################
@@ -1375,7 +1472,6 @@ class QubPositionAction(QubImageAction):
 
     def viewConnect(self, view):
         QubImageAction.viewConnect(self,view)
-        from Qub.Objects.QubDrawingEvent import QubDrawingEvent
         class _MouseFollow(QubDrawingEvent) :
             def __init__(self,cnt) :
                 QubDrawingEvent.__init__(self,False)
@@ -1549,8 +1645,6 @@ class QubSubDataViewAction(QubToggleImageAction) :
     def __refreshPixmap(self) :
         self.__idle.stop()
         if self.__data and self.__colormap and self.__x >= 0 and self.__y >= 0 :
-            import spslut
-            import Numeric
             ymin = self.__y - 4
             if ymin < 0 : ymin = 0
             ymax = ymin + 10
@@ -1768,7 +1862,6 @@ class QubScaleAction(QubToggleImageAction) :
 #####################################################################
 ##########                  QubRulerAction                 ##########
 #####################################################################
-from Qub.Objects.QubDrawingCanvasTools import QubCanvasRuler
 
 class QubRulerAction(QubToggleImageAction) :
     HORIZONTAL,VERTICAL = range(2)
@@ -1942,7 +2035,6 @@ class QubBrightnessContrastAction(QubAction):
     This action will allow to open a dialog 
     """
     def __init__(self,label = None,iconName = 'bright-cont',**keys):
-        from Qub.Widget.QubDialog import QubBrightnessContrastDialog
         QubAction.__init__(self,**keys)
 
         self.__dialog = QubBrightnessContrastDialog(None)
@@ -2070,7 +2162,86 @@ class QubSaveImageAction(QubAction) :
     def __saveImage(self) :
         if self.__dialog:
             self.__dialog.takeSnap()
+
+##@brief an action to mange curve measure marker
+#
+class QubFollowGraphCurveAction(QubAction):
+    def __init__(self,curve=None,**keys):
+        QubAction.__init__(self,**keys)
+        self.__curve = weakref.ref(curve)
+        self.__pointMeasure = curve.getCurvePointFollowMarked()
+        self.__pointMeasure.hide()
         
+    def addToolWidget(self,parent) :
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent,"followCurve")
+            self._widget.setAutoRaise(True)
+            self._widget.setIconSet(qt.QIconSet(loadIcon('measure.png')))
+            qt.QObject.connect(self._widget,qt.SIGNAL('toggled(bool)'),self._setState)
+            self._widget.setToggleButton(True)
+            qt.QToolTip.add(self._widget,'curve measure')
+        return self._widget
+
+    def _setState(self,aFlag) :
+        if self.__pointMeasure:
+            self.__pointMeasure.setVisible(aFlag)
+            plot = self.__pointMeasure.plot()
+            if plot: plot.replot()
+        
+##@brief an action to zoom on graph
+#
+class QubGraphZoomAction(QubAction):
+    def __init__(self,graph=None,**keys) :
+        QubAction.__init__(self,**keys)
+        self.__graph = weakref.ref(graph)
+        self.__plotZoomer = qwt.QwtPlotZoomer(graph.xBottom,graph.yLeft,
+                                              qwt.QwtPicker.DragSelection,
+                                              qwt.QwtPicker.AlwaysOff,
+                                              graph.canvas())
+        self.__plotZoomer.setRubberBandPen(qt.QPen(qt.Qt.blue))
+
+        qt.QObject.connect(self.__plotZoomer,qt.SIGNAL('zoomed(const QwtDoubleRect&)'),self.__zoomed)
+        self.setState(False)
+        
+    def addToolWidget(self,parent) :
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent,"zoom")
+            self._widget.setAutoRaise(True)
+            self._widget.setIconSet(qt.QIconSet(loadIcon('zoomrect.png')))
+            qt.QObject.connect(self._widget,qt.SIGNAL('toggled(bool)'),self.setState)
+            self._widget.setToggleButton(True)
+            qt.QToolTip.add(self._widget,'graph zoom')
+        return self._widget
+
+    def setState(self,aFlag) :
+        if aFlag:
+            self.__plotZoomer.setZoomBase()
+            pattern = [qwt.QwtEventPattern.MousePattern(qt.Qt.LeftButton, qt.Qt.NoButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.MidButton, qt.Qt.NoButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.RightButton, qt.Qt.NoButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.LeftButton, qt.Qt.ShiftButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.MidButton, qt.Qt.ShiftButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.RightButton, qt.Qt.ShiftButton)]
+            self.__plotZoomer.setMousePattern(pattern)
+        else:
+            pattern = [qwt.QwtEventPattern.MousePattern(qt.Qt.NoButton, qt.Qt.NoButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.NoButton, qt.Qt.NoButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.NoButton, qt.Qt.NoButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.NoButton, qt.Qt.NoButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.NoButton, qt.Qt.NoButton),
+                       qwt.QwtEventPattern.MousePattern(qt.Qt.NoButton, qt.Qt.NoButton)]
+            self.__plotZoomer.setMousePattern(pattern)
+            
+    def __zoomed(self,rect) :
+        if rect == self.__plotZoomer.zoomBase() :
+            graph = self.__graph()
+            graph.setAxisAutoScale(graph.xBottom)
+            graph.setAxisAutoScale(graph.xTop)
+            graph.setAxisAutoScale(graph.yLeft)
+            graph.setAxisAutoScale(graph.yRight)
+            graph.replot()
+            self.__plotZoomer.setZoomBase()
+                
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################

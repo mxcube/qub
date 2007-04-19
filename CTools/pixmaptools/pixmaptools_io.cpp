@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdlib.h>
 
 #include <pixmaptools_io.h>
 
@@ -17,6 +18,8 @@
 
 
 static const char ID[] = "pixmaptools";
+static bool aRloginFlag = !!getenv("SSH_CLIENT");
+
 struct IO::Data {
     int shmsize;
     int shmpolicy;
@@ -43,7 +46,7 @@ IO::IO()
     
 #ifdef HAVE_MITSHM
     int ignore;
-    if (XQueryExtension(qt_xdisplay(), "MIT-SHM", &ignore, &ignore, &ignore)) {
+    if (!aRloginFlag && XQueryExtension(qt_xdisplay(), "MIT-SHM", &ignore, &ignore, &ignore)) {
 	if (XShmQueryExtension(qt_xdisplay()))
 	    m_bShm = true;
     }

@@ -3,8 +3,9 @@
 import os
 import os.path
 
-dont_rm_files = ['pixmaptools.sip','pixmaptools_io.cpp','pixmaptools_io.h','pixmaptoolsconfig.py.in','configure.py',
-                 'clean.py']
+dont_rm_files = ['pixmaptools.sip','pixmaptools_io.cpp','pixmaptools_io.h',
+                 'pixmaptools_lut.cpp','pixmaptools_lut.h',
+                 'pixmaptoolsconfig.py.in','configure.py','clean.py']
 
 for root,dirs,files in os.walk('.') :
     for file_name in files :

@@ -1,13 +1,12 @@
 import qt
 import Numeric
 
-import spslut
-
 from Qub.Icons.QubIcons import loadIcon
-from Qub.Widget.QubImage import QubImage
-from Qub.Widget.QubGraph import QubGraph, QubGraphCurve
+from Qub.Widget.Graph.QubGraph import QubGraph
+from Qub.Widget.Graph.QubGraphCurve import  QubGraphCurve
 
 from Qub.Tools.QubWeakref import createWeakrefMethod
+from Qub.CTools.pixmaptools import LUT
 
 ################################################################################
 ####################                QubAction               ####################
@@ -32,15 +31,15 @@ class QubColormapDialog(qt.QWidget):
         self.__dataMin = 0
         self.__dataMax = 255
         
-        self.__colormapSps = [("Greyscale",spslut.GREYSCALE),
-                              ("Reverse Grey",spslut.REVERSEGREY),
-                              ("Temperature",spslut.TEMP),
-                              ("Red",spslut.RED),
-                              ("Green",spslut.GREEN),
-                              ("Blue",spslut.BLUE),
-                              ("Many",spslut.MANY)]
+        self.__colormapSps = [("Greyscale",LUT.Palette.GREYSCALE),
+                              ("Reverse Grey",LUT.Palette.REVERSEGREY),
+                              ("Temperature",LUT.Palette.TEMP),
+                              ("Red",LUT.Palette.RED),
+                              ("Green",LUT.Palette.GREEN),
+                              ("Blue",LUT.Palette.BLUE),
+                              ("Many",LUT.Palette.MANY)]
 
-        self.__lutType = [('Linear',spslut.LINEAR),('Logarithm',spslut.LOG)]
+        self.__lutType = [('Linear',LUT.LINEAR),('Logarithm',LUT.LOG)]
                          
         
         """
@@ -55,16 +54,10 @@ class QubColormapDialog(qt.QWidget):
         """
         colormapData = Numeric.resize(Numeric.arange(60), (10,60))
         self.__colormapCombo = qt.QComboBox(self)
+        palette = LUT.Palette()
         for colormapName,colormapType in self.__colormapSps:
-            (image_str, size, minmax) = spslut.transform(colormapData ,
-                                                         (1,0), 
-                                                         (spslut.LINEAR, 3.0),
-                                                         "BGRX", 
-                                                         colormapType,
-                                                         1, 
-                                                         (0, 0))
-            image = qt.QImage(image_str,size[0],size[1],32,None,0,
-                          qt.QImage.IgnoreEndian)
+            palette.fillPalette(colormapType)
+            image,(minVal,maxVal) = LUT.map_on_min_max_val(colormapData,palette,LUT.LINEAR)
             self.__colormapCombo.insertItem(qt.QPixmap(image),colormapName)
         self.connect(self.__colormapCombo, qt.SIGNAL("activated(int)"),
                      self.__colormapTypeChanged)
@@ -148,35 +141,28 @@ class QubColormapDialog(qt.QWidget):
         set X axis label
         remove curves legends
         """
-        self.__colormapGraph.enableYLeftAxis(0)
+        self.__colormapGraph.enableAxis(self.__colormapGraph.yLeft,False)
         self.__colormapGraph.setXLabel("Data Values")
-        self.__colormapGraph.useLegend(False)
 
         """
         set the curve _/-
         """
-        self.colormapCurve = QubGraphCurve (self.__colormapGraph,
-                                            "ColormapCurve",
-                                            [0, 10, 20, 30],
-                                            [-10, -10, 10, 10 ]
-                                            )
+        self.colormapCurve = QubGraphCurve("ColormapCurve")
+        self.colormapCurve.setData([0, 10, 20, 30],[-10, -10, 10, 10 ])
+        self.colormapCurve.attach(self.__colormapGraph)
+        self.__minControl = self.colormapCurve.getPointControl(1)
+        self.__minControl.setConstraints(10, 20, -10, -10)
+        self.__minControl.setValueChangeCallback(self.__minMoved)
         
-        self.colormapCurve.defConstraints(1, 10, 20, -10, -10)
-        self.colormapCurve.defConstraints(2, 10, 20,  10,  10)
-        self.colormapCurve.setPointControlled(1)
-        self.colormapCurve.setPointControlled(2)
+        self.__maxControl = self.colormapCurve.getPointControl(2)
+        self.__maxControl.setConstraints(10, 20,  10,  10)
+        self.__maxControl.setValueChangeCallback(self.__maxMoved)
+        
+        self.__lowerBound = self.colormapCurve.getPointMarked(0)
+        self.__upperBound = self.colormapCurve.getPointMarked(3)
 
-        self.colormapCurve.setPointMarked(0)
-        self.colormapCurve.setPointMarked(3)
-
-        self.__colormapGraph.setCurve(self.colormapCurve)
 
         self.__colormapGraph.setMinimumSize(qt.QSize(250,200))
-
-        self.connect (self.__colormapGraph, qt.PYSIGNAL("PointMoved"),
-                      self._graphMove)
-        self.connect (self.__colormapGraph, qt.PYSIGNAL("PointReleased"),
-                      self._graphRelease)
 
         hlayout4.addWidget(self.__colormapGraph)
         
@@ -312,29 +298,17 @@ class QubColormapDialog(qt.QWidget):
     #############################################
     ### GRAPH
     #############################################
-    def _graphMove(self, *args):
-        """
-        user is moving a point given by args[0] to the position given
-        by(args[1],args[2])
-        """
-        self._graphRelease(*args)
+    def __maxMoved(self,x,y) :
+        if self.__colormap:
+            minVal,_ = self.__colormap.minMax()
+            self.__colormap.setMinMax(minVal,x)
+        self.__refreshImage()
         
-    def _graphRelease(self, *args):
-        """
-        user is release mouse on point given by (args[1],args[2]) for
-        the point given by args[0]
-        This will be the new min or max value for the colormap.
-        Send the signal "ColormapChanged"
-        """
-        (curve, point , x ,y) = (args[0], args[1], args[2], args[3])
-
-        if self.__colormap :
-            minVal,maxVal = self.__colormap.minMax()
-            if point == 1:
-                self.__colormap.setMinMax(x,maxVal)
-            elif point == 2:
-                self.__colormap.setMinMax(minVal,x)
-            self.__refreshImage()
+    def __minMoved(self,x,y) :
+        if self.__colormap:
+            _,maxVal = self.__colormap.minMax()
+            self.__colormap.setMinMax(x,maxVal)
+        self.__refreshImage()
         
     def update(self,data):
         colormap = self.__colormap
@@ -348,16 +322,16 @@ class QubColormapDialog(qt.QWidget):
             marge = (abs(self.__dataMax) + abs(self.__dataMin)) / 6.0
             minmd = self.__dataMin - marge
             maxpd = self.__dataMax + marge
-            self.__colormapGraph.setZoom(minmd-marge/2, maxpd, -11.5, 11.5)
-
+            self.__colormapGraph.setAxisScale(self.__colormapGraph.xBottom,minmd-marge/2, maxpd)
+            self.__colormapGraph.setAxisScale(self.__colormapGraph.yLeft,-11.5, 11.5)
             """
             tells where points can move:
                 first and last : do not move
                 second and third: cannot move in Y dir.,can move
                                   in X dir. between datamin and datamax
-            """ 
-            self.colormapCurve.defConstraints(1, self.__dataMin, self.__dataMax, -10, -10)
-            self.colormapCurve.defConstraints(2, self.__dataMin, self.__dataMax,  10,  10)
+            """
+            self.__minControl.setConstraints(self.__dataMin, self.__dataMax, -10, -10)
+            self.__maxControl.setConstraints(self.__dataMin, self.__dataMax,  10,  10)
 
             """
             move points to their values
@@ -366,11 +340,11 @@ class QubColormapDialog(qt.QWidget):
                 minValue,maxValue = self.__dataMin,self.__dataMax
             else:
                 minValue,maxValue = colormap.minMax()
-            self.__colormapGraph.deplace(self.colormapCurve, 0, minmd, -10)
-            self.__colormapGraph.deplace(self.colormapCurve, 1, minValue, -10)
-            self.__colormapGraph.deplace(self.colormapCurve, 2, maxValue, 10)
-            self.__colormapGraph.deplace(self.colormapCurve, 3, maxpd, 10)
 
+            self.__lowerBound.setValue(minmd, -10)
+            self.__minControl.setValue(minValue, -10)
+            self.__maxControl.setValue(maxValue, 10)
+            self.__upperBound.setValue(maxpd, 10)
             self.__colormapGraph.replot()
                          ####### TEXT UPDATE #######
             self.__minText.setText('%d' % minValue)
@@ -544,8 +518,6 @@ class QubMain(qt.QMainWindow):
 if  __name__ == '__main__':
     import EdfFile
     import sys
-    from Qub.Widget.QubImageView import QubImageView
-    
     app = qt.QApplication(sys.argv)
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),

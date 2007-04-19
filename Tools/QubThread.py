@@ -1,4 +1,5 @@
 import qt
+from Qub import useThread
 
 class QubLock :
     """ Simple way to lock a API """
@@ -38,67 +39,106 @@ class QubThreadProcess :
         raise StandardError('getFunc2Process must be redefine')
 
 class _ThreadMgr :
-    class _thread(qt.QThread) :
-        def __init__(self,queues,mutex,cond) :
-            qt.QThread.__init__(self)
-            self.__cond = cond
-            self.__mutex = mutex
-            self.__queues = queues
-            self.__stop = False
+    if useThread() :
+        class _thread(qt.QThread) :
+            def __init__(self,queues,mutex,cond) :
+                qt.QThread.__init__(self)
+                self.__cond = cond
+                self.__mutex = mutex
+                self.__queues = queues
+                self.__stop = False
 
-        def __del__(self) :
-            self.stop()
-                        
-        def stop(self) :
-            aLock = QubLock(self.__mutex)
-            self.__stop = True
-            self.__cond.wakeAll()
-            aLock.unLock()
-            self.wait()
-            
-        def run(self) :
-            aLock = QubLock(self.__mutex)
-            while not self.__stop :
-                while not self.__stop and self.__waitCondTest() :
-                    self.__cond.wait(self.__mutex)
-                if not self.__stop :
+            def __del__(self) :
+                self.stop()
+
+            def stop(self) :
+                aLock = QubLock(self.__mutex)
+                self.__stop = True
+                self.__cond.wakeAll()
+                aLock.unLock()
+                self.wait()
+
+            def run(self) :
+                aLock = QubLock(self.__mutex)
+                while not self.__stop :
+                    while not self.__stop and self.__waitCondTest() :
+                        self.__cond.wait(self.__mutex)
+                    if not self.__stop :
+                        queue = self.__getMaxLengthQueue()
+                        process = queue[0]
+                        try :
+                            func = process.getFunc2Process()
+                            aLock.unLock()
+                            func()
+                            aLock.lock()
+                        except :
+                            aLock.lock()
+                            if len(queue) and process == queue[0] :
+                                queue.pop(0)
+
+            def __waitCondTest(self) :
+                aFlag = True
+                for l in self.__queues :
+                    if len(l) :
+                        aFlag = False
+                        break
+                return aFlag
+
+            def __getMaxLengthQueue(self) :
+                maxLenght = 0
+                returnQueue = None
+                for l in self.__queues :
+                    lenght = len(l)
+                    if lenght > maxLenght :
+                        maxLenght = lenght
+                        returnQueue = l
+                return returnQueue
+    else:
+        class _thread(qt.QTimer) :
+            def __init__(self,queues,mutex,cond) :
+                qt.QTimer.__init__(self)
+                self.__queues = queues
+                qt.QObject.connect(self,qt.SIGNAL('timeout()'),self.__timeout)
+                
+            def start(self,timeout = 10) :
+                qt.QTimer.start(self,timeout)
+                
+            def __timeout(self) :
+                if not self.__waitCondTest() :
                     queue = self.__getMaxLengthQueue()
                     process = queue[0]
                     try :
                         func = process.getFunc2Process()
-                        aLock.unLock()
                         func()
-                        aLock.lock()
                     except :
-                        aLock.lock()
                         if len(queue) and process == queue[0] :
                             queue.pop(0)
 
-        def __waitCondTest(self) :
-            aFlag = True
-            for l in self.__queues :
-                if len(l) :
-                    aFlag = False
-                    break
-            return aFlag
-        
-        def __getMaxLengthQueue(self) :
-            maxLenght = 0
-            returnQueue = None
-            for l in self.__queues :
-                lenght = len(l)
-                if lenght > maxLenght :
-                    maxLenght = lenght
-                    returnQueue = l
-            return returnQueue
-        
+            def __waitCondTest(self) :
+                aFlag = True
+                for l in self.__queues :
+                    if len(l) :
+                        aFlag = False
+                        break
+                return aFlag
+
+            def __getMaxLengthQueue(self) :
+                maxLenght = 0
+                returnQueue = None
+                for l in self.__queues :
+                    lenght = len(l)
+                    if lenght > maxLenght :
+                        maxLenght = lenght
+                        returnQueue = l
+                return returnQueue
+            
     def __init__(self) :
         self.__mutex = qt.QMutex()
         self.__cond = qt.QWaitCondition()
         self.__queues = []
         self.__threads = []
         self.__exitThreadFlag = False
-        for x in xrange(2) :
+        for x in xrange(useThread() and 2 or 1) :
             threadProcess = _ThreadMgr._thread(self.__queues,self.__mutex,self.__cond)
             self.__threads.append(threadProcess)
             threadProcess.start()
@@ -145,4 +185,5 @@ def _stopThreads() :
     qt.qApp.sendPostedEvents()
     qt.qApp.processEvents()
 
-qt.QObject.connect(qt.qApp,qt.SIGNAL('aboutToQuit()'),_stopThreads)
+if not qt.qApp.startingUp() :
+    qt.QObject.connect(qt.qApp,qt.SIGNAL('aboutToQuit()'),_stopThreads)

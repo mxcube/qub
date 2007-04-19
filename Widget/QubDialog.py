@@ -11,21 +11,36 @@ import qt
 import qtcanvas
 import math
 import os.path
+import itertools
+import Qwt5 as qwt
+
 from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 from Qub.Objects.QubPixmapDisplay import QubPixmapZoomPlug
+
 from Qub.Objects.QubDrawingManager import QubPointDrawingMgr
 from Qub.Objects.QubDrawingManager import QubLineDrawingMgr
 from Qub.Objects.QubDrawingManager import Qub2PointSurfaceDrawingMgr
 from Qub.Objects.QubDrawingManager import QubPolygoneDrawingMgr
+
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasEllipse
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasAngle
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasCloseLinePolygone
 
-from Qub.Widget.QubWidgetSet import QubSlider,QubColorToolMenu
-from Qub.Icons.QubIcons import loadIcon
 from Qub.Objects.QubDrawingEvent import QubMoveNPressed1Point
+
+from Qub.Widget.QubWidgetSet import QubSlider,QubColorToolMenu
+
+from Qub.Icons.QubIcons import loadIcon
+
 from Qub.Tools import QubImageSave
+
+from Qub.Print.QubPrintPreview import getPrintPreviewDialog
+
+from Qub.Widget.Graph.QubGraph import QubGraphView
+from Qub.Widget.Graph.QubGraphCurve import QubGraphCurve
+
+from Qub.Widget.QubWidgetFromUI import QubWidgetFromUI
 
 ####################################################################
 ##########                                                ##########
@@ -593,6 +608,7 @@ class QubSaveImageWidget(qt.QWidget):
 ##@brief this dialogue is use to save an image
 #
 #With this tool, you can save an image in JPEG or PNG
+#@see QubSaveImageWidget
 class QubSaveImageDialog(qt.QDialog) :
     def __init__(self,parent=None,name='Save Image',canvas = None,matrix = None) :
         qt.QDialog.__init__(self,parent,name)
@@ -612,6 +628,148 @@ class QubSaveImageDialog(qt.QDialog) :
                 raise AttributeError,'QubSaveImageDialog instance has not attribute %s' % attr
         else:
                 raise AttributeError,'QubSaveImageDialog instance has not attribute %s' % attr
+####################################################################
+##########                                                ##########
+##########                QubDataStatWidget               ##########
+##########                                                ##########
+####################################################################        
+##@brief widget to display statistique of data
+#
+from Qub.Widget.QubDataStat import Histogram
+class QubDataStatWidget(Histogram) :
+    def __init__(self,parent = None,name = '',f = 0) :
+        Histogram.__init__(self,parent,name,f)
+        self.setIcon(loadIcon("histogram.png"))
+        self.__data = None
+        nbChannelWidget = self.child('__numberOfChannels')
+        nbChannelWidget.setValidator(qt.QIntValidator(nbChannelWidget))
+        nbChannelWidget.setText('10')
+        qt.QObject.connect(nbChannelWidget,qt.SIGNAL('returnPressed ()'),self.__refreshIdle)
+        qt.QObject.connect(nbChannelWidget,qt.SIGNAL('lostFocus ()'),self.__refreshIdle)
+        
+        for widgetName in ['__minHisto','__maxHisto'] :
+            widget = self.child(widgetName)
+            widget.setValidator(qt.QIntValidator(widget))
+            qt.QObject.connect(widget,qt.SIGNAL('returnPressed ()'),self.__refreshIdle)
+            qt.QObject.connect(widget,qt.SIGNAL('lostFocus ()'),self.__refreshIdle)
+            
+
+                     ####### PRINT ACTION #######
+        from Qub.Widget.QubActionSet import QubPrintPreviewAction
+        printAction = QubPrintPreviewAction(name="print",group="admin")
+        printAction.previewConnect(getPrintPreviewDialog())
+
+        graphFrame = self.child('__graphFrame')
+        self.__graph = QubGraphView(parent = graphFrame,actions = [printAction])
+        layout = graphFrame.layout()
+        layout.insertWidget(1,self.__graph)
+        self.__curve = QubGraphCurve('Data Statistic')
+        self.__curve.attach(self.__graph)
+        self.__curve.setStyle(self.__curve.Sticks)
+        self.__curve.setPen(qt.QPen(qt.Qt.red,2))
+
+        self.__zoom = qwt.QwtPlotZoomer(self.__graph.xBottom,self.__graph.yRight,
+                                        qwt.QwtPicker.DragSelection,
+                                        qwt.QwtPicker.AlwaysOff,
+                                        self.__graph.canvas())
+        self.__zoom.setMousePattern([qwt.QwtEventPattern.MousePattern(qt.Qt.LeftButton, qt.Qt.NoButton),
+                                     qwt.QwtEventPattern.MousePattern(qt.Qt.MidButton, qt.Qt.NoButton),
+                                     qwt.QwtEventPattern.MousePattern(qt.Qt.RightButton, qt.Qt.NoButton),
+                                     qwt.QwtEventPattern.MousePattern(qt.Qt.LeftButton, qt.Qt.ShiftButton),
+                                     qwt.QwtEventPattern.MousePattern(qt.Qt.MidButton, qt.Qt.ShiftButton),
+                                     qwt.QwtEventPattern.MousePattern(qt.Qt.RightButton, qt.Qt.ShiftButton)])
+        self.__zoom.setRubberBandPen(qt.QPen(qt.Qt.blue))
+        qt.QObject.connect(self.__zoom,qt.SIGNAL('zoomed(const QwtDoubleRect&)'),self.__zoomed)
+
+        self.__idle = qt.QTimer(self)
+        self.connect(self.__idle,qt.SIGNAL('timeout()'),self.__refresh)
+        
+    def show(self) :
+        QubWidgetFromUI.show(self)
+        self.setMinimumSize(self.sizeHint())
+        self.__zoom.setZoomBase()
+        self.__refreshIdle()
+        
+    def setData(self,data) :
+        import numpy
+        self.__data = numpy.array(data)
+        self.__refreshIdle()
+
+    def __refreshIdle(self) :
+        if not self.__idle.isActive() :
+            self.__idle.start(0)
+    def __refresh(self) :
+        self.__idle.stop()
+        import numpy
+        if self.isVisible() and self.__data is not None:
+            height,width = self.__data.shape
+            nbPixel = height * width
+            integralVal = self.__data.sum()
+            average = float(integralVal) / nbPixel
+            minVal,maxVal = self.__data.min(),self.__data.max()
+            stdDeviation = self.__data.std()
+
+            for value,childName in [(height,'__heightLE'),(width,'__widthLE'),
+                                    (minVal,'__minValLE'),(maxVal,'__maxValLE'),
+                                    (integralVal,'__integralLE'),(average,'__averageLE'),
+                                    (nbPixel,'__nbPixelLE'),(stdDeviation,'__stdDevLE')] :
+                childWidget = self.child(childName)
+                if int(value) == value:
+                    childWidget.setText('%d' % value)
+                else:
+                    childWidget.setText('%.2f' % value)
+
+            minHistoWidget = self.child('__minHisto')
+            stringVal = minHistoWidget.text()
+            minHisto,ok = stringVal.toInt()
+            if not ok: minHisto = minVal
+            
+            maxHistoWidget = self.child('__maxHisto')
+            stringVal = maxHistoWidget.text()
+            maxHisto,ok = stringVal.toInt()
+            if not ok: maxHisto = maxVal
+            
+            nbChannelWidget = self.child('__numberOfChannels')
+            stringVal = nbChannelWidget.text()
+            bins,ok = stringVal.toInt()
+
+            if ok:
+                YHisto,XHisto = numpy.histogram(self.__data,bins = bins,range=[minHisto,maxHisto])
+                self.__curve.setData(XHisto,YHisto)
+                self.__graph.replot()
+
+    def __zoomed(self,rect) :
+        if rect == self.__zoom.zoomBase() :
+            self.__graph.setAxisAutoScale(self.__graph.xBottom)
+            self.__graph.replot()
+            self.__zoom.setZoomBase()
+            
+##@brief the data statistique dialog
+#
+#@see QubDataStatWidget
+class QubDataStatDialog(qt.QDialog) :
+    def __init__(self,parent=None,name='Data stat',canvas = None,matrix = None) :
+        qt.QDialog.__init__(self,parent,name)
+        self.__dataStat = QubDataStatWidget(self,name)
+        layout = qt.QHBoxLayout(self)
+        layout.addWidget(self.__dataStat)
+
+    def show(self) :
+        qt.QDialog.show(self)
+        self.setMinimumSize(self.sizeHint())
+        
+    def __nonzero__(self) :
+        return True
+    
+    def __getattr__(self, attr):
+        if not attr.startswith("__") :
+            try:
+                return getattr(self.__dataStat,attr)
+            except AttributeError,err:
+                raise AttributeError,'QubDataStatDialog instance has not attribute %s' % attr
+        else:
+                raise AttributeError,'QubDataStatDialog instance has not attribute %s' % attr
+
 ####################################################################
 ##########                                                ##########
 ##########        QubBrightnessContrastDialog             ##########
