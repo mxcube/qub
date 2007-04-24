@@ -50,7 +50,6 @@ public:
     void fillSegment(int from,int to,
 		     double R1,double G1,double B1,
 		     double R2,double G2,double B2) throw(LutError);
-    void endFillSegment() throw();
   private:
     
     void _fillSegment(const XServer_Info&,
@@ -59,7 +58,6 @@ public:
     void _calcPalette(unsigned int palette[],int fmin, int fmax,mapping_meth) throw();
 
     unsigned int _dataPalette[0x10000];
-    unsigned int _logdataPalette[0x10000];
     mode         _mode;
   };
 public:

@@ -188,14 +188,17 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
     #@param keepROI if keepROI == False -> zoom on full image
     #               else the ROI is keept
     def setZoom(self, zoomx, zoomy,keepROI = False):
-        if self.__plug :
-            plug = self.__plug()
-            if plug is None:
-                raise StandardError("QubPixmapDisplay object not plugged")
+        try:
+            if self.__plug :
+                plug = self.__plug()
+                if plug is None:
+                    raise StandardError("QubPixmapDisplay object not plugged")
 
-            if self.__scrollMode in ["Auto", "AlwaysOff"]:
-                plug.zoom().setZoom(zoomx, zoomy,keepROI)
-    
+                if self.__scrollMode in ["Auto", "AlwaysOff"]:
+                    plug.zoom().setZoom(zoomx, zoomy,keepROI)
+        except:
+            import traceback
+            traceback.print_exc()
     ##@brief Change the visible part of the pixmap.
     #
     #@param center:

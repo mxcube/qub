@@ -93,7 +93,7 @@ class QubColormapDialog(qt.QWidget):
         self.__minText.setFixedWidth(150)
         self.__minText.setAlignment(qt.Qt.AlignRight)
         self.connect(self.__minText, qt.SIGNAL("returnPressed()"),
-                     self.__minTextChanged)
+                     self.__minMaxTextChanged)
         hlayout2.addWidget(self.__minText)
         
         """
@@ -121,7 +121,7 @@ class QubColormapDialog(qt.QWidget):
         self.__maxText.setAlignment(qt.Qt.AlignRight)
         
         self.connect(self.__maxText, qt.SIGNAL("returnPressed()"),
-                     self.__maxTextChanged)
+                     self.__minMaxTextChanged)
         hlayout3.addWidget(self.__maxText)
         
         """
@@ -237,30 +237,19 @@ class QubColormapDialog(qt.QWidget):
     #############################################
     ### MIN/MAX VALUES
     #############################################
-    def __minTextChanged(self):
+    def __minMaxTextChanged(self):
         """
         min value changed
             - update the colormap dialog
             - send the "ColormapChanged" signal
         """
         if self.__colormap :
-            minVal,maxVal = colormap.minMax()
-            val,_ = self.__minText.text().toFloat()
-            colormap.setMinMax(val,maxVal)
+            minMax,_ = self.__minText.text().toFloat()
+            maxVal,_ = self.__maxText.text().toFloat()
+
+            self.__colormap.setMinMax(minMax,maxVal)
             self.__refreshImage()
 
-    def __maxTextChanged(self):
-        """
-        max value changed
-            - update the colormap dialog
-            - send the "ColormaChanged" signal
-        """
-        if self.__colormap:
-            minVal,maxVal = colormap.minMax()
-            val,_ = self.__maxText.text().toFloat()
-            colormap.setMinMax(minVal,val)
-            self.__refreshImage()
-            
     #############################################
     ### SCALES
     #############################################
@@ -347,9 +336,13 @@ class QubColormapDialog(qt.QWidget):
             self.__upperBound.setValue(maxpd, 10)
             self.__colormapGraph.replot()
                          ####### TEXT UPDATE #######
-            self.__minText.setText('%d' % minValue)
-            self.__maxText.setText('%d' % maxValue)
-
+            if isinstance(minValue,int):
+                self.__minText.setText('%d' % minValue)
+                self.__maxText.setText('%d' % maxValue)
+            else:
+                self.__minText.setText('%lf' % minValue)
+                self.__maxText.setText('%lf' % maxValue)
+ 
             colormapType = self.__colormapSps[self.__colormapCombo.currentItem()]
             if colormapType[1] != colormap.colorMapType():
                 for i,(colorTypeName,colorType) in enumerate(self.__colormapSps):

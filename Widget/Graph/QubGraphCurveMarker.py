@@ -204,7 +204,14 @@ class QubGraphCurvePointMarked(qwt.QwtPlotMarker) :
                                        qt.QPen(qt.Qt.black),
                                        qt.QSize(7,7))
         self.setSymbol(self.__symbol)
-    
+
+    def setValue(self,x,y) :
+        qwt.QwtPlotMarker.setValue(self,x,y)
+        curve = self.__curve()
+        if curve:
+            curve.modifyValue(self.__index,x,y)
+        
+
 ##@brief a simple object to set a follow marker curve
 #
 #

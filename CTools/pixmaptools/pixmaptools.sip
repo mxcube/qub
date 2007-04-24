@@ -220,7 +220,6 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
     void fillSegment(int from,int to,
 		     double R1,double G1,double B1,
 		     double R2,double G2,double B2) throw(LutError);
-    void endFillSegment() throw();
   };
 %TypeCode
 #define PY_ARRAY_UNIQUE_SYMBOL _PixmapNumpyArray

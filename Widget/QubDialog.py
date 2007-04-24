@@ -649,7 +649,7 @@ class QubDataStatWidget(Histogram) :
         
         for widgetName in ['__minHisto','__maxHisto'] :
             widget = self.child(widgetName)
-            widget.setValidator(qt.QIntValidator(widget))
+            widget.setValidator(qt.QDoubleValidator(widget))
             qt.QObject.connect(widget,qt.SIGNAL('returnPressed ()'),self.__refreshIdle)
             qt.QObject.connect(widget,qt.SIGNAL('lostFocus ()'),self.__refreshIdle)
             
@@ -721,12 +721,12 @@ class QubDataStatWidget(Histogram) :
 
             minHistoWidget = self.child('__minHisto')
             stringVal = minHistoWidget.text()
-            minHisto,ok = stringVal.toInt()
+            minHisto,ok = stringVal.toFloat()
             if not ok: minHisto = minVal
             
             maxHistoWidget = self.child('__maxHisto')
             stringVal = maxHistoWidget.text()
-            maxHisto,ok = stringVal.toInt()
+            maxHisto,ok = stringVal.toFloat()
             if not ok: maxHisto = maxVal
             
             nbChannelWidget = self.child('__numberOfChannels')

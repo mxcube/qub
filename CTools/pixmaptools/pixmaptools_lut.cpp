@@ -84,7 +84,7 @@ typedef union {
 LUT::Palette::Palette(palette_type pType,mode aMode) throw() : _mode(aMode)
 {
   if(pType == USER) 
-    memset(_dataPalette,0,sizeof(_dataPalette)),memset(_logdataPalette,0,sizeof(_logdataPalette));
+    memset(_dataPalette,0,sizeof(_dataPalette));
   else
     fillPalette(pType);
 }
@@ -98,7 +98,7 @@ void LUT::Palette::fillPalette(palette_type aType) throw()
       _fillSegment(config,0     , 0x4000,  0, 0, 1, 0, 1, 1);
       _fillSegment(config,0x4000, 0x8000,  0, 1, 1, 0, 1, 0);
       _fillSegment(config,0x8000, 0xc000,  0, 1, 0, 1, 1, 0);
-      _fillSegment(config,0xc000, 0xffff, 1, 1, 0, 1, 0, 0);
+      _fillSegment(config,0xc000, 0x10000, 1, 1, 0, 1, 0, 0);
       break;
     case MANY:
       _fillSegment(config,0     , 0x2aaa,  0, 0, 1, 0, 1, 1);
@@ -106,22 +106,21 @@ void LUT::Palette::fillPalette(palette_type aType) throw()
       _fillSegment(config,0x5555, 0x8000,  0, 1, 0, 1, 1, 0);
       _fillSegment(config,0x8000, 0xaaaa,  1, 1, 0, 1, 0, 0);
       _fillSegment(config,0xaaaa, 0xd555,  1, 0, 0, 1, 1, 0);
-      _fillSegment(config,0xd555, 0xffff, 1, 1, 0, 1, 1, 1);
+      _fillSegment(config,0xd555, 0x10000, 1, 1, 0, 1, 1, 1);
       break;
     case BLUE: 
-      _fillSegment(config,0, 0xffff, 0, 0, 0, 0, 0, 1); break;
+      _fillSegment(config,0, 0x10000, 0, 0, 0, 0, 0, 1); break;
     case GREEN:
-      _fillSegment(config,0, 0xffff, 0, 0, 0, 0, 1, 0); break;
+      _fillSegment(config,0, 0x10000, 0, 0, 0, 0, 1, 0); break;
     case RED:
-      _fillSegment(config,0, 0xffff, 0, 0, 0, 1, 0, 0);break;
+      _fillSegment(config,0, 0x10000, 0, 0, 0, 1, 0, 0);break;
     case REVERSEGREY:
-      _fillSegment(config,0, 0xffff, 1, 1, 1, 0, 0, 0);break;
+      _fillSegment(config,0, 0x10000, 1, 1, 1, 0, 0, 0);break;
     case GREYSCALE:
     default:
-      _fillSegment(config,0, 0xffff, 0, 0, 0, 1, 1, 1);
+      _fillSegment(config,0, 0x10000, 0, 0, 0, 1, 1, 1);
       break;
     }
-  _calcPalette(_logdataPalette,0,0xffff,LOG);
 }
 /**
  * @brief fill a contigus segment of the palette
@@ -136,20 +135,11 @@ void LUT::Palette::fillSegment(int from,int to,
   const XServer_Info &config = theLutConfiguration.getServerInfo(_mode);
   if(from < 0)
     throw LutError("fillSegment : from must be > 0");
-  if(to > 0xffff) 
-    throw LutError("fillSegment : to must be lower or equal to 65535");
+  if(to > 0x10000) 
+    throw LutError("fillSegment : to must be lower or equal to 65536");
   if(from > to)
     throw LutError("fillSegment : form must be lower than to");
   _fillSegment(config,from,to,R1,G1,B1,R2,G2,B2);
-}
-/** 
- * @brief specify that all the segment of the colormap are filled.
- * 
- * calculate logarithm colormap associate
- */
-void LUT::Palette::endFillSegment() throw()
-{
-  _calcPalette(_logdataPalette,0,0xffff,LOG);
 }
 // @brief set the data palette
 void LUT::Palette::setPaletteData(const unsigned int *aPaletteDataPt,int aSize) throw(LutError)
@@ -157,7 +147,6 @@ void LUT::Palette::setPaletteData(const unsigned int *aPaletteDataPt,int aSize) 
   if(aSize != sizeof(int) * 0x10000)
     throw LutError("setPaletteData : Palette must be have 65536 value");
   memcpy(_dataPalette,aPaletteDataPt,aSize);
-  _calcPalette(_logdataPalette,0,0xffff,LOG);
 }
 
 //@brief get the data palette

@@ -3,10 +3,11 @@ import platform
 from distutils.core import setup,Extension
 
 if platform.system() == 'Linux' :
-    extra_compile_args = ['-pthread','-msse2','-mfpmath=sse']
+    extra_compile_args = ['-pthreads','-msse2','-mfpmath=sse']
+    extra_link_args = ['-pthreads']
 elif platform.system() == 'SunOS' :
-    extra_compile_args = ['-D_REENTRANT']
-    extra_link_args = ['-Wl,-mt,-lpthread']
+    extra_compile_args = ['-g','-pthreads']
+    extra_link_args = ['-g','-pthreads']#['-Wl,-mt,-lpthread']
 else:
     extra_compile_args = []
     

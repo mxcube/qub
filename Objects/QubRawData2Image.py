@@ -69,27 +69,30 @@ class QubRawData2Image(qt.QObject) :
     #@todo the methode is needed by QT3 because it's not MT-Safe,
     #it's could be remove when QT4 will be used
     def customEvent(self,event) :
-        if event.event_name == "_postSetImage" :
-            aLock = QubLock(self.__mutex)
-	    pendingSend = list(self.__sendPending)
-	    self.__sendPending = []
-	    aLock.unLock()
-            for fullimage,plugNImage in pendingSend :
-                for plug,image in plugNImage:
-                    if not plug.isEnd() :
-                        if plug.setImage(image,fullimage) :
-			    aLock.lock()
+        try:
+            if event.event_name == "_postSetImage" :
+                aLock = QubLock(self.__mutex)
+                pendingSend = list(self.__sendPending)
+                self.__sendPending = []
+                aLock.unLock()
+                for fullimage,plugNImage in pendingSend :
+                    for plug,image in plugNImage:
+                        if not plug.isEnd() :
+                            if plug.setImage(image,fullimage) :
+                                aLock.lock()
+                                try:
+                                    self.__plugs.remove(plug)
+                                except: pass
+                                aLock.unLock()
+                        else:
+                            aLock.lock()
                             try:
                                 self.__plugs.remove(plug)
                             except: pass
-			    aLock.unLock()
-                    else:
-			aLock.lock()
-                        try:
-                            self.__plugs.remove(plug)
-                        except: pass
-                        aLock.unLock()
-
+                            aLock.unLock()
+        except:
+            import traceback
+            traceback.print_exc()
 ##@brief this class is the link between QubRawData2Image and
 #other diplay pixmap object
 #

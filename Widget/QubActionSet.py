@@ -1134,32 +1134,35 @@ class QubZoomListAction(QubAction):
                 traceback.print_exc()
     
     def _applyZoom(self, zoomVal):
-        qubImage = self._qubImage and self._qubImage() or None
-        if qubImage is not None:
-            """
-            set wait cursor as changing zoom factor could take some times
-            """
-            qubImage.setCursor(qt.QCursor(qt.Qt.WaitCursor))
+        try:
+            qubImage = self._qubImage and self._qubImage() or None
+            if qubImage is not None:
+                """
+                set wait cursor as changing zoom factor could take some times
+                """
+                qubImage.setCursor(qt.QCursor(qt.Qt.WaitCursor))
 
-            """
-             zoom value
-            """
-            self._zoomVal = zoomVal
+                """
+                 zoom value
+                """
+                self._zoomVal = zoomVal
 
-            """
-            update zoom value as percentage in toolbar and menu widget
-            """   
-            self.writeStrValue("%d%%"%(int(self._zoomVal*100)))    
+                """
+                update zoom value as percentage in toolbar and menu widget
+                """   
+                self.writeStrValue("%d%%"%(int(self._zoomVal*100)))    
 
-            """
-            calculate and display new pixmap not centered
-            """
-            qubImage.setZoom(self._zoomVal, self._zoomVal,self._keepROI)
-            """
-            restore cursor
-            """
-            qubImage.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
-    
+                """
+                calculate and display new pixmap not centered
+                """
+                qubImage.setZoom(self._zoomVal, self._zoomVal,self._keepROI)
+                """
+                restore cursor
+                """
+                qubImage.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
+        except:
+            import traceback
+            traceback.print_exc()
     def zoom(self) :
         try:
             return self._zoomValList[self.__lastIdSelected]
