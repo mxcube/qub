@@ -55,14 +55,15 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
     def __append(self,arrayData,path) :
         aLock = QubLock(self.__mutex)
         if self.__plug is not None and not self.__plug.isEnd() :
-            while len(self.__dataPending) > 16 : # SIZE QUEUE LIMIT
-                self.__cond.wait(self.__mutex)
             dataStruct = QubStdData2Image._data_struct()
             if path is not None :
                 dataStruct.setPath(path)
             else :
                 dataStruct.setData(arrayData)
-            self.__dataPending.append(dataStruct)
+            if len(self.__dataPending) > 16 : # SIZE QUEUE LIMIT FLUSH PENDING
+                self.__dataPending = [dataStruct] # TODO SEE IF WE CAN DO BETTER
+            else:
+                self.__dataPending.append(dataStruct)
             if not self.__actif :
                 self.__actif = True
                 aLock.unLock()
