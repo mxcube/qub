@@ -180,7 +180,11 @@ class QubDataDisplay(qt.QWidget) :
     def __del__(self) :
         if self.__dataPlug:
             self.__specShm.unplug(self.__dataPlug)
-            
+
+    ##@brief get the drawing view for QubDrawingManager Object
+    #@return a QubPixmapDisplay
+    def getDrawing(self) :
+        return self.__mainView.view()
     ##@brief set data to all action which need it
     def setData(self,data) :
         self.__subDataView.setData(data)
