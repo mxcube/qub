@@ -12,6 +12,7 @@ import qtcanvas
 import math
 import os.path
 import itertools
+import numpy
 import Qwt5 as qwt
 
 from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
@@ -691,17 +692,18 @@ class QubDataStatWidget(Histogram) :
         self.__refreshIdle()
         
     def setData(self,data) :
-        import numpy
-        self.__data = numpy.array(data)
+        self.__data = data
         self.__refreshIdle()
 
     def __refreshIdle(self) :
-        if not self.__idle.isActive() :
+        if self.isVisible() and not self.__idle.isActive() :
             self.__idle.start(0)
+            
     def __refresh(self) :
         self.__idle.stop()
         import numpy
         if self.isVisible() and self.__data is not None:
+            self.__data = numpy.array(self.__data)
             height,width = self.__data.shape
             nbPixel = height * width
             integralVal = self.__data.sum()

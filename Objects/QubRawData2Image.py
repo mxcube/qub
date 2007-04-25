@@ -53,18 +53,31 @@ class QubRawData2Image(qt.QObject) :
         self.__dataZoomProcess.putRawData(data)
 
     def extendSendList(self,fullimageNPlugs) :
+        aLock = QubLock(self.__mutex,False)
+        for fullimage,plugNImage in fullimageNPlugs :
+            for plug,image in plugNImage:
+                if not plug.isEnd() :
+                    if plug.setImage(image,fullimage) :
+                        aLock.lock()
+                        try:
+                            self.__plugs.remove(plug)
+                        except: pass
+                        aLock.unLock()
+                else:
+                    aLock.lock()
+                    try:
+                        self.__plugs.remove(plug)
+                    except: pass
+                    aLock.unLock()
+        return
+
         aLock = QubLock(self.__mutex)
         self.__sendPending.extend(fullimageNPlugs)
         aLock.unLock()
         event = qt.QCustomEvent(qt.QEvent.User)
         event.event_name = "_postSetImage"
-        try:
-            qt.qApp.lock()
-            qt.qApp.postEvent(self,event)
-        finally:
-            qt.qApp.unlock()
-
-        
+        qt.qApp.postEvent(self,event)
+                
     ##@brief it use for the communication between the main thread and other
     #@todo the methode is needed by QT3 because it's not MT-Safe,
     #it's could be remove when QT4 will be used
@@ -313,26 +326,22 @@ class _DataZoomProcess(QubThreadProcess) :
         self.__mutex = qt.QMutex()
         self.__cond = qt.QWaitCondition()
         self.__actif = False
-        self.__dataProcessPending = []
+        self.__dataProcessPending = None
         self.__InProgress = []
 
     def getFunc2Process(self) :
         aLock = QubLock(self.__mutex)
-        self.__InProgress.append(_DataZoomProcess._process_struct(self.__dataProcessPending.pop(0)))
+        self.__InProgress.append(_DataZoomProcess._process_struct(self.__dataProcessPending))
+        self.__dataProcessPending = None
         self.__cond.wakeOne()
-        if not self.__dataProcessPending:
-            self.__actif = False
-            aLock.unLock()
-            self._threadMgr.pop(self,False)
+        self.__actif = False
+        aLock.unLock()
+        self._threadMgr.pop(self,False)
         return self.dataProcess
 
     def putRawData(self,aData) :
         aLock = QubLock(self.__mutex)
-        if len(self.__dataProcessPending) > 32 : # SIZE QUEUE LIMIT
-            return # TODO MAY BE A LOG MESSAGE
-        elif len(self.__dataProcessPending) > 16 :
-            self.__cond.wait(self.__mutex,1000)
-        self.__dataProcessPending.append(aData)
+        self.__dataProcessPending = aData
         if not self.__actif :
             self.__actif = True
             aLock.unLock()

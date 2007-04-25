@@ -75,24 +75,18 @@ class QubImage2Pixmap(qt.QObject) :
                 if needZoomFlag :
                     self.__imageZoomProcess.putImage((zoomedImage,fullimage))
                 else :
-                    self.appendPendingList([(plug,zoomedImage,fullimage) for plug in self.__plugs],False)
+                    self.__plugsNimagesPending.append([(plug,zoomedImage,fullimage) for plug in self.__plugs])
+                    aLock.unLock()
+                    self.__startIdle()
 
         ##@brief add an image in the pending display stack
-        def appendPendingList(self,aList,aLock = True) :
-            aLock = QubLock(self.__mutex,aLock)
+        def appendPendingList(self,aList) :
+            aLock = QubLock(self.__mutex)
             self.__plugsNimagesPending.append(aList)
             aLock.unLock()
-            if not self.isActive() :
-                #send event
-                event = qt.QCustomEvent(qt.QEvent.User)
-                event.event_name = "_startTimer"
-                cnt = self.__cnt()
-                if cnt :
-                    try:
-                        qt.qApp.lock()
-                        qt.qApp.postEvent(cnt,event)
-                    finally:
-                        qt.qApp.unlock()
+            self.__startIdle()
+            
+
         ##@brief need a refresh for somme reason
         def refresh(self) :
             try:
@@ -155,6 +149,17 @@ class QubImage2Pixmap(qt.QObject) :
                             pass
                         aLock.unLock()
                             
+        ##@brief send a custom event to start the timer
+        #@todo in Qt4 remove the event and replace this fct by the curent customEvent
+        def __startIdle(self) :
+            if not self.isActive() :
+                #send event
+                event = qt.QCustomEvent(qt.QEvent.User)
+                event.event_name = "_startTimer"
+                cnt = self.__cnt()
+                if cnt :
+                    qt.qApp.postEvent(cnt,event)
+                    
         ##@brief decimation algorithm
         #
         #this methode has two way of decimation :

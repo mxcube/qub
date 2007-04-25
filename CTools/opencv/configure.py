@@ -22,7 +22,7 @@ qt_sip_flags = config.pyqt_qt_sip_flags
 
 # Run SIP to generate the code.  Note that we tell SIP where to find the qt
 # module's specification files using the -I flag.
-cmd = " ".join([config.sip_bin, "-c", '.', "-b", build_file, "-I", config.pyqt_sip_dir,"-I",OpencvInclude, qt_sip_flags,"opencv.sip"])
+cmd = " ".join([config.sip_bin,"-g", "-c", '.', "-b", build_file, "-I", config.pyqt_sip_dir,"-I",OpencvInclude, qt_sip_flags,"opencv.sip"])
 print cmd
 os.system(cmd)
 

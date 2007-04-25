@@ -140,6 +140,7 @@ extern "C"
 }
 template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,const IN *aSrcPalette)
 {
+  Py_BEGIN_ALLOW_THREADS;
   for(int i = 0;i < 0x10000;++i,++aDestPalette,aSrcPalette += 4)
      {
       *aDestPalette  = aSrcPalette[0] & 0xff;
@@ -147,13 +148,16 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
       *aDestPalette |= (aSrcPalette[2] & 0xff) << 16;
       *aDestPalette |= (aSrcPalette[3] & 0xff) << 24;	
      }
+  Py_END_ALLOW_THREADS;
 }
 %End
     SIP_PYOBJECT getPaletteData();
 %MethodCode
   unsigned int *aPaletteDataPt;
   int aSize;
+  Py_BEGIN_ALLOW_THREADS;
   sipCpp->getPaletteData(aPaletteDataPt,aSize);
+  Py_END_ALLOW_THREADS;
   sipRes = PyString_FromStringAndSize((const char *)aPaletteDataPt,aSize);
   delete aPaletteDataPt;
 %End
@@ -321,7 +325,10 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 #endif
 #define MAP_IMAGE(TYPE)\
  TYPE aMin,aMax;\
- QImage aMappedImage = LUT::map_on_min_max_val((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
+ QImage aMappedImage;\
+ Py_BEGIN_ALLOW_THREADS;\
+ aMappedImage = LUT::map_on_min_max_val((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
+ Py_END_ALLOW_THREADS;\
  aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
 MAP_FUNCTION
 %End
@@ -334,7 +341,10 @@ MAP_FUNCTION
 #define MAP_IMAGE(TYPE)\
  TYPE aMin = (TYPE)a3;\
  TYPE aMax = (TYPE)a4;\
- QImage aMappedImage = LUT::map((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
+ QImage aMappedImage;\
+ Py_BEGIN_ALLOW_THREADS;\
+ aMappedImage = LUT::map((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
+ Py_END_ALLOW_THREADS;\
  aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
 MAP_FUNCTION
 %End
