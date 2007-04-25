@@ -6,8 +6,8 @@ if platform.system() == 'Linux' :
     extra_compile_args = ['-pthread','-msse2','-mfpmath=sse']
     extra_link_args = ['-pthread']
 elif platform.system() == 'SunOS' :
-    extra_compile_args = ['-g','-pthread']
-    extra_link_args = ['-g','-pthread']#['-Wl,-mt,-lpthread']
+    extra_compile_args = ['-g','-pthreads']
+    extra_link_args = ['-g','-pthreads']#['-Wl,-mt,-lpthread']
 else:
     extra_compile_args = []
     

@@ -192,7 +192,7 @@ class QubDataDisplay(qt.QWidget) :
         self.__vLineSelection.setData(data)
         self.__lineSelection.setData(data)
         self.__dataStat.setData(data)
-        pass
+
     ##@brief Caption Window
     def __setCaption(self,name) :
         self.setCaption(name)
