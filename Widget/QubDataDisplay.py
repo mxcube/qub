@@ -109,7 +109,6 @@ class QubDataDisplay(qt.QWidget) :
                 self.__file = EdfFile.EdfFile(data)
                 print "Number of Record",self.__file.GetNumImages()
                 dataArray = numpy.array(self.__file.GetData(0)) # TODO remove when EDF Module use numpy
-
                      ####### PRINT ACTION #######
         printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
         printAction.previewConnect(getPrintPreviewDialog())
@@ -185,7 +184,7 @@ class QubDataDisplay(qt.QWidget) :
         self.__setCaption(captionName)
         if dataArray is not None :
             self.__rawData2Image.putRawData(dataArray)
-##            self.setData(dataArray)
+            self.setData(dataArray)
 
         
     def __del__(self) :
@@ -203,7 +202,6 @@ class QubDataDisplay(qt.QWidget) :
         self.__vLineSelection.setData(data)
         self.__lineSelection.setData(data)
         self.__dataStat.setData(data)
-
     
     ##@brief Caption Window
     def __setCaption(self,name) :
