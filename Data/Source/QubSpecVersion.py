@@ -1,5 +1,5 @@
 import weakref
-import sps
+from Qub.CTools import sps
 from Qub.Data.Source.QubSpecShm import QubSpecShm
 from Qub.Data.Source.QubSource import QubSpecMotherSource
 from Qub.Data.Plug.QubPlug import QubPollingPlug

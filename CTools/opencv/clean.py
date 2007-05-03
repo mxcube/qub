@@ -6,7 +6,6 @@ import os.path
 dont_rm_files = ['opencv.sip','opencv_qtTools.cpp','opencv_qtTools.h',
                  'opencvconfig.py.in','configure.py','swigpyrun.h',
                  'swig_opencv_image.h','swig_opencv_image.cpp',
-                 'opencv_bayer.cpp','opencv_bayer.h',
                  'clean.py']
 
 for root,dirs,files in os.walk('.') :

@@ -4,7 +4,7 @@ import qtcanvas
 import sys
 import math
 
-import Numeric
+import numpy
 
 import Qwt5 as qwt
 
@@ -499,9 +499,9 @@ class QubLineDataSelectionAction(QubToggleImageAction):
                 ys = range(int(math.ceil(starty)),int(math.floor(starty + nbLine)),1)
                 if int(starty) != starty: ys.insert(0,starty)
                 if int(starty + nbLine) != (starty + nbLine): ys.append(starty + nbLine)
-                xs = Numeric.arange(startx,startx + int(math.ceil(math.sqrt(distx ** 2 + disty ** 2))),1)
+                xs = numpy.arange(startx,startx + int(math.ceil(math.sqrt(distx ** 2 + disty ** 2))),1)
                 abscis = xs
-                lines = Numeric.array([[x,y] for y in ys for x in xs])
+                lines = numpy.array([[x,y] for y in ys for x in xs])
                 self._graph.setAxisTitle(self._graph.xBottom,'X value')
                 self._graph.setAxisTitle(self._graph.xTop,'Y value')
                 self._graph.setAxisScale(self._graph.xTop,starty,endy)
@@ -513,27 +513,27 @@ class QubLineDataSelectionAction(QubToggleImageAction):
                 xs = range(int(math.ceil(startx)),int(math.floor(startx + nbLine)),1)
                 if int(startx) != startx: xs.insert(0,startx)
                 if int(startx + nbLine) != (startx + nbLine): xs.append(startx + nbLine)
-                ys = Numeric.arange(starty,starty + int(math.ceil(math.sqrt(distx ** 2 + disty ** 2))),1)
+                ys = numpy.arange(starty,starty + int(math.ceil(math.sqrt(distx ** 2 + disty ** 2))),1)
                 angle -= math.pi / 2
                 abscis = ys
-                lines = Numeric.array([[x,y] for x in xs for y in ys])
+                lines = numpy.array([[x,y] for x in xs for y in ys])
                 self._graph.setAxisTitle(self._graph.xBottom,'Y value')
                 self._graph.setAxisTitle(self._graph.xTop,'X value')
                 self._graph.setAxisScale(self._graph.xTop,startx,endx)
 
-            rotation = Numeric.array([[math.cos(-angle),-math.sin(-angle)],
+            rotation = numpy.matrix([[math.cos(-angle),-math.sin(-angle)],
                                      [math.sin(-angle),math.cos(-angle)]])
-            translation = Numeric.array([startx,starty])
+            translation = numpy.array([startx,starty])
 
             lines = lines - translation
-            lines = Numeric.matrixmultiply(lines,rotation)
+            lines = lines * rotation
             lines = lines + translation
 
             
             inter_result = datafuncs.interpol([range(self._data.shape[0]),range(self._data.shape[1])],self._data,lines,0)
             inter_result.shape = inter_result.shape[0] / len(abscis),len(abscis)
                         
-            average = Numeric.zeros(len(inter_result[0]))
+            average = numpy.zeros(len(inter_result[0]))
             for line in inter_result:
                 average = average + line
             average = average / len(inter_result)
@@ -685,7 +685,7 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                  startPos = round(yzoom * self._lineId) / yzoom
                  endPos = startPos + nbLine
                  try :
-                     lines = [x for x in Numeric.take(self._data,range(int(startPos),int(endPos) + 1))]
+                     lines = [x for x in self._data[range(int(startPos),int(endPos) + 1)]]
                  except IndexError,err:
                      return
 
@@ -700,15 +700,15 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                  else:
                       caption = '(line : %d)' % (self._lineId)
                  try :
-                     lines = [x for x in Numeric.take(self._data,range(self._lineId,self._lineId + nbLine))]
+                     lines = [x for x in self._data[range(self._lineId,self._lineId + nbLine)]]
                  except IndexError,err:
                      return
-                 
-            yVales = Numeric.zeros(len(lines[0]))
+            
+            yVales = numpy.zeros(len(lines[0]))
             for line in lines :
                  yVales = yVales + line
             yVales = yVales / nbLine
-            self._curve.setData(Numeric.arange(len(yVales)),yVales)
+            self._curve.setData(numpy.arange(len(yVales)),yVales)
             self._graph.replot()
             self._graph.setTitle('%s %s' % (self._graphLegend,caption))
             self._graph.setCaption('%s %s' % (self._captionPrefix,caption))
@@ -770,7 +770,7 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
                  startPos = round(xzoom * self._columnId) / xzoom
                  endPos = startPos + nbCol
                  try:
-                     columns = [x for x in Numeric.transpose(Numeric.take(self._data,range(int(startPos),int(endPos) + 1),axis = 1))]
+                     columns = [x for x in numpy.transpose(numpy.take(self._data,range(int(startPos),int(endPos) + 1),axis = 1))]
                  except IndexError,err:
                      return
                  startFrac = math.ceil(startPos) - startPos
@@ -784,14 +784,14 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
                  else:
                      caption = '(column : %d)' % (self._columnId)
                  try:
-                     columns = [x for x in Numeric.transpose(Numeric.take(self._data,range(self._columnId,self._columnId + nbCol),axis = 1))]
+                     columns = [x for x in numpy.transpose(numpy.take(self._data,range(self._columnId,self._columnId + nbCol),axis = 1))]
                  except IndexError,err:
                      return
-             xVales = Numeric.zeros(len(columns[0]))
+             xVales = numpy.zeros(len(columns[0]))
              for column in columns :
                  xVales = xVales + column
              xVales = xVales / nbCol
-             self._curve.setData(Numeric.arange(len(xVales)),xVales)
+             self._curve.setData(numpy.arange(len(xVales)),xVales)
              self._graph.setTitle('%s %s' % (self._graphLegend,caption))
              self._graph.replot()
              self._graph.setCaption('%s %s' %(self._captionPrefix,caption))
@@ -1647,7 +1647,7 @@ class QubSubDataViewAction(QubToggleImageAction) :
             
     def __refreshPixmap(self) :
         self.__idle.stop()
-        if self.__data and self.__colormap and self.__x >= 0 and self.__y >= 0 :
+        if self.__data is not None and self.__colormap and self.__x >= 0 and self.__y >= 0 :
             ymin = self.__y - 4
             if ymin < 0 : ymin = 0
             ymax = ymin + 10
@@ -1659,14 +1659,18 @@ class QubSubDataViewAction(QubToggleImageAction) :
             xmax = xmin + 10
             if xmax > cols: xmax = cols
             
-            FloatArrayType = Numeric.typecodes['Float']
-            if FloatArrayType.find(self.__data.typecode()) > -1 :
+            FloatArrayType = numpy.typecodes['Float']
+            if FloatArrayType.find(self.__data.dtype.char) > -1 :
                 valueFormatString = '%s<td>%s%.2f%s</td>'
             else:
                 valueFormatString = '%s<td>%s%d%s</td>'
-            self.__dataCrop = Numeric.take(Numeric.take(self.__data,range(ymin,ymax)),range(xmin,xmax),axis=1)
-            image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(self.__dataCrop,self.__colormap.palette(),
-                                                                        self.__colormap.lutType())
+            self.__dataCrop = self.__data[range(ymin,ymax)].take(range(xmin,xmax),axis=1)
+            try:
+                image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(self.__dataCrop,self.__colormap.palette(),
+                                                                            self.__colormap.lutType())
+            except pixmaptools.LutError,err:
+                print err.msg()
+                return
             if not image.width() or not image.height(): return
             self._widget.setPixmap(qt.QPixmap(image.scale(20,20)))
             tooltipstring = '<table><tr><th><b>rows/col</b></th>'
@@ -2343,15 +2347,14 @@ class QubMain(qt.QMainWindow):
     def readEdfFile(self, file):    
         edf = EdfFile.EdfFile(file)
         self.data = edf.GetData(0)
-        self.dataMin = min(Numeric.ravel(self.data))
-        self.dataMax = max(Numeric.ravel(self.data))
+        self.dataMin = min(self.data.ravel())
+        self.dataMax = max(self.data.ravel())
 
                        
 ##  MAIN   
 if  __name__ == '__main__':
     from Qub.Widget.QubImageView import QubImageView
     import EdfFile
-    import Numeric
     import spslut
     
     app = qt.QApplication(sys.argv)

@@ -78,9 +78,10 @@ typedef union {
   unsigned int p;
 } swaptype;
 
-//@brief constructor of the Palette object
-//
-//@param aMode there is two possible mode (RGBX or BGRX)
+/** @brief constructor of the Palette object
+ *
+ *  @param aMode there is two possible mode (RGBX or BGRX)
+*/
 LUT::Palette::Palette(palette_type pType,mode aMode) throw() : _mode(aMode)
 {
   if(pType == USER) 
@@ -88,7 +89,8 @@ LUT::Palette::Palette(palette_type pType,mode aMode) throw() : _mode(aMode)
   else
     fillPalette(pType);
 }
-//@brief create standard palette
+/** @brief create standard palette
+ */
 void LUT::Palette::fillPalette(palette_type aType) throw()
 {
   const XServer_Info &config = theLutConfiguration.getServerInfo(_mode);
@@ -141,7 +143,7 @@ void LUT::Palette::fillSegment(int from,int to,
     throw LutError("fillSegment : form must be lower than to");
   _fillSegment(config,from,to,R1,G1,B1,R2,G2,B2);
 }
-// @brief set the data palette
+/// @brief set the data palette
 void LUT::Palette::setPaletteData(const unsigned int *aPaletteDataPt,int aSize) throw(LutError)
 {
   if(aSize != sizeof(int) * 0x10000)
@@ -149,7 +151,7 @@ void LUT::Palette::setPaletteData(const unsigned int *aPaletteDataPt,int aSize) 
   memcpy(_dataPalette,aPaletteDataPt,aSize);
 }
 
-//@brief get the data palette
+///@brief get the data palette
 void LUT::Palette::getPaletteData(unsigned int * &aPaletteDataPt,int &aSize)
 {
   aPaletteDataPt = new unsigned int[0x10000];
@@ -279,6 +281,17 @@ void LUT::Palette::_calcPalette(unsigned int palette[],int fmin, int fmax,
 }
 
 // LUT TEMPLATE
+/** @brief transform <b>data</b> to an image using the palette give in args
+ * 
+ *  autoscale data on min/max
+ *  @param data the data source array
+ *  @param column the number of column of the source data
+ *  @param row the number of row of the source data
+ *  @param aPalette the palette colormap used to transform source data to an image
+ *  @param aMeth the mapping methode
+ *  @param dataMin return the min data value
+ *  @param dataMax return the max data value
+ */
 template<class IN> QImage LUT::map_on_min_max_val(const IN *data,int column,int row,Palette &aPalette,
 						  mapping_meth aMeth,
 						  IN &dataMin,IN &dataMax)
@@ -287,7 +300,11 @@ template<class IN> QImage LUT::map_on_min_max_val(const IN *data,int column,int 
   return map(data,column,row,aPalette,aMeth,dataMin,dataMax);
 }
 
-
+/** @brief transform <b>data</b> to an image using the palette an dataMin and dataMax given in args
+ *  
+ *  simple look up between dataMin and dataMax
+ *  @see map_on_min_max_val
+ */
 template<class IN> void _find_min_max(const IN *aData,int aNbValue,IN &dataMin,IN &dataMax)
 {
   dataMax = dataMin = *aData;++aData;
@@ -298,11 +315,12 @@ template<class IN> void _find_min_max(const IN *aData,int aNbValue,IN &dataMin,I
     }
 }
 #ifdef __SSE2__
+/// @brief opti min/max unsigned short
 template<> void _find_min_max(unsigned short const *aData,int aNbValue,
 			      unsigned short &dataMin,unsigned short &dataMax)
 {
   __m128i aMinVector,aMaxVector;
-  if(((long)aData) & 0xff) // if True not 16 alligned mmx min/max
+  if(((long)aData) & 0xf) // if True not 16 alligned mmx min/max
     {
       aMinVector = _mm_set1_epi64(*(__m64*)aData),aMaxVector = _mm_set1_epi64(*(__m64*)aData);
       aData += 4,aNbValue -= 4;
@@ -373,22 +391,25 @@ template<> void _find_min_max(unsigned short const *aData,int aNbValue,
     }
   _mm_empty();
 }
-//@brief opti for float
+/// @brief opti for float
 template<> void _find_min_max(const float *aData,int aNbValue,
 			      float &dataMin,float &dataMax)
 {
   __m128 aMinVector,aMaxVector;
-  if(((long)aData) & 0xff) // if True not 16 alligned mmx min/max
+  if(((long)aData) & 0xf) // if True not 16 alligned
     {
       float aMin = *aData,aMax = *aData;
       ++aData;
-      if(*aData > aMax) aMax = *aData;
-      else if(*aData < aMin) aMin = *aData;
+      if(*aData > *aMax) *aMax = *aData;
+      else if(*aData < *aMin) *aMin = *aData;
       ++aData;
       aMinVector = _mm_set1_ps(aMin),aMaxVector = _mm_set1_ps(aMax);
     }
   else
-    aMinVector = _mm_set1_ps(*aData),aMaxVector = _mm_set1_ps(*aData);
+    {
+      aMinVector = _mm_load1_ps(aData);
+      aMaxVector = _mm_load1_ps(aData);
+    }
 
   __m128 *data = (__m128*)aData;
   for(;aNbValue >= 4;++data,aNbValue -= 4)
@@ -514,7 +535,7 @@ template<class IN> QImage _linear_data_map(const IN *data,int column,int line,
 }
 
 ///@brief opti for unsigned short
-template<> QImage _linear_data_map(const unsigned short *data,int column,int line,
+template<> QImage _linear_data_map(unsigned short const *data,int column,int line,
 				   unsigned int *palette,double,double,
 				   unsigned short dataMin,unsigned short dataMax) throw()
 {
@@ -533,6 +554,7 @@ template<> QImage _linear_data_map(const unsigned short *data,int column,int lin
     }
   return anImage;
 }
+
 ///@brief opti for short
 template<> QImage _linear_data_map(const short *data,int column,int line,
 				   unsigned int *palette,double,double,
@@ -577,7 +599,7 @@ template<> QImage _linear_data_map(const char *data,int column,int line,
   return anImage;
 }
 ///@brief opti for unsigned char
-template<> QImage _linear_data_map(const unsigned char *data,int column,int line,
+template<> QImage _linear_data_map(unsigned char const *data,int column,int line,
 				   unsigned int *palette,double,double,
 				   unsigned char dataMin,unsigned char dataMax) throw()
 {
@@ -605,7 +627,7 @@ template<> QImage _linear_data_map(const float *aData,int column,int line,
   int aNbPixel = column * line;
   QImage anImage(column,line,32);
   unsigned int *anImagePt = (unsigned int*)anImage.bits();
-  if(((long)aData) & 0xff) // if True not 16 alligned standard lookup
+  if(((long)aData) & 0xf) // if True not 16 alligned standard lookup
     for(int i = 2;i;--i,--aNbPixel,++aData,++anImagePt)	// Std Lookup
       {
 	float val=*aData;
@@ -729,7 +751,7 @@ template<class IN> QImage _log_data_map_shift(const IN *data,int column,int line
       if (val >= dataMax)
 	*anImagePt = *(palette + 0xffff) ;
       else if  (val > dataMin)
-	*anImagePt = *(palette + long(A * log10(val) + B));
+	*anImagePt = *(palette + long(A * log10(val + B)));
       else
 	*anImagePt = *palette ;
     }

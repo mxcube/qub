@@ -595,8 +595,8 @@ class QubMain(qt.QMainWindow):
     def readEdfFile(self, file):    
         edf = EdfFile.EdfFile(file)
         self.data = edf.GetData(0)
-        self.dataMin = min(Numeric.ravel(self.data))
-        self.dataMax = max(Numeric.ravel(self.data))
+        self.dataMin = min(self.data.ravel())
+        self.dataMax = max(self.data.ravel())
                
 ##  MAIN   
 if  __name__ == '__main__':

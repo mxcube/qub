@@ -65,9 +65,9 @@ class QubShm2Pixmap(QubPlug) :
         self.__imageView = aQubPixmapDisplayView
         
     def update(self,specversion,specshm,data) :
-        (image_str,size,minmax) = spslut.transform(data,
-                                                   (1,0), (spslut.LINEAR, 3.0),
-                                                   "BGRX", spslut.GREYSCALE,1,(0,255))
+##        (image_str,size,minmax) = spslut.transform(data,
+##                                                   (1,0), (spslut.LINEAR, 3.0),
+##                                                   "BGRX", spslut.GREYSCALE,1,(0,255))
         image = qt.QImage(image_str,size[0],size[1],32,None,0,
                           qt.QImage.IgnoreEndian)
         
@@ -148,7 +148,7 @@ if  __name__ == '__main__':
     if len(sys.argv) < 2:
 ##        print "Give an image file name as argument"
 ##        sys.exit(1)
-        import sps,spslut
+        from Qub.CTools import sps
         from Qub.Data.Source.QubSpecSource import getSpecVersions
         SpecVers = getSpecVersions()
         sebSpec = SpecVers.getObjects('seb')

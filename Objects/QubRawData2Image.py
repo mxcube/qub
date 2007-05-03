@@ -53,24 +53,6 @@ class QubRawData2Image(qt.QObject) :
         self.__dataZoomProcess.putRawData(data)
 
     def extendSendList(self,fullimageNPlugs) :
-        aLock = QubLock(self.__mutex,False)
-        for fullimage,plugNImage in fullimageNPlugs :
-            for plug,image in plugNImage:
-                if not plug.isEnd() :
-                    if plug.setImage(image,fullimage) :
-                        aLock.lock()
-                        try:
-                            self.__plugs.remove(plug)
-                        except: pass
-                        aLock.unLock()
-                else:
-                    aLock.lock()
-                    try:
-                        self.__plugs.remove(plug)
-                    except: pass
-                    aLock.unLock()
-        return
-
         aLock = QubLock(self.__mutex)
         self.__sendPending.extend(fullimageNPlugs)
         aLock.unLock()
@@ -220,14 +202,14 @@ class QubRawData2ImagePlug:
             return self.__colorMapType
         ##@brief set the colormap type
         #
-        #@param aColormapType is a enum from spslut, value can be:
-        # - spslut.GREYSCALE
-        # - spslut.REVERSEGREY
-        # - spslut.TEMP
-        # - spslut.RED
-        # - spslut.GREEN
-        # - spslut.BLUE
-        # - spslut.MANY
+        #@param aColormapType is a enum from pixmaptools.LUT.Palette, value can be:
+        # - pixmaptools.LUT.Palette.GREYSCALE
+        # - pixmaptools.LUT.Palette.REVERSEGREY
+        # - pixmaptools.LUT.Palette.TEMP
+        # - pixmaptools.LUT.Palette.RED
+        # - pixmaptools.LUT.Palette.GREEN
+        # - pixmaptools.LUT.Palette.BLUE
+        # - pixmaptools.LUT.Palette.MANY
         def setColorMapType(self,aColormapType) :
             aLock = QubLock(self.__mutex)
             self.__colorMapType = aColormapType
@@ -240,10 +222,10 @@ class QubRawData2ImagePlug:
             return self.__lutType
         ##@brief set the lut type mapping
         #
-        #@param lutType is an enum from spslut, value can be:
-        # - spslut.LINEAR
-        # - spslut.GAMMA
-        # - spslut.LOG
+        #@param lutType is an enum from pixmaptools.LUT, value can be:
+        # - pixmaptools.LUT.LINEAR
+        # - pixmaptools.LUT.GAMMA
+        # - pixmaptools.LUT.LOG
         def setLutType(self,lutType) :
             aLock = QubLock(self.__mutex)
             self.__lutType = lutType

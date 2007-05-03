@@ -1,5 +1,7 @@
 import weakref
 import qt
+import numpy # TODO REMOVE AS SOON AS EDF MODULE USE NUMPY
+
 if __name__ == "__main__" :
     a = qt.QApplication([])
 
@@ -106,7 +108,7 @@ class QubDataDisplay(qt.QWidget) :
                 captionName = 'File : %s' % os.path.split(data)[1]
                 self.__file = EdfFile.EdfFile(data)
                 print "Number of Record",self.__file.GetNumImages()
-                dataArray = self.__file.GetData(0)
+                dataArray = numpy.array(self.__file.GetData(0)) # TODO remove when EDF Module use numpy
 
                      ####### PRINT ACTION #######
         printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
@@ -141,8 +143,17 @@ class QubDataDisplay(qt.QWidget) :
         self.__colormapDialog = None
         colorMapAction = QubOpenDialogAction(parent=self,name='colormap',iconName='colormap',
                                              label='ColorMap',group="color")
-        colorMapAction.setConnectCallBack(self.__colorMap_dialog_new)
         actions.append(colorMapAction)
+
+        if mdiParent:
+            self.__colormapDialog = QubColormapDialog(parent=mdiParent)
+            mdiParent.addNewChildOfMainWindow(mainWindow,self.__colormapDialog)
+        else:
+            self.__colormapDialog = QubColormapDialog(parent=None)
+        colorMapAction.setDialog(self.__colormapDialog)
+        self.__colormapDialog.setColormapNRefreshCallBack(self.__ImageNViewPlug.colormap(),
+                                                          self.refresh)
+        self.__ImageNViewPlug.setColorMapDialog(self.__colormapDialog)
                ####### CHANGE FOREGROUND COLOR #######
         fcoloraction = QubForegroundColorAction(name="color", group="selection")
         actions.append(fcoloraction)
@@ -172,9 +183,9 @@ class QubDataDisplay(qt.QWidget) :
             import traceback
             traceback.print_exc()
         self.__setCaption(captionName)
-        if dataArray :
+        if dataArray is not None :
             self.__rawData2Image.putRawData(dataArray)
-            self.setData(dataArray)
+##            self.setData(dataArray)
 
         
     def __del__(self) :
@@ -193,6 +204,7 @@ class QubDataDisplay(qt.QWidget) :
         self.__lineSelection.setData(data)
         self.__dataStat.setData(data)
 
+    
     ##@brief Caption Window
     def __setCaption(self,name) :
         self.setCaption(name)
@@ -236,23 +248,6 @@ class QubDataDisplay(qt.QWidget) :
         except AttributeError,err:
             pass
 
-    def __colorMap_dialog_new(self,openDialogAction,aQubImage) :
-        try:
-            mdiParent,mainWindow = QubMdiCheckIfParentIsMdi(self)
-            if mdiParent:
-                self.__colormapDialog = QubColormapDialog(parent=mdiParent)
-                mdiParent.addNewChildOfMainWindow(mainWindow,self.__colormapDialog)
-            else:
-                self.__colormapDialog = QubColormapDialog(parent=None)
-                
-            openDialogAction.setDialog(self.__colormapDialog)
-            self.__colormapDialog.setColormapNRefreshCallBack(self.__ImageNViewPlug.colormap(),
-                                                              self.refresh)
-            self.__ImageNViewPlug.setColorMapDialog(self.__colormapDialog)
-        except:
-            import traceback
-            traceback.print_exc()
-
     def _save_dialog_new(self,openDialogAction,aQubImage) :
         mdiParent,mainWindow = QubMdiCheckIfParentIsMdi(self)
         if mdiParent:
@@ -268,7 +263,7 @@ class QubDataDisplay(qt.QWidget) :
             
 class _ShmDataPlug(QubPlug) :
     def __init__(self,specShm,updateToggle,cnt) :
-        QubPlug.__init__(self,100)
+        QubPlug.__init__(self,200)      # 5 image/second max
         self.__dataReceiver = None
         self.__specShm = specShm
         self.__cnt = weakref.ref(cnt)
@@ -332,7 +327,8 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
 
     def setColorMapDialog(self,colorMapDialog) :
         self.__colormapDialog = colorMapDialog
-
+        fulldata,resizedData = self.data()
+            
     def setDataPositionValue(self,dataValuePosition) :
         self.__dataPositionValueAction = dataValuePosition
         

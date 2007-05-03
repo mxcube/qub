@@ -1,5 +1,6 @@
 import qt
-import Numeric
+
+import numpy
 
 from Qub.Icons.QubIcons import loadIcon
 from Qub.Widget.Graph.QubGraph import QubGraph
@@ -52,7 +53,7 @@ class QubColormapDialog(qt.QWidget):
         """
         combo for colormap
         """
-        colormapData = Numeric.resize(Numeric.arange(60), (10,60))
+        colormapData = numpy.resize(numpy.arange(60), (10,60))
         self.__colormapCombo = qt.QComboBox(self)
         palette = LUT.Palette()
         for colormapName,colormapType in self.__colormapSps:
@@ -148,7 +149,7 @@ class QubColormapDialog(qt.QWidget):
         set the curve _/-
         """
         self.colormapCurve = QubGraphCurve("ColormapCurve")
-        self.colormapCurve.setData([0, 10, 20, 30],[-10, -10, 10, 10 ])
+        self.colormapCurve.setData(numpy.array([0, 10, 20, 30]),numpy.array([-10, -10, 10, 10 ]))
         self.colormapCurve.attach(self.__colormapGraph)
         self.__minControl = self.colormapCurve.getPointControl(1)
         self.__minControl.setConstraints(10, 20, -10, -10)
@@ -207,6 +208,9 @@ class QubColormapDialog(qt.QWidget):
         self.__refreshCallback = None
         self.__colormap = None
 
+    def __del__(self) :
+        self.__refreshCallback = None
+        
     ##@brief setCaptionPrefix
     def setCaptionPrefix(self,prefix) :
         self.setCaption(prefix)
@@ -301,9 +305,8 @@ class QubColormapDialog(qt.QWidget):
         
     def update(self,data):
         colormap = self.__colormap
-        if colormap and data:
-            data = Numeric.ravel(data)
-            self.__dataMin,self.__dataMax = min(data),max(data)
+        if colormap and data is not None:
+            self.__dataMin,self.__dataMax = data.min(),data.max()
                      ####### GRAPH UPDATE #######
             """
             calculate visible part of the graph outside data values (margin)
@@ -370,8 +373,8 @@ class QubColormapDialog(qt.QWidget):
 def Edf2Pixmap(file):
     edf = EdfFile.EdfFile(file)
     data = edf.GetData(0)
-    minData = Numeric.minimum.reduce(Numeric.minimum.reduce(data))
-    maxData = Numeric.maximum.reduce(Numeric.maximum.reduce(data))
+##    minData = Numeric.minimum.reduce(Numeric.minimum.reduce(data))
+##    maxData = Numeric.maximum.reduce(Numeric.maximum.reduce(data))
     (image_str, size, minmax) = spslut.transform(data ,
                                                  (1,0), 
                                                  (spslut.LINEAR, 3.0),

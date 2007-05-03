@@ -701,9 +701,7 @@ class QubDataStatWidget(Histogram) :
             
     def __refresh(self) :
         self.__idle.stop()
-        import numpy
         if self.isVisible() and self.__data is not None:
-            self.__data = numpy.array(self.__data)
             height,width = self.__data.shape
             nbPixel = height * width
             integralVal = self.__data.sum()

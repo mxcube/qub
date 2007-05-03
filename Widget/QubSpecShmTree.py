@@ -1,21 +1,21 @@
-import Numeric
+import numpy
 import weakref
-import sps
+from Qub.CTools import sps
 import qt
 if __name__ == "__main__" :
     a = qt.QApplication([])
 
 _TypeCode = {
-    Numeric.Float32 : "Float",
-    Numeric.Float64 : "Double",
-    Numeric.Int : "Long",
-    Numeric.Int16 : "short",
-    Numeric.Int32 : "Int",
-    Numeric.Int8 : "Byte",
-    Numeric.UnsignedInt16 : "Unsigned short",
-    Numeric.UnsignedInt32 : "Unsigned int",
-    Numeric.UnsignedInt8 : "Unsigned Byte",
-    Numeric.UnsignedInteger : "Unsigned long"}
+    numpy.dtype('float32') : "Float",
+    numpy.dtype('float64') : "Double",
+    numpy.dtype('int') : "Int",
+    numpy.dtype('int16') : "short",
+    numpy.dtype('int32') : "Int",
+    numpy.dtype('int8') : "Byte",
+    numpy.dtype('uint16') : "Unsigned short",
+    numpy.dtype('uint32') : "Unsigned int",
+    numpy.dtype('uint8') : "Unsigned Byte",
+    numpy.dtype('uint64') : "Unsigned long"}
 
 from Qub.Data.Plug.QubPlug import QubPlug
 from Qub.Data.Source.QubSpecSource import getSpecVersions,QubSpecSource2Version
@@ -59,7 +59,7 @@ class _ShmCheckUpDate(QubPlug) :
         if item:
             item.setText(1,'%d,%d' % dataArray.shape)
             try:
-                item.setText(2,_TypeCode[dataArray.typecode()])
+                item.setText(2,_TypeCode[dataArray.dtype])
             except KeyError:
                 item.setText(2,'?')
         return not item

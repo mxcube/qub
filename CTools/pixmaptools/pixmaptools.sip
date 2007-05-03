@@ -327,7 +327,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
  TYPE aMin,aMax;\
  QImage aMappedImage;\
  Py_BEGIN_ALLOW_THREADS;\
- aMappedImage = LUT::map_on_min_max_val((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
+ aMappedImage = LUT::map_on_min_max_val<TYPE>((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
  Py_END_ALLOW_THREADS;\
  aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
 MAP_FUNCTION
@@ -343,7 +343,7 @@ MAP_FUNCTION
  TYPE aMax = (TYPE)a4;\
  QImage aMappedImage;\
  Py_BEGIN_ALLOW_THREADS;\
- aMappedImage = LUT::map((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
+ aMappedImage = LUT::map<TYPE>((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
  Py_END_ALLOW_THREADS;\
  aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
 MAP_FUNCTION
