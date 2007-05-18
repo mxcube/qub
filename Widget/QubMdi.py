@@ -197,6 +197,7 @@ class QubMdi(qt.QWorkspace):
             windowToolBox = qt.QToolBox(self.__windowDocWindow)
             self.__windowDocWindow.setWidget(windowToolBox)
             self.__windowDocWindow.setCaption('Opened window')
+            self.__windowDocWindow.setResizeEnabled(True)
             windowToolBox.addItem(QubMdiTree(self,windowToolBox),'Opened window')
             MainWindow.addDockWindow(self.__windowDocWindow,qt.Qt.DockLeft)
             self.__windowDocWindow.hide()
@@ -372,6 +373,9 @@ class QubMdiTree(qt.QListView) :
 
     def __checkWindowState(self) :
         for item in self.__getIterator(None) :
+            try: item.setText(0,item.window().caption())
+            except AttributeError:
+                pass
             self.__recurseCheckState(item)
 
     def __recurseCheckState(self,parentIterator) :

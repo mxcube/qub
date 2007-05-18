@@ -685,33 +685,34 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                  startPos = round(yzoom * self._lineId) / yzoom
                  endPos = startPos + nbLine
                  try :
-                     lines = [x for x in self._data[range(int(startPos),int(endPos) + 1)]]
+                     lines = [x for x in self._data[int(startPos):int(endPos) + 1]]
                  except IndexError,err:
                      return
-
-                 startFrac = math.ceil(startPos) - startPos
-                 lines[0] = lines[0] * startFrac
-                 endFrac = endPos - math.floor(endPos)
-                 lines[-1] = lines[-1] * endFrac
-		 caption = '(start,end lines : %.2f,%.2f)' % (startPos,endPos)
+                 if lines:
+                     startFrac = math.ceil(startPos) - startPos
+                     lines[0] = lines[0] * startFrac
+                     endFrac = endPos - math.floor(endPos)
+                     lines[-1] = lines[-1] * endFrac
+                     caption = '(start,end lines : %.2f,%.2f)' % (startPos,endPos)
             else:
                  if nbLine > 1:
                       caption = '(start,end lines : %d,%d)' % (self._lineId,self._lineId + nbLine - 1)
                  else:
                       caption = '(line : %d)' % (self._lineId)
                  try :
-                     lines = [x for x in self._data[range(self._lineId,self._lineId + nbLine)]]
+                     lines = [x for x in self._data[self._lineId:self._lineId + nbLine]]
                  except IndexError,err:
                      return
             
-            yVales = numpy.zeros(len(lines[0]))
-            for line in lines :
-                 yVales = yVales + line
-            yVales = yVales / nbLine
-            self._curve.setData(numpy.arange(len(yVales)),yVales)
-            self._graph.replot()
-            self._graph.setTitle('%s %s' % (self._graphLegend,caption))
-            self._graph.setCaption('%s %s' % (self._captionPrefix,caption))
+            if lines:
+                yVales = numpy.zeros(len(lines[0]))
+                for line in lines :
+                     yVales = yVales + line
+                yVales = yVales / nbLine
+                self._curve.setData(numpy.arange(len(yVales)),yVales)
+                self._graph.replot()
+                self._graph.setTitle('%s %s' % (self._graphLegend,caption))
+                self._graph.setCaption('%s %s' % (self._captionPrefix,caption))
 
     def __averageCBK(self,aFlag) :
         self._average = aFlag
@@ -770,31 +771,33 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
                  startPos = round(xzoom * self._columnId) / xzoom
                  endPos = startPos + nbCol
                  try:
-                     columns = [x for x in numpy.transpose(numpy.take(self._data,range(int(startPos),int(endPos) + 1),axis = 1))]
+                     columns = [x for x in self._data.T[int(startPos):int(endPos) + 1]]
                  except IndexError,err:
                      return
-                 startFrac = math.ceil(startPos) - startPos
-                 columns[0] = columns[0] * startFrac
-                 endFrac = endPos - math.floor(endPos)
-                 columns[-1] = columns[-1] * endFrac
-                 caption = '(start,end columns : %.2f,%.2f)' % (startPos,endPos)
+                 if columns:
+                     startFrac = math.ceil(startPos) - startPos
+                     columns[0] = columns[0] * startFrac
+                     endFrac = endPos - math.floor(endPos)
+                     columns[-1] = columns[-1] * endFrac
+                     caption = '(start,end columns : %.2f,%.2f)' % (startPos,endPos)
              else:
                  if nbCol > 1:
                      caption = '(start,end columns : %d,%d)' % (self._columnId,self._columnId + nbCol - 1)
                  else:
                      caption = '(column : %d)' % (self._columnId)
                  try:
-                     columns = [x for x in numpy.transpose(numpy.take(self._data,range(self._columnId,self._columnId + nbCol),axis = 1))]
+                     columns = [x for x in self._data.T[self._columnId:self._columnId + nbCol]]
                  except IndexError,err:
                      return
-             xVales = numpy.zeros(len(columns[0]))
-             for column in columns :
-                 xVales = xVales + column
-             xVales = xVales / nbCol
-             self._curve.setData(numpy.arange(len(xVales)),xVales)
-             self._graph.setTitle('%s %s' % (self._graphLegend,caption))
-             self._graph.replot()
-             self._graph.setCaption('%s %s' %(self._captionPrefix,caption))
+             if columns:
+                 xVales = numpy.zeros(len(columns[0]))
+                 for column in columns :
+                     xVales = xVales + column
+                 xVales = xVales / nbCol
+                 self._curve.setData(numpy.arange(len(xVales)),xVales)
+                 self._graph.setTitle('%s %s' % (self._graphLegend,caption))
+                 self._graph.replot()
+                 self._graph.setCaption('%s %s' %(self._captionPrefix,caption))
 
 ###############################################################################
 #####################          QubCircleSelection        ######################
@@ -1664,7 +1667,7 @@ class QubSubDataViewAction(QubToggleImageAction) :
                 valueFormatString = '%s<td>%s%.2f%s</td>'
             else:
                 valueFormatString = '%s<td>%s%d%s</td>'
-            self.__dataCrop = self.__data[range(ymin,ymax)].take(range(xmin,xmax),axis=1)
+            self.__dataCrop = self.__data[ymin:ymax,xmin:xmax]
             try:
                 image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(self.__dataCrop,self.__colormap.palette(),
                                                                             self.__colormap.lutType())

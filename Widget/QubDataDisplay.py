@@ -48,8 +48,12 @@ class QubDataDisplay(qt.QWidget) :
     #@param data :
     # - in case of spec shm data="specversion:arrayname"
     # - in case of file the file path
-    def __init__(self,parent=None,data=None,name='',**keys) :
+    #@param zoomValList a zoom list default [0.1,0.25,0.5,0.75,1,1.5,2]
+    def __init__(self,parent=None,data=None,name='',
+                 zoomValList = [0.1,0.25,0.5,0.75,1,1.5,2],**keys) :
         qt.QWidget.__init__(self,parent,name,qt.Qt.WDestructiveClose)
+
+        self.__curentdata = None
 
         _,mainWidget = QubMdiCheckIfParentIsMdi(self)
 
@@ -74,14 +78,17 @@ class QubDataDisplay(qt.QWidget) :
         self.connect(self.__idle,qt.SIGNAL('timeout()'),self.__refresh)
                          ####### ACTION #######
         actions = []
+        self.__actionDataActionPlug = []          # action witch need data
                        ####### SUB VIEW #######
         self.__subDataView = QubSubDataViewAction(parent=self,group="image",place="statusbar")
         self.__subDataView.setColormapObject(self.__ImageNViewPlug.colormap())
-
+        self.__actionDataActionPlug.append(self.__subDataView)
+        
         actions.append(self.__subDataView)
             ####### MOUSE POSITION AND DATA VALUE #######
         self.__posaction = 1
         dataArray = None
+        captionName = 'Data Display'
         if data:
             #test if want to poll a shm
             try:
@@ -127,14 +134,17 @@ class QubDataDisplay(qt.QWidget) :
         dataStatAction = QubOpenDialogAction(parent=mainWidget,name='Data statistic',iconName='histogram',group='admin')
         dataStatAction.setDialog(self.__dataStat)
         actions.append(dataStatAction)
+        self.__actionDataActionPlug.append(self.__dataStat)
                        ####### ZOOM LIST #######
         zoomActionList = QubZoomListAction(place = "toolbar",
-                                           initZoom = 1,zoomValList = [0.1,0.25,0.5,0.75,1,1.5,2],
+                                           initZoom = 1,zoomValList = zoomValList,
                                            show = 1,group = "image")
         actions.append(zoomActionList)
                      ####### ZOOM Action #######
         zoomFitOrFill = QubZoomAction(place = "toolbar",group = "image")
         actions.append(zoomFitOrFill)
+        
+
                    ####### LINK ZOOM ACTION #######
         zoomFitOrFill.setList(zoomActionList)
         zoomActionList.setActionZoomMode(zoomFitOrFill)
@@ -161,14 +171,17 @@ class QubDataDisplay(qt.QWidget) :
         self.__hLineSelection = QubHLineDataSelectionAction(parent=mainWidget,group="selection")
         self.__hLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
         actions.append(self.__hLineSelection)
+        self.__actionDataActionPlug.append(self.__hLineSelection)
                  ####### Vertical selection #######
         self.__vLineSelection = QubVLineDataSelectionAction(parent=mainWidget,group="selection")
         self.__vLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
         actions.append(self.__vLineSelection)
+        self.__actionDataActionPlug.append(self.__vLineSelection)
                     ####### Line selection #######
         self.__lineSelection = QubLineDataSelectionAction(parent=mainWidget,group="selection")
         self.__lineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
         actions.append(self.__lineSelection)
+        self.__actionDataActionPlug.append(self.__lineSelection)
                   ####### Position and Value #######
         self.__dataPositionValueAction = QubDataPositionValueAction(name="position",
                                                                     group="image",place="statusbar")
@@ -184,7 +197,7 @@ class QubDataDisplay(qt.QWidget) :
         self.__setCaption(captionName)
         if dataArray is not None :
             self.__rawData2Image.putRawData(dataArray)
-            self.setData(dataArray)
+            self.setData4Action(dataArray)
 
         
     def __del__(self) :
@@ -195,17 +208,53 @@ class QubDataDisplay(qt.QWidget) :
     #@return a QubPixmapDisplay
     def getDrawing(self) :
         return self.__mainView.view()
-    ##@brief set data to all action which need it
+    ##@brief get the view to add some action
+    #@return a QubPixmapDisplayView
+    def getView(self) :
+        return self.__mainView
+    ##@brief add an action witch need data
+    #
+    #@param action a QubAction
+    #@param dataActionplug a class with a methode setData
+    def addDataAction(self,action,dataActionplug) :
+        self.__mainView.addAction([action])
+        self.__actionDataActionPlug.append(dataActionplug)
+        dataActionplug.setData(self.__curentdata)
+    ##@brief add a simple action which doesn't need data
+    #
+    #@param action one or a list of QubAction
+    def addAction(self,action) :
+        if not isinstance(action,list) :
+            action = [action]
+        self.__mainView.addDataAction(action)
+    ##@brief set data from an external source
+    #@param data a numpy 2 dimension array
     def setData(self,data) :
-        self.__subDataView.setData(data)
-        self.__hLineSelection.setData(data)
-        self.__vLineSelection.setData(data)
-        self.__lineSelection.setData(data)
-        self.__dataStat.setData(data)
+        self.__rawData2Image.putRawData(data)
+        self.setData4Action(data)
     
+    ##@brief set data to all action which need it
+    #
+    #Dont call this methode (internal call)
+    #@see setData
+    def setData4Action(self,data) :
+        self.__curentdata = data
+        for action in self.__actionDataActionPlug :
+            try:
+                action.setData(data)
+            except:
+                import traceback
+                traceback.print_exc()
+            
+    ##@brief set caption for windows and subwindows
+    def setCaption(self,name):
+        qt.QWidget.setCaption(self,name)
+        self.__setCaption(name)
     ##@brief Caption Window
     def __setCaption(self,name) :
-        self.setCaption(name)
+        if isinstance(name,qt.QString) :
+            name = name.latin1()
+        qt.QWidget.setCaption(self,name)
         self.__hLineSelection.setCaptionPrefix(name)
         self.__vLineSelection.setCaptionPrefix(name)
         self.__lineSelection.setCaptionPrefix(name)
@@ -277,7 +326,7 @@ class _ShmDataPlug(QubPlug) :
             cnt = self.__cnt()
             if cnt and dataReceiver:
                 dataReceiver.putRawData(dataArray)
-                cnt.setData(dataArray)
+                cnt.setData4Action(dataArray)
             else: aEndFlag = True
         return aEndFlag
 
@@ -329,7 +378,10 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
             
     def setDataPositionValue(self,dataValuePosition) :
         self.__dataPositionValueAction = dataValuePosition
-        
+
+
+
+
 if __name__ == "__main__" :
     import qt
     import sys
@@ -339,7 +391,7 @@ if __name__ == "__main__" :
     widgets = []
     for arg in sys.argv[1:] :
         try:
-            w = QubDataDisplay(data=arg)
+            w = QubDataDisplay(data=arg,withSubZoom = True)
             w.show()
             widgets.append(w)
         except :

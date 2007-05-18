@@ -4,7 +4,7 @@ import os
 import os.path
 
 dont_rm_files = ['pixmaptools.sip','pixmaptools_io.cpp','pixmaptools_io.h',
-                 'pixmaptools_lut.cpp','pixmaptools_lut.h',
+                 'pixmaptools_lut.cpp','pixmaptools_lut_sse.c','pixmaptools_lut_sse.h','pixmaptools_lut.h',
                  'pixmaptoolsconfig.py.in','configure.py','clean.py']
 
 for root,dirs,files in os.walk('.') :

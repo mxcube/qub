@@ -4,8 +4,7 @@
 
 #ifdef __SSE2__
 // #include <mmintrin.h>
-#include <xmmintrin.h>
-#include <stdlib.h>
+#include <pixmaptools_lut_sse.h>
 #endif
 
 
@@ -285,6 +284,7 @@ void LUT::Palette::_calcPalette(unsigned int palette[],int fmin, int fmax,
  * 
  *  autoscale data on min/max
  *  @param data the data source array
+ *  @param anImagePt a data dest array it size must be >= sizeof(int) * nb pixel
  *  @param column the number of column of the source data
  *  @param row the number of row of the source data
  *  @param aPalette the palette colormap used to transform source data to an image
@@ -292,12 +292,12 @@ void LUT::Palette::_calcPalette(unsigned int palette[],int fmin, int fmax,
  *  @param dataMin return the min data value
  *  @param dataMax return the max data value
  */
-template<class IN> QImage LUT::map_on_min_max_val(const IN *data,int column,int row,Palette &aPalette,
+template<class IN> void LUT::map_on_min_max_val(const IN *data,unsigned int *anImagePt,int column,int row,Palette &aPalette,
 						  mapping_meth aMeth,
 						  IN &dataMin,IN &dataMax)
 {
   _find_min_max(data,column * row,dataMin,dataMax);
-  return map(data,column,row,aPalette,aMeth,dataMin,dataMax);
+  map(data,anImagePt,column,row,aPalette,aMeth,dataMin,dataMax);
 }
 
 /** @brief transform <b>data</b> to an image using the palette an dataMin and dataMax given in args
@@ -395,52 +395,13 @@ template<> void _find_min_max(unsigned short const *aData,int aNbValue,
 template<> void _find_min_max(const float *aData,int aNbValue,
 			      float &dataMin,float &dataMax)
 {
-  __m128 aMinVector,aMaxVector;
-  if(((long)aData) & 0xf) // if True not 16 alligned
-    {
-      float aMin = *aData,aMax = *aData;
-      ++aData;
-      if(*aData > *aMax) *aMax = *aData;
-      else if(*aData < *aMin) *aMin = *aData;
-      ++aData;
-      aMinVector = _mm_set1_ps(aMin),aMaxVector = _mm_set1_ps(aMax);
-    }
-  else
-    {
-      aMinVector = _mm_load1_ps(aData);
-      aMaxVector = _mm_load1_ps(aData);
-    }
-
-  __m128 *data = (__m128*)aData;
-  for(;aNbValue >= 4;++data,aNbValue -= 4)
-    {
-      aMinVector = _mm_min_ps(aMinVector,*data);
-      aMaxVector = _mm_max_ps(aMaxVector,*data);
-    }
-  _mm_mfence();			// FLUSH
-  float *aMinPt = (float*)&aMinVector;
-  dataMin = *aMinPt;++aMinPt;
-  for(int i = 3;i;--i,++aMinPt)
-    if(*aMinPt < dataMin) dataMin = *aMinPt;
-
-  float *aMaxPt = (float*)&aMaxVector;
-  dataMax = *aMaxPt;++aMaxPt;
-  for(int i = 3;i;--i,++aMaxPt)
-    if(*aMaxPt > dataMax) dataMax = *aMaxPt;
-
-  //END
-  aData = (const float*)data;
-  for(;aNbValue;--aNbValue,++aData)
-    {
-      if(*aData > dataMax) dataMax = *aData;
-      else if(*aData < dataMin) dataMin = *aData;
-    }
+  min_max_float(aData,aNbValue,&dataMin,&dataMax);
 }
 
 #endif
-template<class IN> QImage LUT::map(const IN *data,int column,int line,Palette &aPalette,
-				   LUT::mapping_meth aMeth,
-				   IN dataMin,IN dataMax)
+template<class IN> void LUT::map(const IN *data,unsigned int *anImagePt,int column,int line,Palette &aPalette,
+				 LUT::mapping_meth aMeth,
+				 IN dataMin,IN dataMax)
 {
   unsigned int aCachePalette[0x10000];
   unsigned int *aUsePalette;
@@ -459,13 +420,12 @@ template<class IN> QImage LUT::map(const IN *data,int column,int line,Palette &a
       aPalette._calcPalette(aUsePalette,aFmin,aFmax,aMeth);
       aMeth = LINEAR;
     }
-  QImage aQImage = _data_map(data,column,line,aMeth,aUsePalette,dataMin,dataMax);
-  return aQImage;
+  _data_map(data,anImagePt,column,line,aMeth,aUsePalette,dataMin,dataMax);
 }
 
-template<class IN> QImage _data_map(const IN *data,int column,int line,
-				    LUT::mapping_meth aMeth,unsigned int *aPalette,
-				    IN dataMin,IN dataMax) throw()
+template<class IN> void _data_map(const IN *data,unsigned int *anImagePt,int column,int line,
+				  LUT::mapping_meth aMeth,unsigned int *aPalette,
+				  IN dataMin,IN dataMax) throw()
 {
   static const int mapmin = 0;
   static const int mapmax = 0xffff;
@@ -501,25 +461,23 @@ template<class IN> QImage _data_map(const IN *data,int column,int line,
       B = 0.0;
     }
   if(aMeth == LUT::LINEAR)
-    return _linear_data_map(data,column,line,aPalette,A,B,dataMin,dataMax);
+    _linear_data_map(data,anImagePt,column,line,aPalette,A,B,dataMin,dataMax);
   else
     {
       if(shift < 1e-6)
-	return _log_data_map(data,column,line,aPalette,A,B,dataMin,dataMax);
+	_log_data_map(data,anImagePt,column,line,aPalette,A,B,dataMin,dataMax);
       else
-	return _log_data_map_shift(data,column,line,aPalette,A,B,dataMin,dataMax,shift);
+	_log_data_map_shift(data,anImagePt,column,line,aPalette,A,B,dataMin,dataMax,shift);
     }
 }
 
 // LINEAR MAPPING FCT
 
-template<class IN> QImage _linear_data_map(const IN *data,int column,int line,
+template<class IN> void _linear_data_map(const IN *data,unsigned int *anImagePt,int column,int line,
 					   unsigned int *palette,double A,double B,
 					   IN dataMin,IN dataMax) throw()
 {
-  QImage anImage(column,line,32);
   int aNbPixel = column * line;
-  unsigned int *anImagePt = (unsigned int*)anImage.bits();
   unsigned int *anImageEnd = anImagePt + aNbPixel;
     for(;anImagePt != anImageEnd;++anImagePt,++data)
     {
@@ -531,17 +489,14 @@ template<class IN> QImage _linear_data_map(const IN *data,int column,int line,
        else  
 	 *anImagePt = *palette; 
     }
-  return anImage;
 }
 
 ///@brief opti for unsigned short
-template<> QImage _linear_data_map(unsigned short const *data,int column,int line,
+template<> void _linear_data_map(unsigned short const *data,unsigned int *anImagePt,int column,int line,
 				   unsigned int *palette,double,double,
 				   unsigned short dataMin,unsigned short dataMax) throw()
 {
-  QImage anImage(column,line,32);
   int aNbPixel = column * line;
-  unsigned int *anImagePt = (unsigned int*)anImage.bits();
   unsigned int *anImageEnd = anImagePt + aNbPixel;
   for(;anImagePt != anImageEnd;++anImagePt,++data)
     {
@@ -552,18 +507,15 @@ template<> QImage _linear_data_map(unsigned short const *data,int column,int lin
       else
 	*anImagePt = *palette;
     }
-  return anImage;
 }
 
 ///@brief opti for short
-template<> QImage _linear_data_map(const short *data,int column,int line,
+template<> void _linear_data_map(const short *data,unsigned int *anImagePt,int column,int line,
 				   unsigned int *palette,double,double,
 				   short dataMin,short dataMax) throw()
 {
-  QImage anImage(column,line,32);
   palette += long(ceil((dataMax - dataMin) / 2.));
   int aNbPixel = column * line;
-  unsigned int *anImagePt = (unsigned int*)anImage.bits();
   unsigned int *anImageEnd = anImagePt + aNbPixel;
   for(;anImagePt != anImageEnd;++anImagePt,++data)
     {
@@ -574,18 +526,15 @@ template<> QImage _linear_data_map(const short *data,int column,int line,
       else
 	*anImagePt = *palette;
     }
-  return anImage;
 }
 
 ///@brief opti for char
-template<> QImage _linear_data_map(const char *data,int column,int line,
+template<> void _linear_data_map(const char *data,unsigned int *anImagePt,int column,int line,
 				   unsigned int *palette,double,double,
 				   char dataMin,char dataMax) throw()
 {
-  QImage anImage(column,line,32);
   palette += long(ceil((dataMax - dataMin) / 2.));
   int aNbPixel = column * line;
-  unsigned int *anImagePt = (unsigned int*)anImage.bits();
   unsigned int *anImageEnd = anImagePt + aNbPixel;
   for(;anImagePt != anImageEnd;++anImagePt,++data)
     {
@@ -596,16 +545,13 @@ template<> QImage _linear_data_map(const char *data,int column,int line,
       else
 	*anImagePt = *palette;
     }
-  return anImage;
 }
 ///@brief opti for unsigned char
-template<> QImage _linear_data_map(unsigned char const *data,int column,int line,
+template<> void _linear_data_map(unsigned char const *data,unsigned int *anImagePt,int column,int line,
 				   unsigned int *palette,double,double,
 				   unsigned char dataMin,unsigned char dataMax) throw()
 {
-  QImage anImage(column,line,32);
   int aNbPixel = column * line;
-  unsigned int *anImagePt = (unsigned int*)anImage.bits();
   unsigned int *anImageEnd = anImagePt + aNbPixel;
   for(;anImagePt != anImageEnd;++anImagePt,++data)
     {
@@ -616,17 +562,14 @@ template<> QImage _linear_data_map(unsigned char const *data,int column,int line
       else
 	*anImagePt = *palette;
     }
-  return anImage;
 }
 #ifdef __SSE2__
 //@brief opti for float with sse2
-template<> QImage _linear_data_map(const float *aData,int column,int line,
+template<> void _linear_data_map(const float *aData,unsigned int *anImagePt,int column,int line,
 				   unsigned int *palette,double A,double B,
 				   float dataMin,float dataMax) throw()
 {
   int aNbPixel = column * line;
-  QImage anImage(column,line,32);
-  unsigned int *anImagePt = (unsigned int*)anImage.bits();
   if(((long)aData) & 0xf) // if True not 16 alligned standard lookup
     for(int i = 2;i;--i,--aNbPixel,++aData,++anImagePt)	// Std Lookup
       {
@@ -708,18 +651,15 @@ template<> QImage _linear_data_map(const float *aData,int column,int line,
       else  
 	*anImagePt = *palette;
     }
-  return anImage;
 }
 #endif
 // LOG MAPPING FCT
 
-template<class IN> QImage _log_data_map(const IN *data,int column,int line,
-					unsigned int *aPalette,double A,double B,
-					IN dataMin,IN dataMax) throw()
+template<class IN> void _log_data_map(const IN *data,unsigned int *anImagePt,int column,int line,
+				      unsigned int *aPalette,double A,double B,
+				      IN dataMin,IN dataMax) throw()
 {
-  QImage anImage(column,line,32);
   int aNbPixel = column * line;
-  unsigned int *anImagePt = (unsigned int*)anImage.bits();
   register unsigned int *anImageEnd = anImagePt + aNbPixel;
   register unsigned int *palette = aPalette;
   for(;anImagePt != anImageEnd;++anImagePt,++data)
@@ -732,16 +672,13 @@ template<class IN> QImage _log_data_map(const IN *data,int column,int line,
       else
 	*anImagePt = *palette ;
     }
-  return anImage;
 }
 
-template<class IN> QImage _log_data_map_shift(const IN *data,int column,int line,
-					      unsigned int *aPalette,double A,double B,
-					      IN dataMin,IN dataMax,IN shift) throw()
+template<class IN> void _log_data_map_shift(const IN *data,unsigned int *anImagePt,int column,int line,
+					    unsigned int *aPalette,double A,double B,
+					    IN dataMin,IN dataMax,IN shift) throw()
 {
-  QImage anImage(column,line,32);
   int aNbPixel = column * line;
-  unsigned int *anImagePt = (unsigned int*)anImage.bits();
   register unsigned int *anImageEnd = anImagePt + aNbPixel;
   register unsigned int *palette = aPalette;
   for(;anImagePt != anImageEnd;++anImagePt,++data)
@@ -755,7 +692,6 @@ template<class IN> QImage _log_data_map_shift(const IN *data,int column,int line
       else
 	*anImagePt = *palette ;
     }
-  return anImage;
 }
 
 void init_template()
@@ -763,8 +699,9 @@ void init_template()
 #define INIT_MAP(TYPE)							\
   {									\
     TYPE aMin,aMax;							\
-    LUT::map_on_min_max_val((TYPE*)aBuffer,0,0,palette,LUT::LINEAR,aMin,aMax); \
-    std::cout << aMin << aMax << std::endl;				\
+    unsigned int *anImagePt = NULL;					\
+    LUT::map_on_min_max_val((TYPE*)aBuffer,anImagePt,0,0,palette,LUT::LINEAR,aMin,aMax); \
+    std::cout << aMin << aMax << *anImagePt << std::endl;		\
   }
   LUT::Palette palette = LUT::Palette();
   char *aBuffer = new char[16];

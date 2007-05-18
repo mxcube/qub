@@ -73,6 +73,8 @@ class QubSpecShmTree(qt.QListView) :
         self.addColumn('Type')
         specSource = getSpecVersions()
         specSource.plug(_SpecVersionPlug(self))
+        qt.QObject.connect(self,qt.SIGNAL('doubleClicked (QListViewItem *,const QPoint &,int )'),
+                           self.__dbclickedCBK)
         qt.QObject.connect(self,qt.SIGNAL('clicked(QListViewItem*)'),self.__clickedCBK)
 
         for specversion_name in sps.getspeclist() :
@@ -130,6 +132,9 @@ class QubSpecShmTree(qt.QListView) :
             NextItem = Item.nextSibling()
             yield Item
             Item = NextItem
+    def __dbclickedCBK(self,l,point,column) :
+        pass                            # consumned
+
     def __clickedCBK(self,item) :
         try:
             shmObject = item.shm

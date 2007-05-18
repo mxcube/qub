@@ -61,12 +61,14 @@ public:
     mode         _mode;
   };
 public:
-  template<class IN> static QImage map_on_min_max_val(const IN *data,int column,int row,Palette &aPalette,
-						      mapping_meth aMeth,
-						      IN &dataMin,IN &dataMax);
+  template<class IN> static void map_on_min_max_val(const IN *data,unsigned int *anImagePt,
+						    int column,int row,Palette &aPalette,
+						    mapping_meth aMeth,
+						    IN &dataMin,IN &dataMax);
 
-  template<class IN> static QImage map(const IN *data,int column,int row,
-				       Palette&,mapping_meth,
-				       IN dataMin,IN dataMax);
+  template<class IN> static void map(const IN *data,unsigned int *anImagePt,
+				     int column,int row,
+				     Palette&,mapping_meth,
+				     IN dataMin,IN dataMax);
 };
 #endif

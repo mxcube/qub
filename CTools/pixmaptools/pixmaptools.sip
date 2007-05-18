@@ -325,9 +325,9 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 #endif
 #define MAP_IMAGE(TYPE)\
  TYPE aMin,aMax;\
- QImage aMappedImage;\
+ QImage aMappedImage(column,row,32);\
  Py_BEGIN_ALLOW_THREADS;\
- aMappedImage = LUT::map_on_min_max_val<TYPE>((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
+ LUT::map_on_min_max_val<TYPE>((TYPE*)src->data,(unsigned int*)aMappedImage.bits(),column,row,*a1,a2,aMin,aMax);\
  Py_END_ALLOW_THREADS;\
  aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
 MAP_FUNCTION
@@ -341,13 +341,45 @@ MAP_FUNCTION
 #define MAP_IMAGE(TYPE)\
  TYPE aMin = (TYPE)a3;\
  TYPE aMax = (TYPE)a4;\
- QImage aMappedImage;\
+ QImage aMappedImage(column,row,32);\
  Py_BEGIN_ALLOW_THREADS;\
- aMappedImage = LUT::map<TYPE>((TYPE*)src->data,column,row,*a1,a2,aMin,aMax);\
+ LUT::map<TYPE>((TYPE*)src->data,(unsigned int*)aMappedImage.bits(),column,row,*a1,a2,aMin,aMax);\
  Py_END_ALLOW_THREADS;\
  aRImage = sipConvertFromNewInstance(new QImage(aMappedImage),sipClass_QImage,NULL);
 MAP_FUNCTION
 %End
+
+ static SIP_PYTUPLE transform_autoscale(SIP_PYOBJECT,Palette&,mapping_meth);
+%MethodCode
+#ifdef MAP_IMAGE
+#undef MAP_IMAGE
+#endif
+#define MAP_IMAGE(TYPE)\
+ TYPE aMin,aMax;\
+ npy_intp dims[] = {row << 2,column};\
+ aRImage = PyArray_SimpleNew(2,dims,NPY_UBYTE); \
+ Py_BEGIN_ALLOW_THREADS;\
+ LUT::map_on_min_max_val<TYPE>((TYPE*)src->data,(unsigned int*)PyArray_DATA(aRImage),column,row,*a1,a2,aMin,aMax);\
+ Py_END_ALLOW_THREADS;
+MAP_FUNCTION
+%End
+
+ static SIP_PYTUPLE transform(SIP_PYOBJECT,Palette&,mapping_meth,double,double);
+%MethodCode
+#ifdef MAP_IMAGE
+#undef MAP_IMAGE
+#endif
+#define MAP_IMAGE(TYPE)\
+ TYPE aMin = (TYPE)a3;\
+ TYPE aMax = (TYPE)a4;\
+ npy_intp dims[] = {row << 2,column};\
+ aRImage = PyArray_SimpleNew(2,dims,NPY_UBYTE); \
+ Py_BEGIN_ALLOW_THREADS;\
+ LUT::map<TYPE>((TYPE*)src->data,(unsigned int*)PyArray_DATA(aRImage),column,row,*a1,a2,aMin,aMax);\
+ Py_END_ALLOW_THREADS;
+MAP_FUNCTION
+%End
+
 };
 class LutError
 {
