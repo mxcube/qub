@@ -1,5 +1,7 @@
+import weakref
 import math
 import itertools
+import numpy
 import qt
 import qtcanvas
 from Qub.Objects.QubDrawingConstraint import QubAngleConstraint
@@ -881,6 +883,43 @@ class QubCanvasCloseLinePolygone(qtcanvas.QCanvasPolygon) :
 #@ingroup DrawingCanvasToolsPolygon
 #@ingroup DrawingCanvasToolsRectangle
 class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
+    class _translateFromFirstPoint :
+        def __init__(self,cnt) :
+            self.__cnt = weakref.ref(cnt)
+        def calc(self,x,y,pointlist) :
+            cnt = self.__cnt()
+            if cnt:
+                prevX,prevY = cnt.x(),cnt.y()
+                points = numpy.array([[px,py] for px,py in pointlist])
+                translation = numpy.matrix([x - prevX,y - prevY])
+                points += translation
+                return points
+            
+    class _rotateOrTranslateFromSecondPoint :
+        def __init__(self,cnt) :
+            self.__cnt = weakref.ref(cnt)
+        def calc(self,x,y,pointlist) :
+            cnt = self.__cnt()
+            if cnt :
+                x1,y1 = cnt.x(),cnt.y()
+                X,Y = (x - x1,y - y1)
+                width = math.sqrt(X ** 2 + Y ** 2)
+                try:
+                    angle = math.acos(X / width)
+                except ZeroDivisionError :
+                    angle = 0
+                if y - y1 < 0:
+                    angle = -angle
+                height = cnt.height()
+                points = numpy.array([[width,height]])
+                rotation = numpy.matrix([[numpy.cos(-angle),-numpy.sin(-angle)],
+                                         [numpy.sin(-angle),numpy.cos(-angle)]])
+                translation = numpy.matrix([x1,y1])
+                points = points * rotation
+                points += translation
+                return numpy.array(points)
+                
+
     def __init__(self,canvas) :
         qtcanvas.QCanvasRectangle.__init__(self,canvas)
         if isinstance(canvas,QubCanvasGrid) :
@@ -907,7 +946,8 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
             self.__realGridRegion = None
         self.__oldMatrixValues = None
         self.__contraintAngle = QubAngleConstraint(self.__angle + 90)
-        
+        self.__translateFromFirstPoint = QubCanvasGrid._translateFromFirstPoint(self)
+        self.__rotateOrTranslateFromSecondPoint = QubCanvasGrid._rotateOrTranslateFromSecondPoint(self)
         
     def move(self,x,y,point_id = 0) :
         self.__dirtyFlag = True
@@ -922,7 +962,7 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
                 self.__angle = math.acos(X / dist) * 180 / math.pi
             except ZeroDivisionError :
                 self.__angle = 0
-            width = math.sqrt((x - x1) ** 2 + (y - y1) ** 2)
+            width = dist
             if y - y1 < 0 :
                 self.__angle = -self.__angle
             self.setSize (width,self.height())
@@ -941,11 +981,11 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
             else :
                 x1,y1 = self.__secondPoints
                 height = math.sqrt((x - x1) ** 2 + (y - y1) ** 2)
-                x0 = self.x()
-                vx0 = x1 - x0
-                vx1 = x - x1
-                if(vx0 < 0 and vx1 > 0 or
-                   vx0 > 0 and vx1 < 0) :
+                u = (x1 - self.x(),y1 - self.y())
+                v = (x - x1,y - y1)
+                #prod vect
+                z = u[0] * v[1] - u[1] * v[0]
+                if z < 0. :
                     height = -height
                 self.setSize(self.width(),height)
             return True
@@ -1067,6 +1107,14 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
     #Has the grid is a rectangle, the last point (3th) must be drawn to have a square angle
     def getConstraint(self) :
         return [(2,1,self.__contraintAngle)]
+    ##@brief get the point modifier
+    #
+    #return a translate modifier for the first point
+    #return a rotation modifier for the second point
+    def getModifierConstraint(self) :
+        return [(0,[1,2],self.__translateFromFirstPoint),
+                (1,[2],self.__rotateOrTranslateFromSecondPoint)]
+    
     def update(self) :
         self.__dirtyFlag = True
 

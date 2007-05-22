@@ -24,7 +24,7 @@ class QubAngleConstraint :
             self.__contraintAngle -= math.pi * 2
         while(self.__contraintAngle < -math.pi) :
             self.__contraintAngle += math.pi * 2
-        
+
     def calc(self,x1,y1,x2,y2) :
         if(abs(self.__contraintAngle) == math.pi / 2  or
            abs(self.__contraintAngle) == 3 * math.pi / 2) :
@@ -42,6 +42,8 @@ class QubAngleConstraint :
                               (1 - math.cos(self.__contraintAngle) ** 2))
                 if self.__xPixelSize:
                     X /= self.__xPixelSize
+                if self.__contraintAngle > math.pi / 2 :
+                    X = -X
                 if y2 - y1 < 0 :
                     X = -X
                 x2 = X + x1

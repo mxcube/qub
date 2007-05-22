@@ -721,6 +721,7 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         self._points = []
         self._drawingEvent = QubNPointClick
         self.__constraintPoint = {}
+        self.__modifierConstraint = {}
         
     def __del__(self) :
         for drawingObject in self._drawingObjects :
@@ -800,17 +801,39 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         if hasattr(aDrawingObject,'getConstraint') :
             for contraintId,fromPointId,constaintObject in aDrawingObject.getConstraint() :
                 self.__constraintPoint[contraintId] = (fromPointId,constaintObject)
+        if hasattr(aDrawingObject,'getModifierConstraint') :
+            for fromPointId,contraintIdList,constaintObject in aDrawingObject.getModifierConstraint() :
+                self.__modifierConstraint[fromPointId] = (contraintIdList,constaintObject)
     ##@brief get a modify class to move or resize the polygone
     def _getModifyClass(self,x,y) :
         for i,(xpoint,ypoint) in enumerate(self._points) :
             if self._matrix is not None :
                 xpoint,ypoint = self._matrix.map(xpoint,ypoint)
             if(abs(x - xpoint) < 5 and abs(y - ypoint) < 5) :
-                func = self.move.im_func
-                tmpfunc = new.function(func.func_code,func.func_globals,'tmpmove',(self,0,0,i))
+                (constraintIdList,constraintObject) = self.__modifierConstraint.get(i,(None,None))
+                if constraintIdList is None:
+                    func = self.move.im_func
+                    tmpfunc = new.function(func.func_code,func.func_globals,'tmpmove',(self,0,0,i))
+                else:
+                    func = self.__moveWithContraint.im_func
+                    tmpfunc = new.function(func.func_code,func.func_globals,'tmpmove',(self,0,0,i,constraintIdList,constraintObject))
                 callBack = new.instancemethod(tmpfunc,self,QubPolygoneDrawingMgr)
                 return QubModifyAbsoluteAction(self,callBack)
 
+    ##@brief this methode is use when a drawing object has contraint on point modification
+    #
+    def __moveWithContraint(self,x,y,pointId,pointIdList,constraintobject) :
+        pointList = []
+        for Id in pointIdList :
+            xp,yp = self._points[Id]
+            if self._matrix is not None:
+                xp,yp = self._matrix.map(xp,yp)
+            pointList.append((xp,yp))
+        newPointList = constraintobject.calc(x,y,pointList)
+        self.move(x,y,pointId)
+        for pointId,(x,y) in zip(pointIdList,newPointList) :
+            self.move(x,y,pointId)
+        
     ##@brief methode to draw object from other canvas
     def _drawForeignObject(self,point_id) :
         try:
