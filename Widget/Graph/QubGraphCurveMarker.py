@@ -243,6 +243,7 @@ class QubGraphCurvePointFollowMarked(qwt.QwtPlotMarker) :
             self.__picker = qwt.QwtPicker(plot.canvas())
             self.__picker.setSelectionFlags(qwt.QwtPicker.PointSelection | qwt.QwtPicker.DragSelection)
             qt.QObject.connect(self.__picker,qt.SIGNAL('moved(const QPoint&)'),self.__moved)
+            qt.QObject.connect(self.__picker,qt.SIGNAL('appended(const QPoint &)'),self.__moved)
         else:
             self.__picker = None
 

@@ -317,6 +317,27 @@ class QubMdiTree(qt.QListView) :
         self.__timer.start(1500)
         qt.QObject.connect(self,qt.SIGNAL('clicked(QListViewItem*)'),self.__clickedCBK)
 
+        self.__popUpMenu = qt.QPopupMenu(self)
+        self.__popUpMenu.insertItem('close',self.__closeCBK)
+
+        qt.QObject.connect(self,qt.SIGNAL('rightButtonPressed(QListViewItem*,const QPoint &,int)'),
+                           self.__popUpDisplay)
+
+    def __popUpDisplay(self,item,point,columnid) :
+        self.__popUpMenu.exec_loop(point)
+
+    def __closeCBK(self,i) :
+        for item in self.__getIterator():
+            self.__close_recurse(item)
+            if item.isSelected() :
+                item.window().close()
+                
+    def __close_recurse(self,parentItem) :
+        for item in self.__getIterator(parentItem) :
+            self.__close_recurse(item)
+            if item.isSelected() :
+                item.window.close()
+                
     def __refresh(self,windowList) :
         try:
             currentWindow = set()
@@ -373,7 +394,11 @@ class QubMdiTree(qt.QListView) :
 
     def __checkWindowState(self) :
         for item in self.__getIterator(None) :
-            try: item.setText(0,item.window().caption())
+            try:
+                item.setText(0,item.window().caption())
+                icon = item.window().icon()
+                if icon:
+                    item.setPixmap(0,icon)
             except AttributeError:
                 pass
             self.__recurseCheckState(item)
@@ -395,13 +420,14 @@ class QubMdiTree(qt.QListView) :
             Item = NextItem
 
     def __clickedCBK(self,item) :
-        try:
-            if isinstance(item.window,qt.QWidget) :
-                item.window.setFocus()
-            else:
-                item.window().setFocus()
-        except ValueError:
-            return
+        if item :
+            try:
+                if isinstance(item.window,qt.QWidget) :
+                    item.window.setFocus()
+                else:
+                    item.window().setFocus()
+            except ValueError:
+                return
 
 #############################################################################
 ##########                                                         ##########

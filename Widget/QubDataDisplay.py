@@ -70,7 +70,7 @@ class QubDataDisplay(qt.QWidget) :
 
         #LINK RAW DATA 2 IMAGE
         self.__rawData2Image = QubRawData2Image()
-        self.__ImageNViewPlug = _ImageNViewPlug(self.__image2Pixmap,self.__mainView)
+        self.__ImageNViewPlug = _ImageNViewPlug(self,self.__image2Pixmap,self.__mainView)
         self.__rawData2Image.plug(self.__ImageNViewPlug)
 
 
@@ -103,7 +103,7 @@ class QubDataDisplay(qt.QWidget) :
                         ####### UPDATE #######
                     update = QubToggleAction(name="update",group="image",initState=True)
                     actions.append(update)
-                    captionName = 'Spec Array : %s' % data
+                    captionName = 'Spec shm : %s' % data
 
                     self.__dataPlug = _ShmDataPlug(self.__specShm,update,self)
                     self.__dataPlug.setDataReceiver(self.__rawData2Image)
@@ -356,13 +356,17 @@ class _MainViewPlug(QubImage2PixmapPlug) :
         return False
 
 class _ImageNViewPlug(QubRawData2ImagePlug) :
-    def __init__(self,image2Pixmap,mainView) :
+    def __init__(self,dataDisplay,image2Pixmap,mainView) :
         QubRawData2ImagePlug.__init__(self)
         mainView.setPixmapPlug(self)
         self.__receiver = weakref.ref(image2Pixmap)
         self.__colormapDialog = None
-
+        self.__dataDisplay = weakref.ref(dataDisplay)
+        
     def setImage(self,imagezoomed,fullimage) :
+        dataDisplay = self.__dataDisplay()
+        if dataDisplay:
+            dataDisplay.setIcon(qt.QPixmap(imagezoomed.smoothScale(22,22,fullimage.ScaleMin)))
         if self.__colormapDialog:
             fulldata,resizedData = self.data()
             self.__colormapDialog.update(resizedData)

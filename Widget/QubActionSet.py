@@ -252,14 +252,16 @@ class QubPrintPreviewAction(QubAction):
             view = self._view and self._view() or None
             if view is not None:
                 if hasattr(view, "getPPP"):
-                    self._preview.show()
                     if self.__withVector and hasattr(view,'canvas') and isinstance(view.canvas(),qtcanvas.QCanvas) :
                         self._preview.addCanvasVectorNPixmap(view.canvas(),view.getPPP())
                     else:
                         self._preview.addPixmap(view.getPPP())
+                    self._preview.show()
+                    self._preview.raiseW()
                 elif hasattr(view,"getGraph") : # QwtPlot
                     self._preview.addGraph(view.getGraph())
                     self._preview.show()
+                    self._preview.raiseW()
 
     def viewConnect(self, view):
         """

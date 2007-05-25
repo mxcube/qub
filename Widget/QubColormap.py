@@ -31,6 +31,9 @@ class QubColormapDialog(qt.QWidget):
         self.setIcon(loadIcon('colormap.png'))
         self.__dataMin = 0
         self.__dataMax = 255
+        self.__data = None
+        self.__histoTimer = qt.QTimer(self)
+        qt.QObject.connect(self.__histoTimer,qt.SIGNAL('timeout()'),self.__calcHistogram)
         
         self.__colormapSps = [("Greyscale",LUT.Palette.GREYSCALE),
                               ("Reverse Grey",LUT.Palette.REVERSEGREY),
@@ -40,7 +43,7 @@ class QubColormapDialog(qt.QWidget):
                               ("Blue",LUT.Palette.BLUE),
                               ("Many",LUT.Palette.MANY)]
 
-        self.__lutType = [('Linear',LUT.LINEAR),('Logarithm',LUT.LOG)]
+        self.__lutType = [('Linear',LUT.LINEAR),('Logarithm',LUT.LOG),('Shift Logarithm',LUT.SHIFT_LOG)]
                          
         
         """
@@ -166,7 +169,14 @@ class QubColormapDialog(qt.QWidget):
         self.__colormapGraph.setMinimumSize(qt.QSize(250,200))
 
         hlayout4.addWidget(self.__colormapGraph)
-        
+
+        #Histogram curve
+        self.__histoCurve = QubGraphCurve("Histo")
+        self.__histoCurve.setAxis(QubGraph.xBottom,QubGraph.yRight)
+        self.__histoCurve.setStyle(self.__histoCurve.Sticks)
+        self.__histoCurve.setPen(qt.QPen(qt.Qt.blue,2))
+        self.__histoCurve.attach(self.__colormapGraph)
+        self.__colormapGraph.setAxisAutoScale(QubGraph.yRight)
         """
         hlayout 5 (HORIZONTAL)
             - autoscale
@@ -207,7 +217,7 @@ class QubColormapDialog(qt.QWidget):
         self.setFixedSize(vlayout.minimumSize())
         self.__refreshCallback = None
         self.__colormap = None
-
+        
     def __del__(self) :
         self.__refreshCallback = None
         
@@ -304,9 +314,13 @@ class QubColormapDialog(qt.QWidget):
         self.__refreshImage()
         
     def update(self,data):
+        self.__data = data
         colormap = self.__colormap
         if colormap and data is not None:
-            self.__dataMin,self.__dataMax = data.min(),data.max()
+            if colormap.lutType() == LUT.LOG :
+                self.__dataMin,self.__dataMax = colormap.minMaxMappingMethode()
+            else:
+                self.__dataMin,self.__dataMax = data.min(),data.max()
                      ####### GRAPH UPDATE #######
             """
             calculate visible part of the graph outside data values (margin)
@@ -361,12 +375,25 @@ class QubColormapDialog(qt.QWidget):
                         break
 
             self.__autoscaleToggle.setOn(colormap.autoscale())
+        #HISTO
+        if self.isShown() and not self.__histoTimer.isActive():
+            self.__histoTimer.start(5000)
             
     def __refreshImage(self) :
         if self.__refreshCallback :
             self.__refreshCallback()
+
+    def __calcHistogram(self) :
+        if self.__data is not None:
+            minVal,maxVal = self.__colormap.minMax()
+            YHisto,XHisto = numpy.histogram(self.__data,bins = 25,range=[minVal,maxVal])
+            self.__histoCurve.setData(XHisto,YHisto)
+            self.__colormapGraph.replot()
             
- 
+    def show(self) :
+        qt.QWidget.show(self)
+        self.__histoTimer.stop()
+        self.__calcHistogram()
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################

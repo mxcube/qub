@@ -296,7 +296,10 @@ template<class IN> void LUT::map_on_min_max_val(const IN *data,unsigned int *anI
 						  mapping_meth aMeth,
 						  IN &dataMin,IN &dataMax)
 {
-  _find_min_max(data,column * row,dataMin,dataMax);
+  if(aMeth != LOG)
+    _find_min_max(data,column * row,dataMin,dataMax);
+  else
+    _find_minpos_max(data,column * row,dataMin,dataMax);
   map(data,anImagePt,column,row,aPalette,aMeth,dataMin,dataMax);
 }
 
@@ -312,6 +315,19 @@ template<class IN> void _find_min_max(const IN *aData,int aNbValue,IN &dataMin,I
     {
       if(*aData > dataMax) dataMax = *aData;
       else if(*aData < dataMin) dataMin = *aData;
+    }
+}
+
+template<class IN> void _find_minpos_max(const IN *aData,int aNbValue,IN &dataMin,IN &dataMax)
+{
+  dataMax = *aData;
+  if(*aData > 0) dataMin = *aData;
+  else dataMin = 0;
+  ++aData;
+  for(int i = 1;i < aNbValue;++i,++aData)
+    {
+      if(*aData > dataMax) dataMax = *aData;
+      else if(*aData > 0. && *aData < dataMin) dataMin = *aData;
     }
 }
 #ifdef __SSE2__
@@ -440,8 +456,9 @@ template<class IN> void _data_map(const IN *data,unsigned int *anImagePt,int col
 	  lmin = double(dataMin);
 	  lmax = double(dataMax);
 	}
-      else
+      else if(aMeth == LUT::SHIFT_LOG)
 	{
+
 	  if(dataMin <= 0)
 	    {
 	      shift = -dataMin;
@@ -449,6 +466,16 @@ template<class IN> void _data_map(const IN *data,unsigned int *anImagePt,int col
 	      dataMax += shift;
 	      dataMin += shift;
 	    }
+	  lmin = log10(dataMin);
+	  lmax = log10(dataMax);
+	}
+      else
+	{
+	  if(dataMin == 0)
+	    dataMin = IN(1);
+	  else if(dataMin <= 0)
+	    dataMin = IN(1e-6);
+
 	  lmin = log10(dataMin);
 	  lmax = log10(dataMax);
 	}

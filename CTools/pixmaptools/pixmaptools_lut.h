@@ -30,7 +30,7 @@ private:
 class LUT
 {
 public :
-  enum mapping_meth {LINEAR,LOG};
+  enum mapping_meth {LINEAR,LOG,SHIFT_LOG};
   struct XServer_Info;
   
 public:

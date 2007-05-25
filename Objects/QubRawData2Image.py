@@ -173,18 +173,28 @@ class QubRawData2ImagePlug:
             self.__autoscale = True
             self.__min = 0
             self.__max = 255
+            self.__minMappingMethode = 0
+            self.__maxMappingMethode = 255
             self.__mutex = qt.QMutex()
 
         ##@return min max as a tuple
         def minMax(self) :
             aLock = QubLock(self.__mutex)
             return (self.__min,self.__max)
+        ##@return min max calculeted by the lut
+        def minMaxMappingMethode(self) :
+            aLock = QubLock(self.__mutex)
+            return (self.__minMappingMethode,self.__maxMappingMethode)
         ##@brief set the min max value of data for the lookup table
         def setMinMax(self,minValue,maxVlaue) :
             aLock = QubLock(self.__mutex)
             self.__min = minValue
             self.__max = maxVlaue
-            
+        ##@brief set the min max value of the mapping lut methode
+        def setMinMaxMappingMethode(self,minVal,maxVal) :
+            aLock = QubLock(self.__mutex)
+            self.__minMappingMethode = minVal
+            self.__maxMappingMethode = maxVal
         ##return True if autoscale is On
         def autoscale(self) :
             aLock = QubLock(self.__mutex)
@@ -363,10 +373,11 @@ class _DataZoomProcess(QubThreadProcess) :
                     try:
                         if colormap.autoscale() :
                             image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(dataArray,colormap.palette(),
-                                                                            colormap.lutType())
+                                                                                        colormap.lutType())
+                            colormap.setMinMaxMappingMethode(minVal,maxVal)
                         else:
-                            image,(minVal,maxVal) = pixmaptools.LUT.map(dataArray,colormap.palette(),
-                                                            colormap.lutType(),*colormap.minMax())
+                           image,(minVal,maxVal) = pixmaptools.LUT.map(dataArray,colormap.palette(),
+                                                                       colormap.lutType(),*colormap.minMax())
                     except pixmaptools.LutError,err :
                         print err.msg()
                         return

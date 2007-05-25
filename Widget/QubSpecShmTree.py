@@ -75,7 +75,6 @@ class QubSpecShmTree(qt.QListView) :
         specSource.plug(_SpecVersionPlug(self))
         qt.QObject.connect(self,qt.SIGNAL('doubleClicked (QListViewItem *,const QPoint &,int )'),
                            self.__dbclickedCBK)
-        qt.QObject.connect(self,qt.SIGNAL('clicked(QListViewItem*)'),self.__clickedCBK)
 
         for specversion_name in sps.getspeclist() :
             self.newSpecVersion(specSource,specversion_name)
@@ -98,6 +97,7 @@ class QubSpecShmTree(qt.QListView) :
                 break
     
     def newSpecShm(self,specVersion,shm_name) :
+        _,_,shmtype,flag = sps.getarrayinfo(specVersion.name(),shm_name)
         for specVersionItem in self.__getIterator() :
             if specVersionItem.text(0) == specVersion.name() :
                 shmItem = qt.QListViewItem(specVersionItem)
@@ -106,6 +106,7 @@ class QubSpecShmTree(qt.QListView) :
                 shmItem.shm.plug(plug)
                 plug.update(specVersion,shmItem.shm,shmItem.shm.getSpecArray(True))
                 shmItem.setText(0,shm_name)
+                shmItem.setVisible(shmtype != sps.STRING and (flag & sps.IS_ARRAY))
                 break
 
     def removeSpecShm(self,specVersion,shm_name) :
@@ -132,17 +133,16 @@ class QubSpecShmTree(qt.QListView) :
             NextItem = Item.nextSibling()
             yield Item
             Item = NextItem
-    def __dbclickedCBK(self,l,point,column) :
-        pass                            # consumned
 
-    def __clickedCBK(self,item) :
-        try:
-            shmObject = item.shm
-            specvesrion = shmObject.container()
-            if self.__openCbk :
-                self.__openCbk('%s:%s' % (specvesrion.name(),shmObject.name()))
-        except AttributeError,err:
-            pass
+    def __dbclickedCBK(self,item,point,column) :
+        if item:
+            try:
+                shmObject = item.shm
+                specvesrion = shmObject.container()
+                if self.__openCbk :
+                    self.__openCbk('%s:%s' % (specvesrion.name(),shmObject.name()))
+            except AttributeError,err:
+                pass
                 
             
 if __name__ == "__main__" :

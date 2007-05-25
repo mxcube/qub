@@ -112,7 +112,7 @@ class LUT
 %End
 
 public :
-  enum mapping_meth {LINEAR,LOG};
+  enum mapping_meth {LINEAR,LOG,SHIFT_LOG};
   
 public:
   class Palette

@@ -73,5 +73,10 @@ class QubGraphView(QubView) :
             raise AttributeError,'QubGraphView instance has not attribute %s' % attr
 
     def show(self):
+        shownFlag = self.isShown()
         QubView.show(self)
-        self.setMinimumSize(self.sizeHint())
+        sizeHint = self.sizeHint()
+        width,height = sizeHint.width(),sizeHint.height()
+        self.setMinimumSize(sizeHint)
+        if not shownFlag :
+            self.resize(max(width,height * 16 / 9),height)
