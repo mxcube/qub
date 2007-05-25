@@ -531,8 +531,8 @@ class QubLineDataSelectionAction(QubToggleImageAction):
             lines = lines * rotation
             lines = lines + translation
 
-            
-            inter_result = datafuncs.interpol([range(self._data.shape[0]),range(self._data.shape[1])],self._data,lines,0)
+
+            inter_result = datafuncs.interpol([range(self._data.shape[1]),range(self._data.shape[0])],self._data.T,lines,0)
             inter_result.shape = inter_result.shape[0] / len(abscis),len(abscis)
                         
             average = numpy.zeros(len(inter_result[0]))
