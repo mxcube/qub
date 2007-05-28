@@ -41,6 +41,7 @@ from Qub.Widget.Graph.QubGraphCurve import QubGraphCurve
 from Qub.Widget.QubMdi import QubMdiCheckIfParentIsMdi
 
 from Qub.Widget.QubDialog import QubBrightnessContrastDialog
+from Qub.Widget.QubDialog import QubQuickView
 
 from Qub.Print.QubPrintPreview import getPrintPreviewDialog
 
@@ -1547,6 +1548,42 @@ class QubDataPositionValueAction(QubPositionAction):
         except TypeError,err:
             self.__valueLabel.setText("")
         self.__valueLabel.setPaletteForegroundColor(color)
+
+####################################################################
+##########                                                ##########
+##########                  QubQuickScroll                ##########
+##########                                                ##########
+####################################################################
+class QubQuickScroll(QubImageAction) :
+    class _Label(qt.QLabel) :
+        def __init__(self,parent) :
+            qt.QLabel.__init__(self,parent)
+            self.quickView = QubQuickView(None)
+            self.setMouseTracking(True)
+            
+        def __del__(self) :
+            del self.quickView
+            
+        def mousePressEvent(self,mouseEvent) :
+            self.quickView.popAt(mouseEvent.globalX(),mouseEvent.globalY())
+        
+    def __init__(self,autoConnect=True,**keys):
+        QubImageAction.__init__(self,autoConnect=autoConnect,**keys)
+
+    def addStatusWidget(self,parent) :
+        if self._widget is None :
+            self._widget = QubQuickScroll._Label(parent)
+        return self._widget
+
+    def viewConnect(self,view) :
+        self._widget.quickView.setScrollView(view)
+        
+    def setImageNPixmap(self,image,pixmap = None) :
+        self._widget.quickView.setImage(image)
+        if pixmap is None :
+            pixmap = qt.QPixmap(image.smoothScale(22,22,fullimage.ScaleMin))
+        self._widget.setPixmap(pixmap)
+    
 ####################################################################
 ##########                                                ##########
 ##########                  QubSubDataView                ##########

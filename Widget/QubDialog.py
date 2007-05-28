@@ -909,4 +909,118 @@ class QubBrightnessContrastDialog(qt.QDialog):
             self.brightnessChanged(self.__camera.getBrightness())
         
         qt.QDialog.show(self)
+##@brief a class to display a quick image view
+#
+#This class can also drive a scrollView
+class QubQuickView(qt.QLabel) :
+    def __init__(self,parent = None,name = "Quick view",**keys) :
+        qt.QLabel.__init__(self,parent,name,qt.Qt.WStyle_Customize | qt.Qt.WStyle_NoBorder)
+        self.__width = 128
+        self.__height = 128
+        self.__pixmap = None
+        self.__image = None
+        self.__dirtyFlag = True
+        self.__scrollView = None
+        self.__curentRect = None
+        self.__popUpMode = False
+        self.__grabMouseOnFirstDraw = False
+        self.setMouseTracking(True)
+
+    ##@brief define the max size of the quick view
+    def setMaximumImageSize(self,w,h) :
+        self.__width,self.__height = w,h
+
+    ##@brief set the image to display
+    def setImage(self,image) :
+        self.__image = image
+        self.__dirtyFlag = True
+        if self.isShown() :
+            self.update()
+
+    ##@brief set the scrollview to control
+    def setScrollView(self,scrollView) :
+        self.__scrollView = weakref.ref(scrollView)
+        if scrollView:
+            qt.QObject.connect(scrollView,qt.SIGNAL('contentsMoving(int,int)'),self.__update_rectangle)
+
+    ##@brief redraw
+    def paintEvent(self,paintEvent) :
+        if self.__grabMouseOnFirstDraw:
+            self.grabMouse()
+            self.__grabMouseOnFirstDraw = False
+            
+        if self.__dirtyFlag :
+            self.__dirtyFlag = False
+            self.__pixmap = qt.QPixmap(self.__image.smoothScale(self.__width,self.__height,self.__image.ScaleMin))
+            self.setFixedSize(self.__pixmap.size())
+
+        paint = qt.QPainter(self)
+        paintRect = paintEvent.rect()
+        paint.drawPixmap(paintRect.x(),paintRect.y(),self.__pixmap,
+                         paintRect.x(),paintRect.y(),paintRect.width(),paintRect.height())
+
+        if self.__scrollView :
+            scrollView = self.__scrollView()
+            if scrollView:
+                rect,_ = self.__getViewRect(scrollView)
+                paint.setPen(qt.QPen(qt.Qt.red,1))
+                paint.drawRect(rect)
+                self.__curentRect = rect
+                
+    def __update_rectangle(self,x,y) :
+        if self.__curentRect is not None:
+            rect,_ = self.__getViewRect(self.__scrollView(),x,y)
+            rect = rect.unite(self.__curentRect)
+            self.update(rect)
+
+    def __getViewRect(self,scrollView,x = None,y = None) :
+        if self.__dirtyFlag :
+            self.__dirtyFlag = False
+            self.__pixmap = qt.QPixmap(self.__image.smoothScale(self.__width,self.__height,self.__image.ScaleMin))
+            self.setFixedSize(self.__pixmap.size())
+
+        if x is None:
+            x,y = scrollView.contentsX(),scrollView.contentsY()
+        width,height = scrollView.contentsWidth(),scrollView.contentsHeight()
+        rect = qt.QRect(x,y,scrollView.visibleWidth(),scrollView.visibleHeight())
+        matrix = qt.QWMatrix(self.__pixmap.width() / float(width),0,
+                             0,self.__pixmap.height() / float(height),0,0)
+        return matrix.map(rect),matrix
+    
+    def mouseReleaseEvent(self,mouseReleaseEvent) :
+        if self.__popUpMode :
+            self.__popUpMode = False
+            self.releaseMouse ()
+            self.hide()
+
+    def mouseMoveEvent(self,mouseMoveEvent) :
+        if mouseMoveEvent.state() == qt.Qt.LeftButton:
+            if self.__scrollView is not None:
+                scrollView = self.__scrollView()
+                if scrollView :
+                    rect,matrix = self.__getViewRect(scrollView)
+                    x,y = mouseMoveEvent.x(),mouseMoveEvent.y()
+                    rect.moveCenter(qt.QPoint(x,y))
+                    if rect.x() < 0 : rect.setX(0)
+                    if rect.y() < 0 : rect.setY(0)
+                    if rect.x() + rect.width() > self.__pixmap.width() :
+                        rect.setX(self.__pixmap.width() - rect.width())
+                    if rect.y() + rect.height() > self.__pixmap.height() :
+                        rect.setY(self.__pixmap.height() - rect.height())
+                    rect = matrix.invert()[0].map(rect)
+                    scrollView.setContentsPos(rect.x(),rect.y())
+
+    ##@brief show like a popUp window on the parent position x,y
+    def popAt(self,x = -1,y = -1) :
+        qt.QLabel.show(self)
+        self.__popUpMode = True
+        self.__grabMouseOnFirstDraw = True
+        if self.__scrollView is not None and x != -1 :
+            scrollView = self.__scrollView()
+            if scrollView:
+                rect,matrix = self.__getViewRect(scrollView)
+                center = rect.center()
+                x -= center.x()
+                y -= center.y()
+                self.move(x,y)
         

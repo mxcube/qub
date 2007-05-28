@@ -22,6 +22,7 @@ from Qub.Widget.QubActionSet import QubZoomAction
 from Qub.Widget.QubActionSet import QubOpenDialogAction
 from Qub.Widget.QubActionSet import QubPrintPreviewAction
 from Qub.Widget.QubActionSet import QubSubDataViewAction
+from Qub.Widget.QubActionSet import QubQuickScroll
 from Qub.Widget.QubActionSet import QubForegroundColorAction
 from Qub.Widget.QubActionSet import QubHLineDataSelectionAction
 from Qub.Widget.QubActionSet import QubVLineDataSelectionAction
@@ -79,11 +80,13 @@ class QubDataDisplay(qt.QWidget) :
                          ####### ACTION #######
         actions = []
         self.__actionDataActionPlug = []          # action witch need data
+                     ####### QUICK SCROLL #######
+        self.quickScrollAction = QubQuickScroll(parent=self,group="image",place="statusbar")
+        actions.append(self.quickScrollAction)
                        ####### SUB VIEW #######
         self.__subDataView = QubSubDataViewAction(parent=self,group="image",place="statusbar")
         self.__subDataView.setColormapObject(self.__ImageNViewPlug.colormap())
         self.__actionDataActionPlug.append(self.__subDataView)
-        
         actions.append(self.__subDataView)
             ####### MOUSE POSITION AND DATA VALUE #######
         self.__posaction = 1
@@ -366,7 +369,10 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
     def setImage(self,imagezoomed,fullimage) :
         dataDisplay = self.__dataDisplay()
         if dataDisplay:
-            dataDisplay.setIcon(qt.QPixmap(imagezoomed.smoothScale(22,22,fullimage.ScaleMin)))
+            iconPixmap = qt.QPixmap(imagezoomed.smoothScale(22,22,fullimage.ScaleMin))
+            dataDisplay.setIcon(iconPixmap)
+            dataDisplay.quickScrollAction.setImageNPixmap(imagezoomed,iconPixmap)
+            
         if self.__colormapDialog:
             fulldata,resizedData = self.data()
             self.__colormapDialog.update(resizedData)
