@@ -327,7 +327,7 @@ template<class IN> void _find_minpos_max(const IN *aData,int aNbValue,IN &dataMi
   for(int i = 1;i < aNbValue;++i,++aData)
     {
       if(*aData > dataMax) dataMax = *aData;
-      else if(*aData > 0. && *aData < dataMin) dataMin = *aData;
+      else if(*aData > 0. && (*aData < dataMin || dataMin == 0)) dataMin = *aData;
     }
 }
 #ifdef __SSE2__
