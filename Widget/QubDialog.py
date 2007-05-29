@@ -982,7 +982,7 @@ class QubQuickView(qt.QLabel) :
         if x is None:
             x,y = scrollView.contentsX(),scrollView.contentsY()
         width,height = scrollView.contentsWidth(),scrollView.contentsHeight()
-        rect = qt.QRect(x,y,scrollView.visibleWidth(),scrollView.visibleHeight())
+        rect = qt.QRect(x,y,min(width,scrollView.visibleWidth()),min(height,scrollView.visibleHeight()))
         matrix = qt.QWMatrix(self.__pixmap.width() / float(width),0,
                              0,self.__pixmap.height() / float(height),0,0)
         return matrix.map(rect),matrix
