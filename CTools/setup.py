@@ -1,6 +1,7 @@
 import glob
 import platform
 from distutils.core import setup,Extension
+import numpy
 
 if platform.system() == 'Linux' :
     extra_compile_args = ['-pthread','-msse2','-mfpmath=sse']
@@ -21,12 +22,12 @@ dataresize_module = Extension(name = "datafuncs",
                               sources = glob.glob('datafuncs/datafuncs*cpp'),
                               extra_compile_args = extra_compile_args,
 			      extra_link_args = extra_link_args,
-                              include_dirs = ['datafuncs'])
+                              include_dirs = ['datafuncs',numpy.get_include()])
 sps_module = Extension(name = "sps",
                               sources = glob.glob('sps/sps*c'),
                               extra_compile_args = extra_compile_args,
 			      extra_link_args = extra_link_args,
-                              include_dirs = ['sps'])
+                              include_dirs = ['sps',numpy.get_include()])
 
 setup(name = "QubCTools",version = "1.0",
       description = "Some tools written in C for speed",
