@@ -118,7 +118,7 @@ class QubDataDisplay(qt.QWidget) :
                 captionName = 'File : %s' % os.path.split(data)[1]
                 self.__file = EdfFile.EdfFile(data)
                 print "Number of Record",self.__file.GetNumImages()
-                dataArray = numpy.array(self.__file.GetData(0)) # TODO remove when EDF Module use numpy
+                dataArray = self.__file.GetData(0)
                      ####### PRINT ACTION #######
         printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
         printAction.previewConnect(getPrintPreviewDialog())
@@ -248,7 +248,6 @@ class QubDataDisplay(qt.QWidget) :
             except:
                 import traceback
                 traceback.print_exc()
-            
     ##@brief set caption for windows and subwindows
     def setCaption(self,name):
         qt.QWidget.setCaption(self,name)

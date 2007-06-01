@@ -214,7 +214,7 @@ class QubColormapDialog(qt.QWidget):
         """
         colormap window can not be resized
         """
-        self.setFixedSize(vlayout.minimumSize())
+##        self.setFixedSize(vlayout.minimumSize())
         self.__refreshCallback = None
         self.__colormap = None
         

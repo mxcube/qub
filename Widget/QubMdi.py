@@ -83,30 +83,89 @@ class QubMdi(qt.QWorkspace):
 
     def addNewChildOfMainWindow(self,mainWindow,child) :
         mainWindowRef = weakref.ref(mainWindow,self.__closeMainWindowCbk)
-        subWindowList = self.__mdiTreeChild.get(mainWindowRef,[])
+        mainWindowDic = None
+        try:
+            mainWindowDic = self.__mdiTreeChild[mainWindowRef]
+        except KeyError:
+            for m,d in self.__mdiTreeChild.iteritems() :
+                parentWindow,mainWindowDic = self.__findWindRefInTree(m,mainWindowRef,d)
+                if parentWindow is not None:
+                    break
+
+        if mainWindowDic is None:  # mainWindow is not in the Tree create it
+            mainWindowDic = {}
+            self.__mdiTreeChild[mainWindowRef] = mainWindowDic
+            
         if child:
-            subWindowList.append(child)
-        self.__mdiTreeChild[mainWindowRef] = subWindowList
+            grandChildDic = None
+            try:
+                childRef = weakref.ref(child,self.__closeMainWindowCbk)
+                grandChildDic = self.__mdiTreeChild.pop(childRef) # could be a previously a main window
+            except KeyError:
+                for m,d in self.__mdiTreeChild.iteritems() :
+                    parentWindow,childSubWindow = self.__findWindRefInTree(m,childRef,d)
+                    if parentWindow is not None:
+                        grandChildDic = childSubWindow.pop(childRef)
+                        break
+                if grandChildDic is None: # Create it
+                    grandChildDic = {}
+            mainWindowDic[childRef] = grandChildDic
+
         for cbk in self.__childWindowCbks:
             cbk(self.__mdiTreeChild)
-        
+            
+            
     def addRefreshOnChildWindows(self,cbk) :
         self.__childWindowCbks.append(cbk)
 
     def __closeMainWindowCbk(self,mainWindowsRef) :
         try:
-            for subWindow in self.__mdiTreeChild[mainWindowsRef] :
-                try:
-                    subWindow.close(True)
-                except:
-                    import traceback
-                    traceback.print_exc()
-            self.__mdiTreeChild.pop(mainWindowsRef)
+            childSubWindow = None
+            for m,d in self.__mdiTreeChild.iteritems() :
+                if m != mainWindowsRef :
+                    parentWindow,childSubWindow = self.__findWindRefInTree(m,mainWindowsRef,d)
+                    if parentWindow is not None:
+                        childSubWindow = childSubWindow.pop(mainWindowsRef)
+                        break
+                else:
+                    childSubWindow = self.__mdiTreeChild.pop(m)
+                    break
+            if childSubWindow is not None:
+                for subWindowRef,subWindowDic in childSubWindow.iteritems() :
+                    try:
+                        self.__closeWindowRecurs(subWindowRef,subWindowDic)
+                    except:
+                        import traceback
+                        traceback.print_exc()
+                        
             for cbk in self.__childWindowCbks:
                 cbk(self.__mdiTreeChild)
         except KeyError:
             pass
-        
+        except:
+            import traceback
+            traceback.print_exc()
+            
+    def __findWindRefInTree(self,parentWindow,searchWindow,windowDico) :
+        retParentWindow,retDico = None,None
+        for childWindow,d in windowDico.iteritems() :
+            if childWindow == searchWindow :
+                retParentWindow,retDico = parentWindow,windowDico
+                break
+            else:
+                p,dic = self.__findWindRefInTree(childWindow,searchWindow,d)
+                if p is not None:
+                    retParentWindow,retDico = p,dic
+                    break
+        return (retParentWindow,retDico)
+
+    def __closeWindowRecurs(self,subRef,subWindowDic) :
+        window = subRef()
+        for subWindowRef,subWindowDic in subWindowDic.iteritems() :
+            self.__closeWindowRecurs(subWindowRef,subWindowDic)
+        if window:
+            window.close(1)
+            
     def __connectFollow(self):
         """
         """
@@ -336,62 +395,69 @@ class QubMdiTree(qt.QListView) :
         for item in self.__getIterator(parentItem) :
             self.__close_recurse(item)
             if item.isSelected() :
-                item.window.close()
-                
-    def __refresh(self,windowList) :
-        try:
-            currentWindow = set()
-            for item in self.__getIterator():
-                if not windowList.has_key(item.window):
-                    self.takeItem(item)
-                    continue
-                else:
-                    try:
-                        name = item.window().caption()
-                        item.setText(0,name)
-                    except AttributeError:
-                        pass
+                item.window().close()
+    def __insertRecurseItem(self,parentItem,parentWindowRef,childDico) :
+        if parentItem is None:
+            try:
+                name = parentWindowRef().caption()
+                icon = parentWindowRef().icon()
+            except AttributeError: return
+            newItem = qt.QListViewItem(self)
+        else:
+            try:
+                name = parentWindowRef().name()
+                icon = parentWindowRef().icon()
+            except AttributeError: return
+            newItem = qt.QListViewItem(parentItem)
 
-                    currentWindow.add(item.window)
-            newWindow = set(windowList.keys())
-            newWindow = newWindow.difference(currentWindow)
-            for window in newWindow :
+        newItem.window = parentWindowRef
+        newItem.setText(0,name)
+        newItem.setOpen(True)
+        if icon:
+            newItem.setPixmap(0,icon)
+            
+        for childWindowRef,grandChilddoc in childDico.iteritems() :
+            self.__insertRecurseItem(newItem,childWindowRef,grandChilddoc)
+            
+    def __recurseRefresh(self,parentItem,windowDico) :
+        leavesItemWindows = []
+        for item in self.__getIterator(parentItem) :
+            childDico = windowDico.get(item.window,None)
+            if childDico is not None:
+               self.__recurseRefresh(item,childDico)
+               leavesItemWindows.append(item.window)
+            else:
+                if parentItem is None:
+                    self.takeItem(item)
+                else:
+                    parentItem.takeItem(item)
+        for windowRef,childDico in windowDico.iteritems() :
+            if windowRef not in leavesItemWindows:
+                self.__insertRecurseItem(parentItem,windowRef,childDico)
+                
+            
+    def __refresh(self,windowList) :
+        self.__recurseRefresh(None,windowList)
+
+    def __refresh_subItem(self,mainItem,wList) :
+        for subWindow in wList:
+            findFlag = False
+            for subItem in self.__getIterator(mainItem) :
+                if subItem.window == subWindow:
+                    findFlag = True
+                    break
+            if not findFlag :
                 try:
-                    name = window().caption()
-                    icon = window().icon()
+                    name = subWindow.name()
                 except AttributeError:
                     continue
-                item = qt.QListViewItem(self)
-                item.window = window
-                item.setText(0,name)
-                item.setOpen(True)
-                if icon:
-                    item.setPixmap(0,icon)
-            for mainWindow,wList in windowList.iteritems():
-                for mainItem in self.__getIterator() :
-                    if mainItem.window == mainWindow :
-                        for subWindow in wList:
-                            findFlag = False
-                            for subItem in self.__getIterator(mainItem) :
-                                if subItem.window == subWindow:
-                                    findFlag = True
-                                    break
-                            if not findFlag :
-                                try:
-                                    name = subWindow.name()
-                                except AttributeError:
-                                    continue
-                                subItem = qt.QListViewItem(item)
-                                subItem.window = subWindow
-                                subItem.setText(0,name)
-                                subItem.setVisible(False)
-                                if subWindow.icon():
-                                    subItem.setPixmap(0,subWindow.icon())
-                        break
-        except:
-            import traceback
-            traceback.print_exc()
-
+                subItem = qt.QListViewItem(mainItem)
+                subItem.window = subWindow
+                subItem.setText(0,name)
+                subItem.setVisible(False)
+                if subWindow.icon():
+                    subItem.setPixmap(0,subWindow.icon())
+        
     def __checkWindowState(self) :
         for item in self.__getIterator(None) :
             try:
@@ -406,7 +472,16 @@ class QubMdiTree(qt.QListView) :
     def __recurseCheckState(self,parentIterator) :
         if parentIterator:
             for item in self.__getIterator(parentIterator) :
-                item.setVisible(item.window.isShown())
+                try:
+                    w = item.window()
+                    item.setVisible(w.isShown())
+                    if w.isShown() :
+                        icon = w.icon()
+                        name = w.name()
+                        if icon :
+                            item.setPixmap(0,icon)
+                        item.setText(0,name)
+                except AttributeError: continue
                 self.__recurseCheckState(item)
                 
     def __getIterator(self,parentIterator = None) :

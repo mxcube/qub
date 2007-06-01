@@ -313,10 +313,14 @@ class QubSeparatorAction(QubAction):
 ###############################################################################
 #                          QubZoomRectangle                                   #
 ###############################################################################
-class QubZoomRectangle(QubToggleImageAction) :    
-    def __init__(self,name='zoomrect',**keys) :
+class QubZoomRectangle(QubToggleImageAction) :
+    ##@brief contructor
+    #
+    #@param activate_click_drag if True the recangle can be redraw with click and drag
+    def __init__(self,name='zoomrect',activate_click_drag = False,**keys) :
         QubToggleImageAction.__init__(self,name=name,**keys)
-        
+
+        self.__activate_click_drag = activate_click_drag
         self.__drawingMgr = None
         
     def viewConnect(self,qubImage) :
@@ -356,6 +360,8 @@ class QubZoomRectangle(QubToggleImageAction) :
     def _setState(self,aFlag) :
         if aFlag :
             self.__drawingMgr.show()
+            if self.__activate_click_drag :
+                self.__drawingMgr.startDrawing()
             """
             keep this connection to allow color changed by action
             QubForegroundColorAction
@@ -369,6 +375,7 @@ class QubZoomRectangle(QubToggleImageAction) :
             if qubImage :
                 self.signalDisconnect(qubImage)
             self.__drawingMgr.hide()
+            self.__drawingMgr.stopDrawing()
 
         self.emit(qt.PYSIGNAL("Actif"),(aFlag,))
         
