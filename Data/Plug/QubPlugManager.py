@@ -37,7 +37,10 @@ class QubPlugManager :
         Unplug object
         """
         if(isinstance(aQubPlug,QubPlug)) :
-            self.__plugs.remove(aQubPlug)
+            try:
+                self.__plugs.remove(aQubPlug)
+            except ValueError:
+                return
             aQubPlug.rmPlugMgr(self)
             if not len(self.__plugs) :
                 self.__pollplug.stop()

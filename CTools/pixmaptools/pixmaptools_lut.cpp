@@ -270,13 +270,14 @@ void LUT::Palette::_calcPalette(unsigned int palette[],int fmin, int fmax,
 
   unsigned int *pal = palette;
   unsigned int *palend = palette;
+  *(pal + 0xffff) = *(_dataPalette + 0xffff);
   pal += fmin ; palend += fmax;
   if (meth == LINEAR) 
-    for(int j = 0;pal <= palend;++j,++pal)
-      *pal = *(_dataPalette + int(A * j)); 
+    for(int j = fmin;pal <= palend && j <= fmax;++j,++pal)
+      *pal = *(_dataPalette + int(A * j + B)); 
   else
-    for(int j = fmin;pal <= palend;++j,++pal)
-      *pal = *(_dataPalette + int(A * theLutConfiguration.log(j) + B)); 
+    for(int j = fmin;pal <= palend && j <= fmax;++j,++pal)
+      *pal = *(_dataPalette + int(A * theLutConfiguration.log(j) + B));
 }
 
 // LUT TEMPLATE
