@@ -51,11 +51,12 @@ class QubDataDisplay(qt.QWidget) :
     # - in case of file the file path
     #@param zoomValList a zoom list default [0.1,0.25,0.5,0.75,1,1.5,2]
     def __init__(self,parent=None,data=None,name='',
-                 zoomValList = [0.1,0.25,0.5,0.75,1,1.5,2],**keys) :
+                 zoomValList = [0.1,0.25,0.5,0.75,1,1.5,2],keepROI=False,**keys) :
         qt.QWidget.__init__(self,parent,name,qt.Qt.WDestructiveClose)
 
         self.__curentdata = None
-
+        self.__roi = None
+        
         _,mainWidget = QubMdiCheckIfParentIsMdi(self)
 
         self.__dataPlug = None
@@ -140,11 +141,11 @@ class QubDataDisplay(qt.QWidget) :
         self.__actionDataActionPlug.append(self.__dataStat)
                        ####### ZOOM LIST #######
         zoomActionList = QubZoomListAction(place = "toolbar",
-                                           initZoom = 1,zoomValList = zoomValList,
+                                           initZoom = 1,zoomValList = zoomValList,keepROI = keepROI,
                                            show = 1,group = "image")
         actions.append(zoomActionList)
                      ####### ZOOM Action #######
-        zoomFitOrFill = QubZoomAction(place = "toolbar",group = "image")
+        zoomFitOrFill = QubZoomAction(keepROI = keepROI,place = "toolbar",group = "image")
         actions.append(zoomFitOrFill)
         
 
@@ -235,7 +236,12 @@ class QubDataDisplay(qt.QWidget) :
     def setData(self,data) :
         self.__rawData2Image.putRawData(data)
         self.setData4Action(data)
-    
+    ##@brief set data roi
+    def setDataRoi(self,x,y,width,height) :
+        zoomClass = self.__ImageNViewPlug.zoom()
+        zoomClass.setRoiNZoom(x,y,width,height,*zoomClass.zoom())
+        self.__dataStat.setDataRoi(x,y,width,height)
+        
     ##@brief set data to all action which need it
     #
     #Dont call this methode (internal call)
@@ -374,7 +380,7 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
             
         if self.__colormapDialog:
             fulldata,resizedData = self.data()
-            self.__colormapDialog.update(resizedData)
+            self.__colormapDialog.setData(resizedData)
             self.__dataPositionValueAction.setData(resizedData)
         receiver = self.__receiver()
         if receiver:

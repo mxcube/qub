@@ -369,6 +369,16 @@ class _DataZoomProcess(QubThreadProcess) :
                             else:
                                 height,width = s.data.shape
                                 dataArray = datafuncs.down_size(s.data,0,0,width,height,xzoom,yzoom)
+                        elif zoom.isRoiZoom() :
+                            x,y,width,height = zoom.roi()
+                            if x < 0:
+                                width += x
+                                x = 0
+                            if y < 0 :
+                                height += y
+                                y = 0
+                            dataArray = dataArray[y:y+height,x:x+width]
+                            
                     colormap = plug.colormap()
                     try:
                         if colormap.autoscale() :

@@ -691,11 +691,18 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                 _,yzoom = self._zoom.zoom()
                 if yzoom < 1.:
                     nbLine = (1 / yzoom) * self._lineWidth
+            if self._zoom.isRoiZoom() :
+                ori,_,width,_ = self._zoom.roi()
+                data = self._data[:,ori:ori+width]
+            else:
+                ori = 0
+                data = self._data
+                
             if int(nbLine) != nbLine:
                  startPos = round(yzoom * self._lineId) / yzoom
                  endPos = startPos + nbLine
                  try :
-                     lines = [x for x in self._data[int(startPos):int(endPos) + 1]]
+                     lines = [x for x in data[int(startPos):int(endPos) + 1]]
                  except IndexError,err:
                      return
                  if lines:
@@ -710,7 +717,7 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                  else:
                       caption = '(line : %d)' % (self._lineId)
                  try :
-                     lines = [x for x in self._data[self._lineId:self._lineId + nbLine]]
+                     lines = [x for x in data[self._lineId:self._lineId + nbLine]]
                  except IndexError,err:
                      return
             
@@ -719,7 +726,7 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                 for line in lines :
                      yVales = yVales + line
                 yVales = yVales / nbLine
-                self._curve.setData(numpy.arange(len(yVales)),yVales)
+                self._curve.setData(numpy.arange(ori,ori + len(yVales)),yVales)
                 self._graph.replot()
                 self._graph.setTitle('%s %s' % (self._graphLegend,caption))
                 self._graph.setCaption('%s %s' % (self._captionPrefix,caption))
@@ -777,11 +784,18 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
                  xzoom,_ = self._zoom.zoom()
                  if xzoom < 1.:
                      nbCol = (1 / xzoom) * self._lineWidth
+             if self._zoom.isRoiZoom() :
+                 _,ori,_,height = self._zoom.roi()
+                 data = self._data[ori:ori + height,:]
+             else:
+                 ori = 0
+                 data = self._data
+                 
              if int(nbCol) != nbCol:
                  startPos = round(xzoom * self._columnId) / xzoom
                  endPos = startPos + nbCol
                  try:
-                     columns = [x for x in self._data.T[int(startPos):int(endPos) + 1]]
+                     columns = [x for x in data.T[int(startPos):int(endPos) + 1]]
                  except IndexError,err:
                      return
                  if columns:
@@ -796,7 +810,7 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
                  else:
                      caption = '(column : %d)' % (self._columnId)
                  try:
-                     columns = [x for x in self._data.T[self._columnId:self._columnId + nbCol]]
+                     columns = [x for x in data.T[self._columnId:self._columnId + nbCol]]
                  except IndexError,err:
                      return
              if columns:
@@ -804,7 +818,7 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
                  for column in columns :
                      xVales = xVales + column
                  xVales = xVales / nbCol
-                 self._curve.setData(numpy.arange(len(xVales)),xVales)
+                 self._curve.setData(numpy.arange(ori,ori + len(xVales)),xVales)
                  self._graph.setTitle('%s %s' % (self._graphLegend,caption))
                  self._graph.replot()
                  self._graph.setCaption('%s %s' %(self._captionPrefix,caption))

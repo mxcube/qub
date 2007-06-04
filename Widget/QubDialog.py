@@ -642,6 +642,7 @@ class QubDataStatWidget(Histogram) :
         Histogram.__init__(self,parent,name,f)
         self.setIcon(loadIcon("histogram.png"))
         self.__data = None
+        self.__roi = None
         nbChannelWidget = self.child('__numberOfChannels')
         nbChannelWidget.setValidator(qt.QIntValidator(nbChannelWidget))
         nbChannelWidget.setText('10')
@@ -692,9 +693,16 @@ class QubDataStatWidget(Histogram) :
         self.__refreshIdle()
         
     def setData(self,data) :
-        self.__data = data
+        if self.__roi is not None:
+            x,y,width,height = self.__roi
+            self.__data = data[y:y + height,x:x + width]
+        else:
+            self.__data = data
         self.__refreshIdle()
 
+    def setDataRoi(self,x,y,width,height) :
+        self.__roi = (x,y,width,height)
+        
     def __refreshIdle(self) :
         if self.isVisible() and not self.__idle.isActive() :
             self.__idle.start(0)

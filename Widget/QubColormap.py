@@ -224,7 +224,7 @@ class QubColormapDialog(qt.QWidget):
     ##@brief setCaptionPrefix
     def setCaptionPrefix(self,prefix) :
         self.setCaption(prefix)
-        
+    
     ##@brief this methode set the callback fro refresh when colormap has changed
     def setColormapNRefreshCallBack(self,colormap,cbk) :
         self.__colormap = colormap
@@ -313,14 +313,16 @@ class QubColormapDialog(qt.QWidget):
             self.__colormap.setMinMax(x,maxVal)
         self.__refreshImage()
         
-    def update(self,data):
-        self.__data = data
+    def setData(self,data):
         colormap = self.__colormap
         if colormap and data is not None:
+            self.__data = data
+
             if colormap.lutType() == LUT.LOG :
                 self.__dataMin,self.__dataMax = colormap.minMaxMappingMethode()
             else:
-                self.__dataMin,self.__dataMax = data.min(),data.max()
+                self.__dataMin,self.__dataMax = self.__data.min(),self.__data.max()
+                
                      ####### GRAPH UPDATE #######
             """
             calculate visible part of the graph outside data values (margin)
@@ -378,7 +380,7 @@ class QubColormapDialog(qt.QWidget):
         #HISTO
         if self.isShown() and not self.__histoTimer.isActive():
             self.__histoTimer.start(5000)
-            
+        
     def __refreshImage(self) :
         if self.__refreshCallback :
             self.__refreshCallback()
