@@ -1553,11 +1553,9 @@ class QubDataPositionValueAction(QubPositionAction):
         if xScale < 1.0 or yScale < 1.0 : color = qt.Qt.red
         else: color = qt.Qt.black
 
-        if xScale > 1. :
-            x,_ = matrix.invert()[0].map(x,y)
-        if yScale > 1. :
-            _,y = matrix.invert()[0].map(x,y)
- 
+        if xScale > 1. : x /= xScale
+        if yScale > 1. : y /= yScale
+
         try:
             value = self.__data[y][x]
             if isinstance(value,int) :
