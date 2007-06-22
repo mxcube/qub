@@ -3,6 +3,8 @@
 #
 class QubDataIOPlugin:
     class ReadHandler:
+        def __init__(self,**keys) :
+            pass
         ##@brief return the number of data block in file
         #
         def getNumData(self) :
@@ -21,12 +23,17 @@ class QubDataIOPlugin:
         def get(self,index = 0,roi = None) :
             raise NotImplementedError('you have to redefine get in class %s' % self.__class__.__name__)
 
+        ##@brief get data source
+        #
+        #@return a dictionnary of a hierarchic data source tree
+        def getDataSource(self) :
+            raise NotImplementedError('you have to redefine getDataSource in class %s' % self.__class__.__name__)
 
         ##@brief get info handler of data
         #
         #@param index of the data in file
-        #@return QWidget
-        def getInfoHandler(self,index = 0) :
+        #@return a dictionnary info
+        def info(self,index = 0) :
             pass
 
     class WriteHandler:

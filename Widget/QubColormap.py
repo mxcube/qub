@@ -212,6 +212,26 @@ class QubColormapDialog(qt.QWidget):
         hlayout5.addWidget(self.__fullscaleButton)
 
         """
+        sigma
+        """
+        self.__sigmaScaleMode = [('\xb1 std dev / 2',0,0.5),
+                                 ('\xb1 std dev',1,1.),
+                                 ('\xb1 std dev * 2',2,2.)]
+        
+        self.__sigmaScale = qt.QToolButton(self,"sigma")
+        qt.QObject.connect(self.__sigmaScale, qt.SIGNAL("clicked()"),
+                           self.__sigmaScaleChanged)
+        popupMenu = qt.QPopupMenu(self.__sigmaScale)
+        qt.QObject.connect(popupMenu, qt.SIGNAL("activated(int )"),
+                           self.__sigmaModeSelected)
+
+        self.__sigmaScale.setPopup(popupMenu)
+        self.__sigmaScale.setPopupDelay(0)
+        for itemText,itemVal,_ in self.__sigmaScaleMode :
+            popupMenu.insertItem(itemText,itemVal)
+        self.__sigmaModeSelected(1)
+        hlayout5.addWidget(self.__sigmaScale)
+        """
         colormap window can not be resized
         """
 ##        self.setFixedSize(vlayout.minimumSize())
@@ -220,7 +240,7 @@ class QubColormapDialog(qt.QWidget):
         
     def __del__(self) :
         self.__refreshCallback = None
-        
+                
     ##@brief setCaptionPrefix
     def setCaptionPrefix(self,prefix) :
         self.setCaption(prefix)
@@ -274,7 +294,7 @@ class QubColormapDialog(qt.QWidget):
             - send the "ColormaChanged" signal
         """
         for widget in [self.__colormapGraph,self.__scale90Button,self.__fullscaleButton,
-                       self.__minText,self.__maxText] :
+                       self.__minText,self.__maxText,self.__sigmaScale] :
             widget.setEnabled(not val)
         if self.__colormap:
             self.__colormap.setAutoscale(val)
@@ -296,8 +316,27 @@ class QubColormapDialog(qt.QWidget):
         if self.__colormap:
             self.__colormap.setMinMax(self.__dataMin,self.__dataMax)
             self.__refreshImage()
-        
 
+    def __sigmaScaleChanged(self) :
+        minMax = self.__get_min_max_with_sigma()
+        self.__colormap.setMinMax(*minMax)
+        self.__refreshImage()
+        
+    def __sigmaModeSelected(self,index) :
+        self.__sigmaScaleSelectedMode = index
+        self.__sigmaScale.setText(self.__sigmaScaleMode[index][0])
+
+
+    def __get_min_max_with_sigma(self) :
+        nbValue = 1
+        for val in self.__data.shape:
+            nbValue *= val
+        integralVal = self.__data.sum() 
+        average = integralVal / nbValue
+        stdDeviation = self.__data.std()
+        stdDeviation *= self.__sigmaScaleMode[self.__sigmaScaleSelectedMode][2]
+        return (average - stdDeviation,average + stdDeviation)
+ 
     #############################################
     ### GRAPH
     #############################################

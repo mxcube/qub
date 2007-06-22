@@ -974,7 +974,7 @@ class QubQuickView(qt.QLabel) :
                 paint.setPen(qt.QPen(qt.Qt.red,1))
                 paint.drawRect(rect)
                 self.__curentRect = rect
-                
+        
     def __update_rectangle(self,x,y) :
         if self.__curentRect is not None:
             rect,_ = self.__getViewRect(self.__scrollView(),x,y)

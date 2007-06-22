@@ -1478,26 +1478,28 @@ class QubPositionAction(QubImageAction):
             hlayout = qt.QHBoxLayout(self._widget)
 
             xlabel = qt.QLabel("X:", self._widget)
+            xlabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             hlayout.addWidget(xlabel)
             
             self._xLabel = qt.QLabel("x", self._widget)
+            self._xLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             font = self._xLabel.font()
             font.setBold(True)
             self._xLabel.setFont(font)
-            minsize = self._xLabel.sizeHint()
-            self._xLabel.setMinimumSize(minsize)
             hlayout.addWidget(self._xLabel)
             
             hlayout.addSpacing(5)
                    
             ylabel = qt.QLabel("Y:", self._widget)
+            ylabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             hlayout.addWidget(ylabel)
             
             self._yLabel = qt.QLabel("x", self._widget)
+            self._yLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             self._yLabel.setFont(font)
-            self._yLabel.setMinimumSize(minsize)
-            hlayout.addWidget(self._yLabel)
                         
+            hlayout.addWidget(self._yLabel)
+            hlayout.addStretch()
         return self._widget
 
     def viewConnect(self, view):
@@ -1535,13 +1537,16 @@ class QubDataPositionValueAction(QubPositionAction):
     def addStatusWidget(self,parent) :
         QubPositionAction.addStatusWidget(self,parent)
         valueLabel = qt.QLabel("\tZ:",self._widget)
+        valueLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
         layout = self._widget.layout()
-        layout.addWidget(valueLabel)
+        layout.insertWidget(5,valueLabel)
         self.__valueLabel = qt.QLabel("x",self._widget)
+        self.__valueLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
+
         font = self.__valueLabel.font()
         font.setBold(True)
         self.__valueLabel.setFont(font)
-        layout.addWidget(self.__valueLabel)
+        layout.insertWidget(6,self.__valueLabel)
         return self._widget
 
     def mouseFollow(self,x,y) :
@@ -1567,7 +1572,69 @@ class QubDataPositionValueAction(QubPositionAction):
         except TypeError,err:
             self.__valueLabel.setText("")
         self.__valueLabel.setPaletteForegroundColor(color)
+####################################################################
+##########                                                ##########
+##########               QubSliderNSpinAction             ##########
+##########                                                ##########
+####################################################################
+class QubSliderNSpinAction(QubImageAction) :
+    class _SpinBox(qt.QSpinBox) :
+        def __init__(self,parent) :
+            qt.QSpinBox.__init__(self,parent)
+        def mapValueToText(self,value) :
+            return '%d/%d' % (value,self.maxValue())
+        
+    def __init__(self,autoConnect=True,**keys) :
+        QubImageAction.__init__(self,autoConnect = autoConnect,**keys)
+        self.__cbk = None
+        self.__maxVal = 1
+        
+    def setCallBack(self,cbk) :
+        self.__cbk = cbk
+        
+    def addStatusWidget(self,parent) :
+        if not self._widget:
+            self._widget = qt.QHBox(parent)
+            self._widget.setSpacing(2)
+            self._widget.setMargin(5)
+            self.__slider = qt.QSlider(qt.Qt.Horizontal,self._widget)
+            self.__slider.setSizePolicy(qt.QSizePolicy(qt.QSizePolicy.Expanding,
+                                                       qt.QSizePolicy.Fixed))
+            qt.QObject.connect(self.__slider,qt.SIGNAL('valueChanged(int)'),
+                               self.__sliderChanged)
+            self.__spinBox = QubSliderNSpinAction._SpinBox(self._widget)
+            qt.QObject.connect(self.__spinBox,qt.SIGNAL('valueChanged(int)'),
+                               self.__spinBoxChanged)
+            self.setMaxVal(self.__maxVal)
+            sizePolicy = qt.QSizePolicy(qt.QSizePolicy.Expanding,
+                                                      qt.QSizePolicy.Fixed)
+            sizePolicy.setHorStretch(2)
+            self._widget.setSizePolicy(sizePolicy)
+        return self._widget
 
+    def setValue(self,val) :
+        for widget in [self.__slider,self.__spinBox] :
+            widget.setValue(val)
+        if self.__cbk :
+            self.__cbk(val)
+            
+    def setMaxVal(self,maxVal) :
+        self.__maxVal = maxVal
+        try:
+            for widget in [self.__slider,self.__spinBox] :
+                widget.setMaxValue(maxVal)
+        except AttributeError:
+            pass
+
+    def __spinBoxChanged(self,val) :
+        self.__slider.setValue(val)
+        if self.__cbk :
+            self.__cbk(val)
+
+    def __sliderChanged(self,val) :
+        self.__spinBox.setValue(val)
+        if self.__cbk :
+            self.__cbk(val)
 ####################################################################
 ##########                                                ##########
 ##########                  QubQuickScroll                ##########
@@ -1583,6 +1650,7 @@ class QubQuickScroll(QubImageAction) :
         def __del__(self) :
             del self.quickView
             
+            
         def mousePressEvent(self,mouseEvent) :
             self.quickView.popAt(mouseEvent.globalX(),mouseEvent.globalY())
         
@@ -1592,6 +1660,7 @@ class QubQuickScroll(QubImageAction) :
     def addStatusWidget(self,parent) :
         if self._widget is None :
             self._widget = QubQuickScroll._Label(parent)
+            self._widget.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
         return self._widget
 
     def viewConnect(self,view) :
@@ -1683,6 +1752,7 @@ class QubSubDataViewAction(QubToggleImageAction) :
                                            qt.Qt.WStyle_StaysOnTop | qt.Qt.WStyle_Customize | qt.Qt.WStyle_NoBorder | qt.Qt.WStyle_Tool | qt.Qt.WX11BypassWM)
  
                 self.__toolTip.setPaletteBackgroundColor(qt.Qt.white)
+                self._widget.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             return self._widget
         except:
             import traceback

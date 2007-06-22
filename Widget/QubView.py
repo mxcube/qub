@@ -462,10 +462,9 @@ class QubViewStatusbar(qt.QWidget):
         
         self.__container = qt.QWidget(self)
         self.__hlayout = qt.QHBoxLayout(self.__container)
-        
+       
         self.__firstHlayout.addWidget(self.__container)
-        self.__firstHlayout.addStretch(1)
-        
+                
         self.__actionList = []
         
     ##################################################
@@ -479,7 +478,6 @@ class QubViewStatusbar(qt.QWidget):
         widget = action.addStatusWidget(self.__container)
         
         self.__hlayout.insertWidget(action.index(), widget)
-        self.__hlayout.insertStretch(-1)
         self.__actionList.append(action)
         
         widget.show()

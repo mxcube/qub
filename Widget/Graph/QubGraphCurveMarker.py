@@ -28,7 +28,7 @@ class QubGraphCurvePointControl(qwt.QwtPlotMarker) :
                 def __del__(self) :
                     self._statMachine.marker.highlight(True)
                     self._statMachine.marker.plot().replot()
-                        
+                                        
                 def event(self,event) :
                     if isinstance(event,qt.QMouseEvent) :
                         marker = self._statMachine.marker

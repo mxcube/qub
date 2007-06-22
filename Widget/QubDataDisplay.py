@@ -7,8 +7,6 @@ if __name__ == "__main__" :
 
 import os.path
 
-from Qub.Tools.QubWeakref import createWeakrefMethod
-
 from Qub.Data.Plug.QubPlug import QubPlug
 from Qub.Data.Source.QubSpecSource import getSpecVersions
 
@@ -207,7 +205,7 @@ class QubDataDisplay(qt.QWidget) :
     def __del__(self) :
         if self.__dataPlug:
             self.__specShm.unplug(self.__dataPlug)
-
+        
     ##@brief get the drawing view for QubDrawingManager Object
     #@return a QubPixmapDisplay
     def getDrawing(self) :
@@ -230,12 +228,16 @@ class QubDataDisplay(qt.QWidget) :
     def addAction(self,action) :
         if not isinstance(action,list) :
             action = [action]
-        self.__mainView.addDataAction(action)
+        self.__mainView.addAction(action)
     ##@brief set data from an external source
     #@param data a numpy 2 dimension array
     def setData(self,data) :
         self.__rawData2Image.putRawData(data)
         self.setData4Action(data)
+    ##@brief get current data
+    #@return a numpy 2 dimension array
+    def getData(self) :
+        return self.__curentdata
     ##@brief set data roi
     def setDataRoi(self,x,y,width,height) :
         zoomClass = self.__ImageNViewPlug.zoom()

@@ -11,7 +11,7 @@ class QubLock :
             
     def __del__(self) :
         self.unLock()
-            
+        
     def lock(self) :
         if not self.__lockFlag :
             self.__mutex.lock()
@@ -50,7 +50,8 @@ class _ThreadMgr :
 
             def __del__(self) :
                 self.stop()
-
+                qt.QThread.__del__(self)
+                
             def stop(self) :
                 aLock = QubLock(self.__mutex)
                 self.__stop = True

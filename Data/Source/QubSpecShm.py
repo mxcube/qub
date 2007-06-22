@@ -15,6 +15,7 @@ class QubSpecShm(QubSpecMotherSource) :
     def __del__(self):
         self._plugmgr.destroy(self)
         self._pollplug.setEnd()
+        QubSpecMotherSource.__del__(self)
         
     def hasChange(self) :
         cnt = self._cnt()

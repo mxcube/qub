@@ -396,6 +396,7 @@ class QubMdiTree(qt.QListView) :
             self.__close_recurse(item)
             if item.isSelected() :
                 item.window().close()
+
     def __insertRecurseItem(self,parentItem,parentWindowRef,childDico) :
         if parentItem is None:
             try:
@@ -455,7 +456,7 @@ class QubMdiTree(qt.QListView) :
                 subItem.window = subWindow
                 subItem.setText(0,name)
                 subItem.setVisible(False)
-                if subWindow.icon():
+                if subWindow.icon() :
                     subItem.setPixmap(0,subWindow.icon())
         
     def __checkWindowState(self) :

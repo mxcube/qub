@@ -271,6 +271,7 @@ void LUT::Palette::_calcPalette(unsigned int palette[],int fmin, int fmax,
   unsigned int *pal = palette;
   unsigned int *palend = palette;
   *(pal + 0xffff) = *(_dataPalette + 0xffff);
+  *pal = *_dataPalette;
   pal += fmin ; palend += fmax;
   if (meth == LINEAR) 
     for(int j = fmin;pal <= palend && j <= fmax;++j,++pal)
