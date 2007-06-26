@@ -291,6 +291,28 @@ class QubCanvasHLine(qtcanvas.QCanvasLine) :
         width = self.canvas().width()
         self.setPoints(0,y,width,y)
 
+##@brief this is a pixmap display object
+#@ingroup DrawingCanvasToolsRectangle
+class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
+    def __init__(self,canvas) :
+        if isinstance(canvas,QubCanvasPixmap) :
+            self.__image = canvas.QubCanvasPixmap__image.copy()
+        else:
+            self.__image = qt.QImage()
+        self.__pixmap = qt.QPixmap()
+        self.__pixmapIO = pixmaptools.IO()
+        self.__pixmapIO.setShmPolicy(pixmaptools.IO.ShmKeepAndGrow)
+
+    def setImage(self,image) :
+        self.__image = image
+
+    def draw(self,painter) :
+        qtcanvas.QCanvasRectangle.draw(self,painter)
+        if self.__image:
+            image = self.__image.scale(self.width(),self.height())
+            self.__pixmapIO.putImage(self.__pixmap,0,0,image)
+            painter.drawPixmap(self.x(),self.y(),self.__pixmap)
+            
 ##@brief this object display the scale on bottom left of the image
 #@ingroup DrawingCanvasToolsContainer
 class QubCanvasScale(qtcanvas.QCanvasRectangle) :
