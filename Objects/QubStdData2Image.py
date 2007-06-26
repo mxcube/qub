@@ -2,10 +2,17 @@ import qt
 import traceback
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
-
+try:
+    from opencv import cv
+    from Qub.CTools import opencv
+except ImportError :
+    cv = None
+    opencv = None
 ##@brief This class is use to decompress standard data -> image.
 #data cant be (jpeg,tiff 8 bits...)
 class QubStdData2Image(QubThreadProcess,qt.QObject) :
+    STANDARD,BAYER_RG = (0,1)
+    
     class _data_struct :
         PATH_TYPE,DATA_TYPE = range(2)
         def __init__(self) :
@@ -24,6 +31,10 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
             self.type = QubStdData2Image._data_struct.DATA_TYPE
             self.data = data
             return self
+
+        def loadFromData(self,data) :
+            self.image.loadFromData(data)
+            
     def __init__(self) :
         QubThreadProcess.__init__(self)
         qt.QObject.__init__(self)
@@ -34,6 +45,7 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
         self.__actif = False
         self.__postSetImage = []
         self.__swap = False
+        self.__imageType = QubStdData2Image.STANDARD
         
     def plug(self,plug):
         if isinstance(plug,QubStdData2ImagePlug) :
@@ -44,18 +56,21 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
 
     ##@brief insert a data array in the decompress queues
     #@param data must be an array of a known type (jpeg,png...)
-    def putData(self,data) :
-        self.__append(data,None)
+    def putData(self,data,width = -1,height = -1) :
+        self.__append(data,None,width,height)
     ##@brief Insert a image path file in the decompress queues
     #@param path the full path of the image
     def putImagePath(self,path) :
-        self.__append(None,path)
+        self.__append(None,path,-1,-1)
         
     
-    def __append(self,arrayData,path) :
+    def __append(self,arrayData,path,width,height) :
         aLock = QubLock(self.__mutex)
         if self.__plug is not None and not self.__plug.isEnd() :
-            dataStruct = QubStdData2Image._data_struct()
+            if self.__imageType == QubStdData2Image.STANDARD :
+                dataStruct = QubStdData2Image._data_struct()
+            else:
+                dataStruct = _bayer_struct(width,height)
             if path is not None :
                 dataStruct.setPath(path)
             else :
@@ -94,7 +109,7 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
         if aWorkingStruct is not None :
             try :
                 if aWorkingStruct.type is QubStdData2Image._data_struct.DATA_TYPE :
-                    aWorkingStruct.image.loadFromData(aWorkingStruct.data)
+                    aWorkingStruct.loadFromData(aWorkingStruct.data)
                 else :
                     aWorkingStruct.image.load(aWorkingStruct.path)
                 if swapFlag :
@@ -143,7 +158,12 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
     def setSwapRGB(self,aFlag) :
         aLock = QubLock(self.__mutex)
         self.__swap = aFlag
-
+    ##@brief set the image type
+    #
+    #@param imageType can be STANDARD (qt Standard or BAYER_RG)
+    def setImageType(self,imageType) :
+        self.__imageType = imageType
+        
 ##@brief this class link a Data image provider and
 #a image manager
 class QubStdData2ImagePlug :
@@ -162,3 +182,17 @@ class QubStdData2ImagePlug :
     #@param image a qt.QImage
     def setImage(self,imagezoomed,fullimage) :
         return True                     # (END)
+
+##@brief a decompress bayer class
+#
+class _bayer_struct(QubStdData2Image._data_struct) :
+    def __init__(self,w,h) :
+        QubStdData2Image._data_struct.__init__(self)
+        self.__srcImage = cv.cvCreateImage(cv.cvSize(w,h),cv.IPL_DEPTH_8U,1)
+        self.__destimage = cv.cvCreateImage(cv.cvSize(w,h),cv.IPL_DEPTH_8U,3)
+        self.__widthStep = w
+        
+    def loadFromData(self,data) :
+        self.__srcImage.imageData_set(data)
+        cv.cvCvtColor(self.__srcImage,self.__destimage,cv.CV_BayerRG2RGB)
+        self.image = opencv.qtTools.getQImageFromImageOpencv(self.__destimage)
