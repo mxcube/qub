@@ -4,7 +4,11 @@ import itertools
 import numpy
 import qt
 import qtcanvas
+
 from Qub.Objects.QubDrawingConstraint import QubAngleConstraint
+
+from Qub.CTools import pixmaptools
+
 ##@defgroup DrawingCanvasTools Low level objects drawing
 #@brief this is the group of all vector objects which can be put in a simple QCanvas.
 #
@@ -295,6 +299,7 @@ class QubCanvasHLine(qtcanvas.QCanvasLine) :
 #@ingroup DrawingCanvasToolsRectangle
 class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
     def __init__(self,canvas) :
+        qtcanvas.QCanvasRectangle.__init__(self,canvas)
         if isinstance(canvas,QubCanvasPixmap) :
             self.__image = canvas.QubCanvasPixmap__image.copy()
         else:
@@ -307,11 +312,13 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
         self.__image = image
 
     def draw(self,painter) :
-        qtcanvas.QCanvasRectangle.draw(self,painter)
         if self.__image:
             image = self.__image.scale(self.width(),self.height())
+            if self.__pixmap.size != image.size() :
+                self.__pixmap.resize(image.size())
             self.__pixmapIO.putImage(self.__pixmap,0,0,image)
             painter.drawPixmap(self.x(),self.y(),self.__pixmap)
+        qtcanvas.QCanvasRectangle.draw(self,painter)
             
 ##@brief this object display the scale on bottom left of the image
 #@ingroup DrawingCanvasToolsContainer

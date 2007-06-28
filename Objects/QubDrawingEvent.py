@@ -318,7 +318,6 @@ class QubModifyAbsoluteAction(_DrawingEventNDrawingMgr) :
         if self._dirtyFlag :
             d = self._drawingMgr()
             if d : d.endDraw()
-        _DrawingEventNDrawingMgr.__del__(self)
         
     def setCursor(self,eventMgr) :
         eventMgr.setCursor(self._cursor)
@@ -353,7 +352,6 @@ class QubModifyRelativeAction(_DrawingEventNDrawingMgr) :
         if self._dirtyFlag :
             d = self._drawingMgr()
             if d : d.endDraw()
-        _DrawingEventNDrawingMgr.__del__(self)
         
     def setCursor(self,eventMgr) :
         eventMgr.setCursor(self._cursor)

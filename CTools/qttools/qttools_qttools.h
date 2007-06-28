@@ -1,5 +1,7 @@
+#ifndef QTTOOLS_H
+#define QTTOOLS_H
 
-#include "qt.h"
+//#include "qt.h"
 
 class qttools
 {
@@ -7,3 +9,5 @@ class qttools
   static bool get_qt_resolve_symlinks();
   static void set_qt_resolve_symlinks(bool);
 };
+
+#endif

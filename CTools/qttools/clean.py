@@ -3,7 +3,7 @@
 import os
 import os.path
 
-dont_rm_files = ['qttools.sip','qttools_qttools.cpp','qttools_qttools.h','qttoolsconfig.py.in','configure.py',
+dont_rm_files = ['qttools.sip','qttools_qttools.cpp','qttools_qttools.h','qttoolsconfig.py.in','configure.py','qtxembed.cpp','qtxembed.h',
                  'clean.py']
 
 for root,dirs,files in os.walk('.') :

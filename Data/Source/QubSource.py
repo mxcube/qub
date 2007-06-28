@@ -44,7 +44,6 @@ class QubSpecMotherSource(QubSource) :
             
     def __del__(self) :
         self.setDestroy()
-        QubSource.__del__(self)
         
     def container(self) :
         return self._cnt()

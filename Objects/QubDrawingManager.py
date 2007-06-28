@@ -729,7 +729,7 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         for link,canvas,matrix,objectlist in self._foreignObjects :
             for drawingObject in objectlist :
                 drawingObject.show()
-        QubDrawingMgr.__del__(self)
+
 
     ##@brief set the brush for all drawingObject
     #@param brush a qt.QBrush
