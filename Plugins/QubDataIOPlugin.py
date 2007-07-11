@@ -83,3 +83,8 @@ class QubDataIOPlugin:
     #@return QubDataIOPlugin::WriteHandler
     def writeHandler(self,fd) :
         pass
+
+    ##@brief get information about the plugin
+    #
+    def getPluginInfo(self) :
+        pass

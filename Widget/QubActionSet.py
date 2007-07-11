@@ -1,3 +1,4 @@
+import logging
 import weakref
 import qt
 import qtcanvas
@@ -139,10 +140,10 @@ class QubButtonAction(QubAction):
     This action send a signal "ButtonPressed" when user hit the button
     It creates a pushbutton in the toolbar/contextmenu or statusbar
     """
-    def __init__(self,**keys):
+    def __init__(self,label = '',**keys):
         QubAction.__init__(self,**keys)
         self._item  = None
-        
+        self._label = label
     def addToolWidget(self, parent):
         """
         create default pushbutton (with a label) in the toolbar of the view.
@@ -1477,28 +1478,28 @@ class QubPositionAction(QubImageAction):
             
             hlayout = qt.QHBoxLayout(self._widget)
 
-            xlabel = qt.QLabel("X:", self._widget)
-            xlabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
-            hlayout.addWidget(xlabel)
-            
-            self._xLabel = qt.QLabel("x", self._widget)
+            self._xLabel = qt.QLabel("X:", self._widget)
             self._xLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
-            font = self._xLabel.font()
-            font.setBold(True)
-            self._xLabel.setFont(font)
             hlayout.addWidget(self._xLabel)
+            
+            self._xValue = qt.QLabel("x", self._widget)
+            self._xValue.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
+            font = self._xValue.font()
+            font.setBold(True)
+            self._xValue.setFont(font)
+            hlayout.addWidget(self._xValue)
             
             hlayout.addSpacing(5)
                    
-            ylabel = qt.QLabel("Y:", self._widget)
-            ylabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
-            hlayout.addWidget(ylabel)
-            
-            self._yLabel = qt.QLabel("x", self._widget)
+            self._yLabel = qt.QLabel("Y:", self._widget)
             self._yLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
-            self._yLabel.setFont(font)
-                        
             hlayout.addWidget(self._yLabel)
+            
+            self._yValue = qt.QLabel("x", self._widget)
+            self._yValue.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
+            self._yValue.setFont(font)
+                        
+            hlayout.addWidget(self._yValue)
             hlayout.addStretch()
         return self._widget
 
@@ -1517,8 +1518,8 @@ class QubPositionAction(QubImageAction):
         qubImage = self._qubImage and self._qubImage() or None
         if qubImage: (x, y) = qubImage.matrix().invert()[0].map(x,y)
     
-        self._xLabel.setText(str(x))
-        self._yLabel.setText(str(y))
+        self._xValue.setText(str(x))
+        self._yValue.setText(str(y))
         
 ####################################################################
 ##########                                                ##########
@@ -1530,16 +1531,35 @@ class QubDataPositionValueAction(QubPositionAction):
         QubPositionAction.__init__(self,autoConnect=autoConnect,**keys)
         self.__valueLabel = None
         self.__data = None
+        self.__scaleClass = None
         
     def setData(self,data) :
         self.__data = data
-        
+
+    ##@brief this methode is called by Qub::Widget::QubDataDisplay:QubDataDisplay
+    #
+    def setScaleClass(self,scaleClass) :
+        if scaleClass is not None:
+            labels = self.__scaleClass.getLabels()
+            if labels:
+                if len(labels) > 3 :
+                    logging.getLogger().warning('QubDataPositionValueAction don\'t manage more than 3 values')
+                labels = list(labels)[:3]
+                for labelName,labelWidget in zip(labels,[self._xLabel,self._yLabel,self.__valueLabel]) :
+                    labelWidget.setText(labelName)
+
+
+        else:
+            for labelName,labelWidget in zip(['X:','Y:','\tZ:'],[self._xLabel,self._yLabel,self.__valueLabel]) :
+                labelWidget.setText(labelName)
+                
+        self.__scaleClass = scaleClass
     def addStatusWidget(self,parent) :
         QubPositionAction.addStatusWidget(self,parent)
-        valueLabel = qt.QLabel("\tZ:",self._widget)
-        valueLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
+        self._zLabel = qt.QLabel("\tZ:",self._widget)
+        self._zLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
         layout = self._widget.layout()
-        layout.insertWidget(5,valueLabel)
+        layout.insertWidget(5,self._zLabel)
         self.__valueLabel = qt.QLabel("x",self._widget)
         self.__valueLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
 
@@ -1550,28 +1570,34 @@ class QubDataPositionValueAction(QubPositionAction):
         return self._widget
 
     def mouseFollow(self,x,y) :
-        QubPositionAction.mouseFollow(self,x,y)
-        qubImage = self._qubImage and self._qubImage() or None
-        if not qubImage: return
-        matrix = qubImage.matrix()
-        xScale,yScale = matrix.m11(),matrix.m22()
-        if xScale < 1.0 or yScale < 1.0 : color = qt.Qt.red
-        else: color = qt.Qt.black
+        if self.__scaleClass is not None:
+            try:
+                for value,valueWidget in zip(self.__scaleClass.transform(x,y),[self._xValue,self._yValue,self.__valueLabel]) :
+                    valueWidget.setText(value)
+            except TypeError: return
+        else:
+            QubPositionAction.mouseFollow(self,x,y)
+            qubImage = self._qubImage and self._qubImage() or None
+            if not qubImage: return
+            matrix = qubImage.matrix()
+            xScale,yScale = matrix.m11(),matrix.m22()
+            if xScale < 1.0 or yScale < 1.0 : color = qt.Qt.red
+            else: color = qt.Qt.black
 
-        if xScale > 1. : x /= xScale
-        if yScale > 1. : y /= yScale
+            if xScale > 1. : x /= xScale
+            if yScale > 1. : y /= yScale
 
-        try:
-            value = self.__data[y][x]
-            if isinstance(value,int) :
-                self.__valueLabel.setText("%s" % str(value))
-            else:
-                self.__valueLabel.setText("%.2f" % value)
-        except IndexError,err:
-            self.__valueLabel.setText("x")
-        except TypeError,err:
-            self.__valueLabel.setText("")
-        self.__valueLabel.setPaletteForegroundColor(color)
+            try:
+                value = self.__data[y][x]
+                if isinstance(value,int) :
+                    self.__valueLabel.setText("%s" % str(value))
+                else:
+                    self.__valueLabel.setText("%.2f" % value)
+            except IndexError,err:
+                self.__valueLabel.setText("x")
+            except TypeError,err:
+                self.__valueLabel.setText("")
+            self.__valueLabel.setPaletteForegroundColor(color)
 ####################################################################
 ##########                                                ##########
 ##########               QubSliderNSpinAction             ##########
@@ -1842,6 +1868,7 @@ class QubInfoAction(QubImageAction) :
     def addStatusWidget(self,parent) :
         if self._widget is None :
             self._widget = qt.QLabel(parent)
+            self._widget.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
         return self._widget
     
     def viewConnect(self,qubImage) :

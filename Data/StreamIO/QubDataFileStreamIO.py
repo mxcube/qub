@@ -4,12 +4,12 @@ class QubDataFileStreamIO:
         self._index = index
         self._pluginClass = plugInClass
 
-    def get(self) :
+    def get(self,**keys) :
         fd = file(self._filePath)
         try:
             plugIn = self._pluginClass()
             readHandler = plugIn.readHandler(fd)
-            dataArray = readHandler.get(index = self._index)
+            dataArray = readHandler.get(index = self._index,**keys)
             info = readHandler.info(index = self._index)
             return dataArray,info
         except:

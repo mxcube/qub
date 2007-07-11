@@ -19,14 +19,6 @@ class QubDataGroup(QubDataContainerClass) :
     def key(self) :
         return self._name
     
-class QubDataFileContainerClass(QubDataContainerClass) :
-    def __init__(self,filename = '',**keys) :
-        QubDataContainerClass.__init__(self,**keys)
-        self._fileName = filename
-
-    def filename(self) :
-        return self._fileName
-    
 ##@brief mother class of data class Object
 #
 class QubDataClass(QubDataContainerClass):
@@ -35,11 +27,15 @@ class QubDataClass(QubDataContainerClass):
             self.__source = source and weakref.ref(source,self.__end) or None
             self.__cnt = None
             self.__cache = caching
-            
+
+        ##@brief update sources
+        #
+        #@return True if update OK
         def update(self) :
             source = self.__source()
             if source: source.setDirty()
-
+            return source and True or False
+        
         def setContainer(self,cnt) :
             self.__cnt = cnt
 
@@ -50,11 +46,12 @@ class QubDataClass(QubDataContainerClass):
             if self.__cnt:
                 self.__cnt.removePlug(self)
             
-    def __init__(self,data = None,info = None,caching = False,**keys) :
+    def __init__(self,data = None,info = None,scaleClass = None,caching = False,**keys) :
         QubDataContainerClass.__init__(self,**keys)
         self._isDirty = True            # Need a refresh
         self._dataCache = data
         self._info = info
+        self._scaleClass = scaleClass
         self.__childrenDataClass = []
         self.__cachingCounter = 0
         self.__forceCaching = caching
@@ -62,9 +59,9 @@ class QubDataClass(QubDataContainerClass):
     ##@brief get data
     #
     #usualy a numpy array and dictionnary as info
-    def data(self) :
+    def data(self,**keys) :
         if self._isDirty or self._dataCache is None :
-            data,info = self._data()
+            data,info = self._data(**keys)
             self._isDirty = False
         else:
             data = self._dataCache
@@ -74,7 +71,15 @@ class QubDataClass(QubDataContainerClass):
             self._dataCache = data
             self._info = info
         return (data,info)      
+    ##@brief get scale data class
+    #
+    #usualy return a Qub::Data::Scale::QubDataScale::QubDataScale
+    def scaleClass(self):
+        return self._scaleClass
 
+    def setScaleClass(self,scaleClass) :
+        self._scaleClass = scaleClass
+        
     def setUpdateCallback(self,cbk) :
         self._updateCallback = createWeakrefMethod(cbk)
         
@@ -100,33 +105,13 @@ class QubDataClass(QubDataContainerClass):
             self._data = None           # No source are interest of this data
             
 class QubDataImage(QubDataClass) :
-    def __init__(self,stream_io = None,**keys) :
+    def __init__(self,read_plugin = None,**keys) :
         QubDataClass.__init__(self,**keys)
-        self.__stream_io = stream_io
-        stream_io.plug(QubDataClass.Plug(self))
+        self.__read_plugin = read_plugin
+        try:
+            read_plugin.plug(QubDataClass.Plug(self))
+        except AttributeError:
+            pass
 
-    def _data(self):
-        return self.__stream_io.get()
-            
-
-class QubDataFiltered(QubDataClass):
-    def __init__(self,data_source_key = {},filter_class = None,**keys) :
-        QubDataClass.__init__(self,**keys)
-        self._data_source_key = data_source_key
-        self._filter_class = filter_class
-        for source in data_source_key.values():
-            source.plug(QubDataClass.Plug(self))
-            
-    def _data(self) :
-        return self._filter_class.doFilter(self._data_source_key)    
-
-class QubDataOperation(QubDataClass):
-    def __init__(self,data_source_list = [],operation_class = None,caching = True,**keys) :
-        QubDataClass.__init__(self,**keys)
-        self._data_source_list = data_source_list
-        self._operation_class = operation_class
-        for source in data_source_list:
-            source.plug(QubDataClass.Plug(self))
-
-    def _data(self) :
-        return self._operation_class.doOperation(self._data_source_list)
+    def _data(self,**keys):
+        return self.__read_plugin.get(**keys)

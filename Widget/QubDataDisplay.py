@@ -33,6 +33,7 @@ from Qub.Widget.QubColormap import QubColormapDialog
 
 from Qub.Widget.QubDialog import QubSaveImageWidget,QubSaveImageDialog
 from Qub.Widget.QubDialog import QubDataStatWidget,QubDataStatDialog
+from Qub.Widget.QubDialog import QubInfoTableWidget,QubInfoTableDialog
 
 from Qub.Print.QubPrintPreview import getPrintPreviewDialog
 
@@ -54,7 +55,6 @@ class QubDataDisplay(qt.QWidget) :
 
         self.__curentdata = None
         self.__roi = None
-        
         _,mainWidget = QubMdiCheckIfParentIsMdi(self)
 
         self.__dataPlug = None
@@ -137,6 +137,15 @@ class QubDataDisplay(qt.QWidget) :
         dataStatAction.setDialog(self.__dataStat)
         actions.append(dataStatAction)
         self.__actionDataActionPlug.append(self.__dataStat)
+                     ####### HEADER INFO #######
+        if mdiParent:
+            self.__headerInfo = QubInfoTableWidget(parent = mdiParent,iconName='datatable',name = 'Header Info')
+            mdiParent.addNewChildOfMainWindow(mainWindow,self.__headerInfo)
+        else: self.__headerInfo = QubInfoTableDialog(parent = mainWidget,iconName='datatable',name = 'Header Info')
+        headerInfoAction = QubOpenDialogAction(parent=mainWidget,name='Header info',iconName='datatable',group='admin',
+                                               place='contextmenu')
+        headerInfoAction.setDialog(self.__headerInfo)
+        actions.append(headerInfoAction)
                        ####### ZOOM LIST #######
         zoomActionList = QubZoomListAction(place = "toolbar",
                                            initZoom = 1,zoomValList = zoomValList,keepROI = keepROI,
@@ -201,7 +210,6 @@ class QubDataDisplay(qt.QWidget) :
             self.__rawData2Image.putRawData(dataArray)
             self.setData4Action(dataArray)
 
-        
     def __del__(self) :
         if self.__dataPlug:
             self.__specShm.unplug(self.__dataPlug)
@@ -234,6 +242,21 @@ class QubDataDisplay(qt.QWidget) :
     def setData(self,data) :
         self.__rawData2Image.putRawData(data)
         self.setData4Action(data)
+    ##@brief set info
+    #
+    #@param info must be a dictionnary
+    def setInfo(self,info) :
+        self.__headerInfo.setInfo(info)
+
+    ##@brief set scale class for data
+    #
+    #@param scaleClass usualy a Qub::Data::Scale::QubDataScale::QubDataScale
+    def setScaleClass(self,scaleClass) :
+        for action in self.__actionDataActionPlug :
+            if hasattr(action,'setScaleClass') :
+                action.setScaleClass(scaleClass)
+
+    
     ##@brief get current data
     #@return a numpy 2 dimension array
     def getData(self) :
@@ -271,6 +294,7 @@ class QubDataDisplay(qt.QWidget) :
         self.__colormapDialog.setCaptionPrefix(name)
         self.__saveDialog.setCaptionPrefix(name)
         self.__dataStat.setCaption(name)
+        self.__headerInfo.setCaption(name)
         
     def resizeEvent(self,event):
         try:

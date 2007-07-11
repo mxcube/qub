@@ -9,6 +9,7 @@ import weakref
 import logging
 import qt
 import qtcanvas
+import qttable
 import math
 import os.path
 import itertools
@@ -922,7 +923,8 @@ class QubBrightnessContrastDialog(qt.QDialog):
 #This class can also drive a scrollView
 class QubQuickView(qt.QLabel) :
     def __init__(self,parent = None,name = "Quick view",**keys) :
-        qt.QLabel.__init__(self,parent,name,qt.Qt.WStyle_Customize | qt.Qt.WStyle_NoBorder)
+        qt.QLabel.__init__(self,parent,name,
+                           qt.Qt.WStyle_StaysOnTop | qt.Qt.WStyle_Customize | qt.Qt.WStyle_NoBorder | qt.Qt.WStyle_Tool | qt.Qt.WX11BypassWM)
         self.__width = 128
         self.__height = 128
         self.__pixmap = None
@@ -1031,4 +1033,67 @@ class QubQuickView(qt.QLabel) :
                 x -= center.x()
                 y -= center.y()
                 self.move(x,y)
+##@brief widget to display dictionnary info in a table
+#
+#display info in table in two column (key,value)
+class QubInfoTableWidget(qttable.QTable):
+    def __init__(self,parent = None,name = '',iconName = None) :
+        qttable.QTable.__init__(self,0,2,parent,name)
+        self.__info = None
+        self.horizontalHeader().hide()
+        self.setColumnStretchable(0,True)
+        self.setColumnStretchable(1,True)
+        self.setSelectionMode(qttable.QTable.NoSelection)
+        if iconName:
+            self.setIcon(loadIcon('%s.png' % iconName))
+            
+    def setInfo(self,info) :
+        self.__info = info
+        self.__refresh()
+
+    def show(self) :
+        qttable.QTable.show(self)
+        self.__refresh()
         
+    def __refresh(self) :
+        if self.isShown() :
+            self.removeRows(range(self.numRows()))
+            try:
+                for i,(key,val) in enumerate(self.__info.iteritems()) :
+                    self.insertRows(i)
+                    self.setRowReadOnly(i,True)
+                    try:
+                        self.setText(i,0,str(key))
+                        self.setText(i,1,str(val))
+                    except:
+                        self.setText(i,0,unicode(key,'latin1'))
+                        self.setText(i,1,unicode(val,'latin1'))
+            except AttributeError: pass
+
+##@brief dialog use to diaply table info
+#
+#@see QubInfoTableWidget
+class QubInfoTableDialog(qt.QDialog) :
+    ##@brief constructor
+    #
+    #@param parent parent widget
+    #@param name widget name
+    #@param iconName a file name without extention of a pixmap in the Qub Icon library
+    def __init__(self,parent = None,name = 'Info Dialog',iconName = None) :
+        qt.QDialog.__init__(self,parent,name)
+        self.setCaption(name)
+        if iconName:
+            self.setIcon(loadIcon('%s.png' % iconName))
+
+        self.__infoTable = QubInfoTableWidget(self,'tInfo')
+        layout = qt.QHBoxLayout(self)
+        layout.addWidget(self.__infoTable)
+
+    def show(self) :
+        qt.QDialog.show(self)
+        self.setMinimumSize(self.sizeHint())
+
+    def setInfo(self,info) :
+        self.__infoTable.setInfo(info)
+        
+    

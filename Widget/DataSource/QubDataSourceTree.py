@@ -10,6 +10,8 @@ from Qub.Widget.QubDataDisplay import QubDataDisplay
 
 from Qub.Widget.QubActionSet import QubSliderNSpinAction
 
+from Qub.Plugins.QubDataSourcePlugin import QubDataSourcePlugin
+
 ##@brief this class is a container for data source widget
 #
 #To display data source in that tree you have to interface it with the
@@ -28,12 +30,13 @@ class QubDataSourceTree(qt.QListView) :
         self.__key2Items = weakref.WeakValueDictionary()
         #PopUp Menu
         self.__popUpMenu = qt.QPopupMenu(self)
-        self.__popUpMenu.insertItem('display',self.__displaySourceRecurse)
-        self.__popUpMenu.insertItem('remove',self.__removeSource)
+        self.__popUpMenu.insertItem('display',self.__displaySourceRecurse,'Ctrl+d',-1)
+        self.__popUpMenu.insertItem('remove',self.__removeSource,'Ctrl+r',-2)
         qt.QObject.connect(self,qt.SIGNAL('rightButtonPressed(QListViewItem*,const QPoint &,int)'),
                            self.__popUpDisplay)
         self.__mdi = mdi
         self.__dataActionClass = []
+        self.__dataSourcePlugins = []
         
     def insertDataSourceInTree(self,dico,parent = None) :
         if parent is None :
@@ -61,6 +64,28 @@ class QubDataSourceTree(qt.QListView) :
     #Those action will be add to the data display
     def setDataActions(self,actions) :
         self.__dataActionClass = actions
+
+    ##@brief set data source plugins
+    #
+    #Those action will be add to the popup menu
+    def setDataSourcePlugins(self,plugins) :
+        if self.__dataSourcePlugins :
+            for i in range(len(self.__dataSourcePlugins)) :
+                self.__popUpMenu.removeItem(i)
+                
+        self.__dataSourcePlugins = plugins
+        for i,p in enumerate(plugins):
+            self.__popUpMenu.insertItem(p.name(),self.__pluginsCBK,'',i)
+    ##@brief get all the groups
+    #
+    #@return a group's name list
+    def getGroupsName(self) :
+        groups = []
+        for item in self.__getIterator() :
+            dataSource = item.getDataClass()
+            if isinstance(dataSource,QubDataGroup) :
+                groups.append(dataSource.name())
+        return groups
         
     def __popUpDisplay(self,item,point,columnid) :
         self.__popUpMenu.exec_loop(point)
@@ -112,6 +137,8 @@ class QubDataSourceTree(qt.QListView) :
                                             dataArray,info = dataClass.data()
                                             dataDisplay = self.__dataDisplay()
                                             dataDisplay.setData(dataArray)
+                                            dataDisplay.setInfo(info)
+                                            dataDisplay.setScaleClass(dataClass.scaleClass())
                                             dataDisplay.setCaption(dataClass.name())
                                         except: break
                         cbk = _sliderCallback(item,self.__getIterator)
@@ -130,7 +157,14 @@ class QubDataSourceTree(qt.QListView) :
                     dataDisplay.move(self.__mdi.width() * .25,self.__mdi.height() * 0.25)
 
                 dataDisplay.setData(dataArray)
+                dataDisplay.setInfo(info)
+                dataDisplay.setScaleClass(dataClass.scaleClass())
                 item.dataDisplay = weakref.ref(dataDisplay)
+
+                dataSourceCBK = _dataSourceCBK(dataDisplay)
+                dataClass.setUpdateCallback(dataSourceCBK.update)
+                item.dataSourceCBK = dataSourceCBK
+
                 dataDisplay.setCaption(dataClass.name())
 
                 for pluginsClass in self.__dataActionClass :
@@ -161,11 +195,34 @@ class QubDataSourceTree(qt.QListView) :
                     parent.takeItem(item)
             else:
                 self.__removeSource(i,item)
-                        
+    def __pluginsCBK(self,i) :
+        try:
+            plugin = self.__dataSourcePlugins[i]
+            interface = QubDataSourcePlugin.interface(self)
+            if plugin.initPlugin(interface):
+                plugin.run(interface)
+                                
+        except IndexError:
+            import traceback
+            traceback.print_exc()
+        
     def __dbclickedCBK(self,item,point,column) :
         if item :
             try:
-                item.dbClickedCBK()
+                if not item.dbClickedCBK() :
+                    try:
+                        parent = item.parent()
+                        dataSource = parent.getDataClass()
+                    except AttributeError:
+                        self.__displaySource(item)
+                    else:
+                        if isinstance(dataSource,QubDataGroup) :
+                            self.__displaySource(parent)
+                            sliderAction = parent.sliderAction()
+                            for i,child in enumerate(self.__getIterator(parent)) :
+                                if child == item :
+                                    sliderAction.setValue(i)
+                                    break
             except:
                 import traceback
                 traceback.print_exc()
@@ -221,3 +278,15 @@ class QubDataSourceTreeItem(qt.QListViewItem):
     ##@brief this methode will be called on double click
     def dbClickedCBK(self) :
         pass
+
+
+class _dataSourceCBK:
+    def __init__(self,dataDisplay) :
+        self.__dataDisplay = weakref.ref(dataDisplay)
+
+    def update(self,dataSource) :
+        dataDisplay = self.__dataDisplay()
+        if dataDisplay:
+            dataArray,info = dataSource.data()
+            dataDisplay.setData(dataArray)
+            dataDisplay.setInfo(info)

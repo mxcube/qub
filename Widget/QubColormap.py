@@ -306,7 +306,14 @@ class QubColormapDialog(qt.QWidget):
         the value corresponding to 90% of the different value of the data
         """
         if self.__colormap:
-            self.__colormap.setMinMax(self.__dataMin,0.9 * self.__dataMax)
+            datatmp = self.__data.copy()
+            datatmp = datatmp.ravel()
+            datatmp.sort()
+            cumsum = datatmp.cumsum()
+            limit = cumsum[-1] * 0.95
+            maskResult = cumsum > limit
+            maxVal = datatmp[maskResult][0]
+            self.__colormap.setMinMax(self.__dataMin,maxVal)
             self.__refreshImage()
 
     def __fullscaleChanged(self):
@@ -318,14 +325,16 @@ class QubColormapDialog(qt.QWidget):
             self.__refreshImage()
 
     def __sigmaScaleChanged(self) :
-        minMax = self.__get_min_max_with_sigma()
+        try:
+            minMax = self.__get_min_max_with_sigma()
+        except AttributeError: return
         self.__colormap.setMinMax(*minMax)
         self.__refreshImage()
         
     def __sigmaModeSelected(self,index) :
         self.__sigmaScaleSelectedMode = index
         self.__sigmaScale.setText(self.__sigmaScaleMode[index][0])
-
+        self.__sigmaScaleChanged()
 
     def __get_min_max_with_sigma(self) :
         nbValue = 1

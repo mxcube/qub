@@ -398,7 +398,7 @@ class QubViewToolbar(qt.QDockArea):
         """
         If group "actionGroup" does not already exist, creates it
         """
-        if actionGroup not in self.__groupList.keys():
+        if not self.__groupList.has_key(actionGroup) :
             self.__addGroup(actionGroup, actionGroupIndex)
         
         """
@@ -437,7 +437,7 @@ class QubViewToolbar(qt.QDockArea):
                 """
                 if there is no more action in the group, delete the group
                 """
-                if len(self.__groupList[groupName]["action"]) == 0:
+                if not self.__groupList[groupName]["action"] :
                     self.__delGroup(groupName)
 
 
