@@ -16,7 +16,15 @@ qt_sip_flags = config.pyqt_qt_sip_flags
 
 # Run SIP to generate the code.  Note that we tell SIP where to find the qt
 # module's specification files using the -I flag.
-os.system(" ".join([config.sip_bin, "-c", '.', "-b", build_file, "-I", config.pyqt_sip_dir, qt_sip_flags,"qttools.sip"]))
+cmd = " ".join([config.sip_bin, "-c", '.', "-b", build_file, "-I", config.pyqt_sip_dir, qt_sip_flags,"qttools.sip"])
+print cmd
+os.system(cmd)
+
+#MOC
+if os.system(" ".join(['moc','-o','moc_qtxembed.cpp','qtxembed.h'])) :
+    print 'Moc failed on file qtxembed.h'
+
+compile_file = ['qttools_qttools.cpp','moc_qtxembed.cpp','qtxembed.cpp']
 
 #little HACK for adding source
 bfile = file(build_file)
@@ -24,7 +32,7 @@ whole_line = ''
 for line in bfile :
     if 'sources' in line :
         begin,end = line.split('=')
-        line = '%s = qttools_qttools.cpp%s' % (begin,end)
+        line = '%s = %s%s' % (begin,' '.join(compile_file),end)
     whole_line += line
 bfile.close()
 bfile = file(build_file,'w')
