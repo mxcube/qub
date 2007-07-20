@@ -262,7 +262,7 @@ class QubMdi(qt.QWorkspace):
             self.__windowDocWindow.hide()
 
             self.__windowControl = qt.QToolButton(self.winToolBar,"Opened Window")
-            self.__windowControl.setIconSet(qt.QIconSet(loadIcon("gears.png")))
+            self.__windowControl.setIconSet(qt.QIconSet(loadIcon("windows.xpm")))
             qt.QObject.connect(self.__windowControl,qt.SIGNAL("clicked()"),self.__showWindowToolBox)
 
         self.fullscreen = qt.QToolButton(self.winToolBar,"Full Screen")
