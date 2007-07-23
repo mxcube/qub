@@ -114,7 +114,25 @@ class QubFileDialog(qt.QDialog):
         self.__setDirectory(cleanDir)
         self.dirCombo.insertItem(cleanDir, -1)
         self.dirCombo.setCurrentItem(self.dirCombo.count()-1)
-    
+
+    def __itemRenamed(self, item, name):
+        if self.qdir.exists(name):
+            msg = "name \"%s\" already exists, cannot create the directory !!!"
+            qt.QMessageBox.warning(None, "Create new directory", msg,
+                                           qt.QMessageBox.Ok,0,0)
+            self.iconView.takeItem(item)
+        else:
+            self.qdir.mkdir(name)
+            cleanDir = self.qdir.cleanDirPath(self.qdir.path())
+            self.__setDirectory(cleanDir)
+            
+    def __createDirectory(self):
+        item = qt.QIconViewItem(self.iconView,
+                                "NewDirectory", 
+                                loadIcon("file_dir.xpm"))
+        item.setRenameEnabled(True)
+        item.rename()
+        
     def __iconViewDoubleClick(self, item):
         filename = item.text()
         
@@ -167,6 +185,15 @@ class QubFileDialog(qt.QDialog):
                      self.__goUpDirectory)
         hlayout1.addWidget(self.upButton)
         
+        self.createButton = qt.QToolButton(self)
+        self.createButton.setAutoRaise(True)
+        self.createButton.setSizePolicy(fixedPolicy)
+        self.createButton.setIconSet(qt.QIconSet(loadIcon("file_newfolder.xpm")))
+        qt.QToolTip.add(self.createButton, "Create new directory")
+        self.connect(self.createButton, qt.SIGNAL("clicked()"),
+                     self.__createDirectory)
+        hlayout1.addWidget(self.createButton)
+        
         self.iconView = qt.QIconView(self)
         self.iconView.setItemTextPos(qt.QIconView.Right)
         self.iconView.setResizeMode(qt.QIconView.Adjust)
@@ -177,6 +204,8 @@ class QubFileDialog(qt.QDialog):
                      self.__iconViewDoubleClick)
         self.connect(self.iconView, qt.SIGNAL("selectionChanged(QIconViewItem *)"),
                      self.__selectionChanged)
+        self.connect(self.iconView, qt.SIGNAL("itemRenamed(QIconViewItem *, const QString &)"),
+                     self.__itemRenamed)
         vlayout.addWidget(self.iconView)
         
         hlayout2 = qt.QHBoxLayout(vlayout)
