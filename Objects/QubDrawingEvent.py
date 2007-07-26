@@ -273,12 +273,15 @@ class QubNPointClick(_DrawingEventNDrawingMgr) :
         _DrawingEventNDrawingMgr.__init__(self,aDrawingMgr,oneShot)
         self.__pointNb = 0
         self.__active = False
-    
+        aDrawingMgr.reset()
+        
     def mousePressed(self,x,y) :
         d = self._drawingMgr()
         if d :
             if self.__pointNb == 0 :
+                d.initDraw()
                 d.show()
+
             d.move(x,y,self.__pointNb)
             self.__active = True
             

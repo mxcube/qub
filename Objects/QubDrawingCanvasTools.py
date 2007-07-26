@@ -61,47 +61,191 @@ QubCanvasRectangle = qtcanvas.QCanvasRectangle
 
 ##@brief the Ellipse object
 #@ingroup DrawingCanvasToolsPoint
+#@ingroup DrawingCanvasToolsRectangle
 class QubCanvasEllipse(qtcanvas.QCanvasEllipse):
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasEllipse.__init__(self,canvas)
+        self.__centerRayonDrawingMode = False
+    def setCenterRayonDrawingMode(self,aFlag) :
+        self.__centerRayonDrawingMode = aFlag
+        self.update()
+        
+    def setSize(self,width,height) :
+        if self.__centerRayonDrawingMode:
+            width *= 2
+            height *= 2
+        qtcanvas.QCanvasEllipse.setSize(self,width,height)
+        
     def drawShape(self, p):
         p.drawArc(int(self.x()-self.width()/2+0.5), 
                   int(self.y()-self.height()/2+0.5), 
                   self.width(), self.height(), 
-                  self.angleStart(), self.angleLength())       
-        
+                  self.angleStart(), self.angleLength())
+
+                        
 ##@brief the Donut Object
 #@ingroup DrawingCanvasToolsPoint
+#@ingroup DrawingCanvasToolsRectangle
+#@ingroup DrawingCanvasToolsPolygon
 class QubCanvasDonut(qtcanvas.QCanvasEllipse):
-    """
-    """
-    def setClip(self, w, h):
-        self.win = w
-        self.hin = h
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasEllipse.__init__(self,canvas)
+        if isinstance(canvas,QubCanvasDonut) :
+            self.__centerRayonDrawingMode = canvas._QubCanvasDonut__centerRayonDrawingMode
+            self.__discwidth = canvas._QubCanvasDonut__discwidth
+            self.__circle = canvas._QubCanvasDonut__circle
+            self.__matrix = canvas._QubCanvasDonut__matrix
+            self.__nbDrawPoint = canvas._QubCanvasDonut__nbDrawPoint
+        else:
+            self.__centerRayonDrawingMode = False
+            self.__discwidth = 5
+            self.__oldDiscWidth = None
+            self.__circle = False
+            self.__matrix = None
+            self.__nbDrawPoint = 3
+        
+    ##@brief this methode is called by the drawing manager
+    #
+    # - first point move the center
+    # - second point define the rayon
+    # - third point define the width (on absciss axis) 
+    def move(self,x,y,point_id = 0) :
+        if point_id == 0:               # CENTER
+            qtcanvas.QCanvasEllipse.move(self,x,y)
+        elif point_id == 1:             # RAYON
+            width = abs(self.x() - x) * 2
+            height = abs(self.y() - y) * 2
+            if self.__circle:
+                rayon = math.sqrt(width ** 2 + height ** 2)
+                height = rayon
+                width = rayon
+            qtcanvas.QCanvasEllipse.setSize(self,width,height)
+            if self.__nbDrawPoint > 2 : # START ANGLE SET
+                x1,y1 = x - self.x(),y - self.y()
+                dist = math.sqrt(x1 ** 2 + y1 ** 2)
+                angle = math.acos(x1/dist)
+                if y > self.y() : angle = -angle
+                angle = angle * 180 / math.pi
+                self.setAngles(angle * 16,self.angleLength())
+        elif point_id == 2:             # DISC WIDTH
+            extXRayon = (x - self.x()) * 2
+            extYRayon = (y - self.y()) * 2
+            rayon = math.sqrt(extXRayon ** 2 + extYRayon ** 2)
+            discwidth =  abs(rayon) - self.width()
+            if discwidth <= 0: discwidth = 1
+
+            self.__oldDiscWidth = self.__discwidth
+            self.__discwidth = discwidth
+            self.update()
+        else:
+            x1 = x - self.x()
+            y1 = y - self.y()
+            startAngle = -((self.angleStart() / 16) * math.pi / 180)
+            x2 = math.cos(startAngle)
+            y2 = math.sin(startAngle)
+            scalar = x1 * x2 + y1 * y2
+            dist1 = math.sqrt(x1 **2 + y1 **2)
+            dist2 = math.sqrt(x2 **2 + y2 ** 2)
+            angle = math.acos(scalar/(dist1 * dist2))
+            #prod vect
+            z = x1 * y2 - x2 * y1
+            if z < 0 : angle = 2 * math.pi - angle
+            angle = angle * 180 / math.pi
+            self.setAngles(self.angleStart(),angle * 16)
+        return self.__nbDrawPoint <= point_id # END DRAW
+
+    def areaPoints(self) :
+        point = qt.QPointArray()
+        if self.__oldDiscWidth > self.__discwidth :
+            discwidth = self.__oldDiscWidth
+        else: discwidth = self.__discwidth
+        self.__oldDiscWidth = None
+
+        width = self.width() + discwidth + 6
+        height = self.height() + discwidth + 6
+        point.makeEllipse(self.x() - 3,self.y() - 3,width,height)
+        point.translate(-width / 2,-height / 2)
+        return point
+    
+    ##@brief set the last point id to stop drawing
+    #the circle or arc
+    def setEndPointDraw(self,nbPoint) :
+        self.__nbDrawPoint = nbPoint
+
+    def setCircleMode(self,aFlag) :
+        self.__circle = aFlag
+        self.update()
+        
+    def setCenterRayonDrawingMode(self,aFlag) :
+        self.__centerRayonDrawingMode = aFlag
+        self.update()
+
+    def setSize(self,width,height) :
+        if self.__centerRayonDrawingMode:
+            width *= 2
+            height *= 2
+        qtcanvas.QCanvasEllipse.setSize(self,width,height)
+
+    def setPen(self,pen) :
+        qtcanvas.QCanvasEllipse.setPen(self,pen)
+        color = pen.color()
+        brush = self.brush()
+        brush.setColor(color)
+        self.setBrush(brush)
+
+    def setMatrix(self,matrix) :
+        self.__matrix = matrix
+
+    def setDiscWidth(self, width) :
+        self.__discwidth = width
              
     def drawShape(self, p):
-        try:
-            xout = int(self.x() - self.width()/2+0.5)
-            yout = int(self.y() - self.height()/2+0.5)
+        discwidth = self.__discwidth
+        if self.__matrix is not None:
+            scale = max(self.__matrix.m11(),self.__matrix.m22())
+            discwidth *= scale
+
+        if self.__discwidth > 1:
+            width = self.width() + self.__discwidth
+            height = self.height() + self.__discwidth
+            xout = self.x() - width / 2 - 1
+            yout = self.y() - height / 2 - 1
+
+            regionout = qt.QRegion(xout,yout,
+                                   width,height, 
+                                   qt.QRegion.Ellipse)
+
+            internalWidth = self.width()
+            internalHeight = self.height()
             
-            xin  = int(self.x() - self.win/2+0.5)
-            yin  = int(self.y() - self.hin/2+0.5)
+            xin  = self.x() - internalWidth / 2 - 1
+            yin  = self.y() - internalHeight / 2 - 1
+
+            regionin  = qt.QRegion(xin,yin,
+                                   internalWidth,internalHeight,
+                                   qt.QRegion.Ellipse)
+
+            region = regionout.subtract(regionin)
             
-            self.regionout = QRegion(xout, yout,
-                                     self.width() + 2,
-                                     self.height()+2, 
-                                     QRegion.Ellipse)
-            
-            self.regionin  = QRegion(xin, yin, self.win, self.hin,
-                                     QRegion.Ellipse)
-            self.region = self.regionout.subtract(self.regionin)
-            
-            p.setClipRegion(self.region, QPainter.CoordPainter)
-            p.setPen(Qt.NoPen)
-            p.drawEllipse(xout, yout, self.width(), self.height())
-            
+            p.setClipRegion(region, qt.QPainter.CoordPainter)
+            p.setBrush(self.brush())
+            if not self.angleStart() and self.angleLength() == 360*16 :
+                p.drawEllipse(xout,yout,width,height)
+            else:
+                p.drawPie(xout,yout,width,height,self.angleStart(),self.angleLength())
+
             p.setClipping(0)       
-        except:
-            import traceback
-            traceback.print_exc() 
+            p.setPen(qt.QPen(self.brush().color(),1))
+            p.drawArc(xout,yout,width,height,
+                      self.angleStart(), self.angleLength())
+
+        p.setPen(qt.QPen(self.brush().color(),1))
+        p.drawArc(int(self.x()-self.width()/2-0.5), 
+                  int(self.y()-self.height()/2-0.5), 
+                  self.width(), self.height(), 
+                  self.angleStart(), self.angleLength())
+        p.drawLine(self.x() - 5,self.y(),self.x() + 5,self.y())
+        p.drawLine(self.x(),self.y() - 5,self.x(),self.y() + 5)
 
 ##@brief the Beam Object
 #@ingroup DrawingCanvasToolsPoint

@@ -55,6 +55,7 @@ class QubDrawingMgr :
         self.__eventName = ''
         self.__cantBeModify = True
         self._endDrawCbk = None
+        self._initDrawCbk = None
         self._keyPressedCbk = None
         self._keyReleasedCbk = None
         self._actionInfo = ''
@@ -238,6 +239,12 @@ class QubDrawingMgr :
     def setEndDrawCallBack(self,cbk) :
         self._endDrawCbk = QubWeakref.createWeakrefMethod(cbk)
 
+    ##@brief set a callback for the init draw
+    #
+    #@param cbk is the addresse of a function or a methode with this signature
+    #<b>cbk(self,Qub::Objects::QubDrawingMgr::QubDrawingMgr)</b>
+    def setInitDrawCallBack(self,cbk) :
+        self._initDrawCbk = QubWeakref.createWeakrefMethod(cbk)
     ##@brief set the keyPressed callback
     #
     #@param cbk is the addresse of a function or a methode with this signature
@@ -285,6 +292,10 @@ class QubDrawingMgr :
     def endDraw(self) :
         if self._endDrawCbk is not None :
             self._endDrawCbk(self)
+    def initDraw(self) :
+        if self._initDrawCbk is not None :
+            self._initDrawCbk(self)
+            
     ##@brief key pressed callback
     def rawKeyPressed(self,keyevent) :
         if self._keyPressedCbk:
@@ -300,6 +311,10 @@ class QubDrawingMgr :
     ##@brief all drawingObject should be update
     def update(self) :
         raise StandardError('update has to be redifined')
+    ##@brief reset all the points in the container
+    #
+    def reset(self) :
+        pass
     ##@return the drawing procedure beavior
     ##@see setDrawingEvent
     def _getDrawingEvent(self) :
@@ -749,6 +764,8 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
     def points(self) :
         return self._points
 
+    def reset(self) :
+        self._points = []
     ##@name Internal loop event call
     #@{
     def move(self,x,y,point_id) :

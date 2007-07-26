@@ -21,10 +21,12 @@ from Qub.Objects.QubDrawingManager import QubAddDrawing
 from Qub.Objects.QubDrawingManager import QubPointDrawingMgr
 from Qub.Objects.QubDrawingManager import QubLineDrawingMgr
 from Qub.Objects.QubDrawingManager import Qub2PointSurfaceDrawingMgr
+from Qub.Objects.QubDrawingManager import QubPolygoneDrawingMgr
 from Qub.Objects.QubDrawingManager import QubContainerDrawingMgr
 
 
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasEllipse
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasDonut
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasBeam
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasScale
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasHomotheticRectangle
@@ -825,115 +827,208 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
                  self._graph.setCaption('%s %s' %(self._captionPrefix,caption))
 
 ###############################################################################
-#####################          QubCircleSelection        ######################
+#######                   QubArcDataSelection                           #######
 ###############################################################################
-class QubCircleSelection(QubToggleImageAction):
-    """
-    Action acting on QubImage widget.
-    Select a circle and send its (center, radius) parameters using
-    PYSIGNAL("CircleSelected")
-    """
-    def __init__(self,name='circle',**keys):
-        QubToggleImageAction.__init__(self,name=name,**keys)
+class QubArcDataSelection(QubToggleImageAction):
+            
+    def __init__(self,parent = None,name='disc',graphLegend = 'Arc',autoConnect = True,**keys) :
+        QubToggleImageAction.__init__(self,parent = parent,name=name,autoConnect=autoConnect,**keys)
+        self._arc = None
+        self._data = None
+        self._arcWidth = 1
+        self._average = True
+        self._zoom = None
+        self._captionPrefix = None
+        self._graphLegend = graphLegend
+        self._idle = qt.QTimer()
+        qt.QObject.connect(self._idle,qt.SIGNAL('timeout()'),self._refreshGraph)
+        mdiManager,mainWindow = QubMdiCheckIfParentIsMdi(parent)
+        if mdiManager:
+            self._graph = QubGraphView(mdiManager,name = graphLegend)
+            self._graph.setIcon(loadIcon('%s.png' % name))
+            mdiManager.addNewChildOfMainWindow(mainWindow,self._graph)
+        else:
+            self._graph = QubGraphView(parent,name = graphLegend)
+        self._curve = QubGraphCurve(graphLegend)
+        self._curve.attach(self._graph)
+                     ####### PRINT ACTION #######
+        self.__printAction = QubPrintPreviewAction(name="print",group="admin")
+        self.__printAction.previewConnect(getPrintPreviewDialog())
+                 ####### MEASURE CURVE MARKER #######
+        self.__curveMeasure = QubFollowGraphCurveAction(curve=self._curve,name="measure",group="tools")
+                         ####### ZOOM #######
+        self.__zoom = QubGraphZoomAction(graph=self._graph,name="zoom",group="tools")
+        
+        self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom])
+        self._graph.setAxisTitle(self._graph.yLeft,'Data value')
+        self._graph.setAxisTitle(self._graph.xBottom,'X value')
 
-        self.__rectCoord = qt.QRect(0, 0, 1, 1)
-        self.__x0 = 0
-        self.__y0 = 0
-        self.__radius = 0
-    
-    def viewConnect(self, qubImage):
-        """
-        Once the qubImage is connected, create QCanvas Item
-        """
-        QubToggleImageAction.viewConnect(self, qubImage)
+        self.__tools = [('circle.png','Circle',1,self.__circleInit),
+                        ('donut.png','Donut',2,self.__donutInit),
+                        ('arc.png','Arc',3,self.__arcInit)]
+        #Values for curves
+        self.__angleStart = 0
+        self.__angleLenght = 2 * math.pi
+        self.__center = None
+        self.__inRayon = 1
+        self.__discWidth = 1
+        
+    def addToolWidget(self,parent) :
+        widget = QubToggleImageAction.addToolWidget(self,parent)
+        popupMenu = qt.QPopupMenu(widget)
+        widget.setPopup(popupMenu)
+        widget.setPopupDelay(0)
+        for i,(iconName,name,endPoint,initMeth) in enumerate(self.__tools):
+            popupMenu.insertItem(qt.QIconSet(loadIcon(iconName)),qt.QString(name),i)
+        qt.QObject.connect(popupMenu,qt.SIGNAL('activated(int)'),self.__toolSelected)
+        return widget
 
-        self.__circle = QubCanvasEllipse( self.__rectCoord.width(),
-                                         self.__rectCoord.height(),
-                                         self._qubImage.canvas()
-                                         )
-        self.setColor(self._qubImage.foregroundColor())
+    def viewConnect(self,qubImage) :
+        QubToggleImageAction.viewConnect(self,qubImage)
+        self._arc,_ = QubAddDrawing(qubImage,QubPolygoneDrawingMgr,QubCanvasDonut)
+        self._arc.setCircleMode(True)
+        self._arc.setCanBeModify(False) # TODO SHOULD BE POSSIBLE
+        self._arc.setEndDrawCallBack(self._arcSelect)
+        self._arc_setEndPointDraw = self._arc.setEndPointDraw
+        self._arc_setDiscWidth = self._arc.setDiscWidth
+        self._arc_setAngles = self._arc.setAngles
+        self._arc_setSize = self._arc.setSize
+        self._arc.setBrush(qt.QBrush(qt.Qt.black,qt.Qt.DiagCrossPattern))
+        self._initDrawing()
+        self.__toolSelected(1)          # 3 point circle draw
+        self.setState(False)
 
-    def setColor(self, color):
-        """   
-        Slot connected to "ForegroundColorChanged" "qubImage" signal
-        """
-        self.__circle.setPen(qt.QPen(color))
-        self.__circle.update()
+    def changeArcWidth(self,width) :
+        self._arcWidth = width
+        self._initDrawing()
 
-    def _setState(self, bool):
-        """
-        Draw or Hide circle canvas item
-        """
-        self.__state = bool
-        if self.__circle is not None:
-            if self.__state:
-                self.signalConnect(self._qubImage)
-                self.setColor(self._qubImage.foregroundColor())
-                self.__circle.show()
+    def setData(self,data) :
+        self._data = data
+        self._refreshIdle()
+        
+    def setColor(self,color) :
+        self._arc.setColor(color)
+        
+    def _setState(self,aFlag) :
+        try:
+            if aFlag:
+                self._arc.startDrawing()
             else:
-                self.signalDisconnect(self._qubImage)
-                self.__circle.hide()
-            
-            self.__circle.update()
-
-    def mousePress(self, event):
-        """
-        Update upper-left corner position of the rectangle and sets its
-        width and height to 1
-        """ 
-        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
-        self.__x0 = x
-        self.__y0 = y
-        self.__rectCoord.setRect(x, y, 1, 1)
-        self.viewportUpdate()
-    
-    def mouseMove(self, event):
-        """
-        Upper-left corner of the rectangle has been fixed when mouse press,
-        Updates now the width and height to follow the mouse position
-        """
-        if event.state() == qt.Qt.LeftButton:
-            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
-                                                           event.y())
-            
-            dx = x - self.__x0
-            dy = y - self.__y0
-            radius = math.sqrt( pow(dx,2) + pow(dy,2) )
-            w = radius * 2.0
-            h = radius * 2.0
-            xc = self.__x0 - radius
-            yc = self.__y0 - radius
-            self.__rectCoord.setRect(xc, yc, w, h)
-            self.__radius = radius
-            self.viewportUpdate()
-            
-    def mouseRelease(self, event):
-        """
-        Rectangle selection is finished, send corresponding signal
-        with coordinates (center and radius)
-        """
-        self.emit(qt.PYSIGNAL("CircleSelected"), 
-                  (self.__x0, self.__y0, self.__radius))
+                self._arc.stopDrawing()
+                self._arc.hide()
+                self.__center = None    # desactive refresh
+        except AttributeError: pass
         
-        self.viewportUpdate()
+    def _initDrawing(self) :
+        qubImage = self._qubImage()
+        if qubImage:
+            self._arc.setPen(qt.QPen(qubImage.foregroundColor(),self._arcWidth,qt.Qt.SolidLine))
+
+    def _arcSelect(self,drawingMgr) :
+        points = drawingMgr.points()
+        self.__center = points[0]
+        inPoint = points[1]
+        inXRayon = (inPoint[0] - self.__center[0])
+        inYRayon = (inPoint[1] - self.__center[1])
+        self.__inRayon = math.sqrt(inXRayon ** 2 + inYRayon ** 2)
+
+        if len(points) <= 2:            # CIRCLE
+            self.__discWidth = 1
+        else:
+            extPoint = points[2]
+            extXRayon = (extPoint[0] - self.__center[0])
+            extYRayon = (extPoint[1] - self.__center[1])
+            extRayon = math.sqrt(extXRayon ** 2 + extXRayon ** 2)
+            self.__discWidth = extRayon - self.__inRayon
+            if self.__discWidth < 1 : self.__discWidth = 1
+            
+        if len(points) <= 3 :           # CIRCLE OR DONUT
+            self.__angleStart = 0
+            self.__angleLenght = 2 * math.pi
+        else:
+            #Angle start
+            x1,y1 = inPoint[0] - self.__center[0],inPoint[1] - self.__center[1]
+            dist = math.sqrt(x1 ** 2 + y1 ** 2)
+            self.__angleStart = math.acos(x1/dist)
+            if inPoint[1] > self.__center[1] : self.__angleStart = -self.__angleStart
+            #Angle lenght
+            angleLenghtPoint = points[3]
+            x1 = angleLenghtPoint[0] - self.__center[0]
+            y1 = angleLenghtPoint[1] - self.__center[1]
+            x2,y2 = inPoint[0] - self.__center[0],inPoint[1] - self.__center[1]
+            scalar = x1 * x2 + y1 * y2
+            dist1 = math.sqrt(x1 **2 + y1 **2)
+            dist2 = math.sqrt(x2 **2 + y2 ** 2)
+            self.__angleLenght = math.acos(scalar/(dist1 * dist2))
+            #prod vect
+            z = x1 * y2 - x2 * y1
+            if z < 0 : self.__angleLenght = 2 * math.pi - self.__angleLenght
+
+        self._refreshIdle()
         
-    def viewportUpdate(self):
-        """
-        Draw Circle either if qubImage pixmap has been updated or
-        rectangle coordinates have been changed by the user
-        """
-        rect = self._qubImage.matrix().map(self.__rectCoord)
-        (x,y) = self._qubImage.matrix().map(self.__x0, self.__y0)
+    def _refreshIdle(self) :
+        if not self._idle.isActive() :
+            if self.__center and self._data is not None:
+                self._graph.show()
+            self._idle.start(0)
+            
+    def _refreshGraph(self) :
+        self._idle.stop()
+        if not self._graph.isShown() : return
 
-        self.__circle.setSize(rect.width(), rect.height())
-        self.__circle.move(x, y)
+        if self.__center is not None and self._data is not None:
+            angles = numpy.arange(self.__angleStart,self.__angleStart + self.__angleLenght,math.pi / (180 << 4)) # step == 1/16 deg
+            rayons = numpy.arange(self.__inRayon,self.__inRayon + self.__discWidth)
+            rayons.shape = -1,1
+            x = rayons * numpy.cos(angles) + self.__center[0]
+            x.shape = -1,1
+            y = rayons * numpy.sin(angles) + self.__center[1]
+            y.shape = -1,1
+            inter_result = datafuncs.interpol([range(self._data.shape[1]),range(self._data.shape[0])],self._data.T,numpy.concatenate((x,y),axis = 1),0)
+            inter_result.shape = rayons.shape[0],-1
+            result = numpy.zeros(angles.shape[0])
+            for arc in inter_result:
+                result += arc
+            result /= angles.shape[0]
+
+            self._curve.setData(angles * 180 / numpy.pi,result)
+            self._graph.replot()
+            
+            startAngle = self.__angleStart * 180 / math.pi
+            endAngles = startAngle + (self.__angleLenght * 180 / math.pi)
+            self._graph.setTitle('%s center (%d,%d) from %.2f deg to %.2f deg width = %d' % (self._graphLegend,self.__center[0],self.__center[1],
+                                                                                             startAngle,endAngles,self.__discWidth))
+                                                                                             
+    def __toolSelected(self,idTool) :
+        try:
+            iconName,name,nbPoint,initMethode = self.__tools[idTool]
+            self._arc_setEndPointDraw(nbPoint)
+            self._arc.setInitDrawCallBack(initMethode)
+            self._widget.setIconSet(qt.QIconSet(loadIcon(iconName)))
+            qt.QToolTip.add(self._widget,name)
+            if initMethode is not None: initMethode()
+            self.setState(True)
+        except AttributeError:
+            import traceback
+            traceback.print_exc()
+
+    def __circleInit(self,*args) :
+        self._arc_setDiscWidth(1)
+        self._arc_setAngles(0,360 * 16)
+        self._arc_setSize(10,10)
+        self._arc.hide()
         
-        self.__circle.update()            
+    def __donutInit(self,*args) :
+        self._arc_setAngles(0,360 * 16)
+        self._arc_setSize(10,10)
+        self._arc_setDiscWidth(1)
+        self._arc.hide()
 
-
-
-
-
+    def __arcInit(self,*args) :
+        self._arc_setAngles(0,45 * 16)
+        self._arc_setDiscWidth(5)
+        self._arc_setSize(10,10)
+        self._arc.hide()
 
 ###############################################################################
 #####################          QubDiscSelection        ######################
