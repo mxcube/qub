@@ -238,7 +238,6 @@ class QubColormapDialog(qt.QWidget):
         """
         colormap window can not be resized
         """
-##        self.setFixedSize(vlayout.minimumSize())
         self.__refreshCallback = None
         self.__colormap = None
         
@@ -450,8 +449,8 @@ class QubColormapDialog(qt.QWidget):
             self.__histoDataCurve.setData(XDataHisto,YDataHisto)
 
             YHisto,XHisto = numpy.histogram(self.__data,bins = 32,range=[minVal,maxVal])
-            YHisto = YHisto[:-2]
-            XHisto = XHisto[:-2]
+            YHisto = YHisto[:-1]
+            XHisto = XHisto[:-1]
             lastValue = YHisto[-1]
             maxVal = YDataHisto.max()
             if lastValue > maxVal : YHisto[-1] = maxVal
