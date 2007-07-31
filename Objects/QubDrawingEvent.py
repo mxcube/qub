@@ -298,7 +298,7 @@ class QubNPointClick(_DrawingEventNDrawingMgr) :
     def mouseDblClick(self,x,y) :
         d = self._drawingMgr()
         if d : d.endDraw()
-        return True
+        return self._oneShot
     
     def mouseMove(self,x,y) :
         if self.__active :

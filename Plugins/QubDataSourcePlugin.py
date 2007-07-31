@@ -1,29 +1,7 @@
 ##@brief this class is an interface for data source plugins
 #
 class QubDataSourcePlugin:
-    class interface:
-        def __init__(self,sourceTree) :
-            self.__sourceTree = sourceTree
-        ##@brief return the selected items as a dictionnary
-        #
-        #all param are internal recursive param, just call it without any
-        #@return a dictionnary of sources
-        def getSelectedSources(self,parent = None,forcedSelected = False) :
-            dico = {}
-            for item in self.__sourceTree._QubDataSourceTree__getIterator(parent) :
-                childDico = self.getSelectedSources(item,item.isSelected())
-                if childDico or forcedSelected or item.isSelected():
-                    dico[item.getDataClass()] = childDico
-            return dico
-        ##@brief get all current sources
-        #@return a dictionnary of sources
-        def getSources(self) :
-            return self.getSelectedSources(None,True)
-            
-        def insertDataSource(self,dico) :
-            self.__sourceTree.insertDataSourceInTree(dico)
-            
-    def __init__(self,name = 'undifined Name',**keys) :
+    def __init__(self,name = 'undefined Name',**keys) :
         self._name  = name
         
     ##@brief get the name of the plugin
@@ -53,4 +31,29 @@ class QubDataSourcePlugin:
     #this methode (this methode is called in an other thread)</p>
     def run(self,sourceInterface) :
         pass
-    
+
+    class interface:
+        def __init__(self,sourceTree) :
+            self.__sourceTree = sourceTree
+        ##@brief return the selected items as a dictionnary
+        #
+        #all param are internal recursive param, just call it without any
+        #@return a dictionnary of sources
+        def getSelectedSources(self,parent = None,forcedSelected = False) :
+            dico = {}
+            for item in self.__sourceTree._QubDataSourceTree__getIterator(parent) :
+                childDico = self.getSelectedSources(item,item.isSelected())
+                if childDico or forcedSelected or item.isSelected():
+                    dico[item.getDataClass()] = childDico
+            return dico
+        ##@brief get all current sources
+        #@return a dictionnary of sources
+        def getSources(self) :
+            return self.getSelectedSources(None,True)
+        ##@brief insert data source in the data source tree
+        #
+        #@param dico a sources dictionnary
+        def insertDataSource(self,dico) :
+            self.__sourceTree.insertDataSourceInTree(dico)
+            
+

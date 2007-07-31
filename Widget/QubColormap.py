@@ -155,11 +155,9 @@ class QubColormapDialog(qt.QWidget):
         self.colormapCurve.setData(numpy.array([0, 10, 20, 30]),numpy.array([-10, -10, 10, 10 ]))
         self.colormapCurve.attach(self.__colormapGraph)
         self.__minControl = self.colormapCurve.getPointControl(1)
-        self.__minControl.setConstraints(10, 20, -10, -10)
         self.__minControl.setValueChangeCallback(self.__minMoved)
         
         self.__maxControl = self.colormapCurve.getPointControl(2)
-        self.__maxControl.setConstraints(10, 20,  10,  10)
         self.__maxControl.setValueChangeCallback(self.__maxMoved)
         
         self.__lowerBound = self.colormapCurve.getPointMarked(0)
@@ -176,6 +174,12 @@ class QubColormapDialog(qt.QWidget):
         self.__histoCurve.setStyle(self.__histoCurve.Sticks)
         self.__histoCurve.setPen(qt.QPen(qt.Qt.blue,2))
         self.__histoCurve.attach(self.__colormapGraph)
+        #Histogram Data Curve
+        self.__histoDataCurve = QubGraphCurve("Histo Data")
+        self.__histoDataCurve.setAxis(QubGraph.xBottom,QubGraph.yRight)
+        self.__histoDataCurve.setPen(qt.QPen(qt.Qt.red,1))
+        self.__histoDataCurve.attach(self.__colormapGraph)
+
         self.__colormapGraph.setAxisAutoScale(QubGraph.yRight)
         """
         hlayout 5 (HORIZONTAL)
@@ -313,7 +317,7 @@ class QubColormapDialog(qt.QWidget):
             limit = cumsum[-1] * 0.95
             maskResult = cumsum > limit
             maxVal = datatmp[maskResult][0]
-            self.__colormap.setMinMax(self.__dataMin,maxVal)
+            self.__colormap.setMinMax(self.__data.min(),maxVal)
             self.__refreshImage()
 
     def __fullscaleChanged(self):
@@ -321,7 +325,7 @@ class QubColormapDialog(qt.QWidget):
         set min/max value of the colormap to the min/max value of the data
         """
         if self.__colormap:
-            self.__colormap.setMinMax(self.__dataMin,self.__dataMax)
+            self.__colormap.setMinMax(self.__data.min(),self.__data.max())
             self.__refreshImage()
 
     def __sigmaScaleChanged(self) :
@@ -365,11 +369,15 @@ class QubColormapDialog(qt.QWidget):
         colormap = self.__colormap
         if colormap and data is not None:
             self.__data = data
-
-            if colormap.lutType() == LUT.LOG :
-                self.__dataMin,self.__dataMax = colormap.minMaxMappingMethode()
+            if colormap.autoscale() :
+                if colormap.lutType() == LUT.LOG :
+                    self.__dataMin,self.__dataMax = colormap.minMaxMappingMethode()
+                else:
+                    self.__dataMin,self.__dataMax = self.__data.min(),self.__data.max()
             else:
-                self.__dataMin,self.__dataMax = self.__data.min(),self.__data.max()
+                self.__dataMin,self.__dataMax = colormap.minMax()
+                self.__dataMin = min(self.__data.min(),self.__dataMin)
+                self.__dataMax = max(self.__dataMax,self.__data.max())
                 
                      ####### GRAPH UPDATE #######
             """
@@ -386,8 +394,8 @@ class QubColormapDialog(qt.QWidget):
                 second and third: cannot move in Y dir.,can move
                                   in X dir. between datamin and datamax
             """
-            self.__minControl.setConstraints(self.__dataMin, self.__dataMax, -10, -10)
-            self.__maxControl.setConstraints(self.__dataMin, self.__dataMax,  10,  10)
+            self.__minControl.setConstraints(None,None, -10, -10)
+            self.__maxControl.setConstraints(None,None,  10,  10)
 
             """
             move points to their values
@@ -434,15 +442,25 @@ class QubColormapDialog(qt.QWidget):
             self.__refreshCallback()
 
     def __calcHistogram(self) :
+        self.__histoTimer.stop()
         if self.__data is not None:
             minVal,maxVal = self.__colormap.minMax()
-            YHisto,XHisto = numpy.histogram(self.__data,bins = 25,range=[minVal,maxVal])
+
+            YDataHisto,XDataHisto = numpy.histogram(self.__data,bins = 32,range=[self.__data.min(),self.__data.max()])
+            self.__histoDataCurve.setData(XDataHisto,YDataHisto)
+
+            YHisto,XHisto = numpy.histogram(self.__data,bins = 32,range=[minVal,maxVal])
+            YHisto = YHisto[:-2]
+            XHisto = XHisto[:-2]
+            lastValue = YHisto[-1]
+            maxVal = YDataHisto.max()
+            if lastValue > maxVal : YHisto[-1] = maxVal
             self.__histoCurve.setData(XHisto,YHisto)
+
             self.__colormapGraph.replot()
             
     def show(self) :
         qt.QWidget.show(self)
-        self.__histoTimer.stop()
         self.__calcHistogram()
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################

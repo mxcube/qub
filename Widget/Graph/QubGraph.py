@@ -4,7 +4,14 @@ import Qwt5 as qwt
 from Qub.Widget.QubView import QubView
 
 from Qub.Widget.Graph.QubGraphCurveMarker import QubGraphCurvePointFollowMarked
+##@defgroup GraphDisplay Tools to display curves histogram...
+#
 
+##@ingroup GraphDisplay
+#
+##@brief simple graph widget
+#
+#This class is herited from qwt.QwtPlot
 class QubGraph(qwt.QwtPlot) :
     def __init__(self,parent=None,name='') :
         qwt.QwtPlot.__init__(self,qwt.QwtText(name),parent)
@@ -15,16 +22,25 @@ class QubGraph(qwt.QwtPlot) :
         self.__grid.setMajPen(qt.QPen(qt.Qt.black,1,qt.Qt.DotLine))
         self.__grid.attach(self)
         self.__defaultCursor = qt.QCursor(self.canvas().cursor())
-        
+    ##@brief set the absciss label
+    #
     def setXLabel(self,label) :
         self.setAxisTitle(self.xBottom,label)
-
+    ##@brief set the ordonnes label
+    #
     def setYLabel(self,label) :
         self.setAxisTitle(self.yLeft,label)
 
+    ##@brief get the default cursor
+    #
+    #internal function
     def defaultCursor(self) :
         return self.__defaultCursor
 
+    ##@brief get a graph copy with all the curves and marker
+    #
+    #Use for example by the print function
+    #
     def getGraph(self) :
         graph = qwt.QwtPlot()
         graph.setPaletteBackgroundColor(qt.QColor(self.canvasBackground()))
@@ -53,7 +69,10 @@ class QubGraph(qwt.QwtPlot) :
             newItem.attach(graph)
         graph.replot()
         return graph
-    
+
+##@brief same as QubGraph but herited from QubView so ,
+#you can add some action
+#
 class QubGraphView(QubView) :
     def __init__(self, parent = None, name = "",actions=[]):
         QubView.__init__(self,parent,name,flags=0)

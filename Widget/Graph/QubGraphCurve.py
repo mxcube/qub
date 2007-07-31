@@ -6,6 +6,12 @@ from Qub.Widget.Graph.QubGraphCurveMarker import QubGraphCurvePointControl
 from Qub.Widget.Graph.QubGraphCurveMarker import QubGraphCurvePointMarked
 from Qub.Widget.Graph.QubGraphCurveMarker import QubGraphCurvePointFollowMarked
 
+##@brief curve class
+#
+#With this object you can define a graphic curve to be drawn in Qub::Widget::QubGraph::QubGraph
+#
+#@ingroup GraphDisplay
+#
 class QubGraphCurve(qwt.QwtPlotCurve) :
     def __init__(self,title = '',**keys) :
         qwt.QwtPlotCurve.__init__(self,title)
@@ -15,7 +21,11 @@ class QubGraphCurve(qwt.QwtPlotCurve) :
         
         self._X = None
         self._Y = None
-        
+    ##@brief get or create a control point on that curves
+    #
+    #@param anId the point id of the curve
+    #@return a Qub::Widget::Graph::QubGraphCurveMarker::QubGraphCurvePointControl
+    #
     def getPointControl(self,anId) :
         x = self.x(anId)
         y = self.y(anId)
@@ -24,7 +34,11 @@ class QubGraphCurve(qwt.QwtPlotCurve) :
         if self.plot() :
             curveControl.attach(self.plot())
         return curveControl
-
+    ##@brief get or create a marker
+    #
+    #@param anId the point id of the curve
+    #@return a Qub::Widget::Graph::QubGraphCurveMarker::QubGraphCurvePointMarked
+    #
     def getPointMarked(self,anId) :
         x = self.x(anId)
         y = self.y(anId)
@@ -33,7 +47,9 @@ class QubGraphCurve(qwt.QwtPlotCurve) :
         if self.plot() :
             pointMarked.attach(self.plot())
         return pointMarked
-
+    ##@brief get a follow curves cursor (you can only have one by curve)
+    #
+    #@return a Qub::Widget::Graph::QubGraphCurveMarker::QubGraphCurvePointFollowMarked
     def getCurvePointFollowMarked(self) :
         if self.__markedFollow :
             pointFollowMarked = self.__markedFollow
@@ -86,7 +102,9 @@ class QubGraphCurve(qwt.QwtPlotCurve) :
                     markedDict.pop(index)
         if self.__markedFollow:
             self.__markedFollow.refresh()
-    
+
+    ##@brief attach a curve on a graph
+    #
     def attach(self,graph) :
         if isinstance(graph,QubGraphView) :
             graph = graph.view()

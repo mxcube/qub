@@ -908,6 +908,9 @@ class QubArcDataSelection(QubToggleImageAction):
         
     def setColor(self,color) :
         self._arc.setColor(color)
+
+    def setCaptionPrefix(self,caption) :
+        self._captionPrefix = caption
         
     def _setState(self,aFlag) :
         try:
@@ -999,8 +1002,15 @@ class QubArcDataSelection(QubToggleImageAction):
             self._graph.setTitle('%s center (%d,%d) from %.2f deg to %.2f deg width = %d' % (self._graphLegend,self.__center[0],self.__center[1],
                                                                                              startAngle,endAngles,self.__discWidth))
                                                                                              
+                    
+            toolName = self.__tools[self.__idToolSelected][1]
+            self._graph.setCaption('%s %s' % (self._captionPrefix or '',toolName))
+            self._graph.setIcon(loadIcon(self.__tools[self.__idToolSelected][0]))
+            self._graph.setName(toolName)
+            
     def __toolSelected(self,idTool) :
         try:
+            self.__idToolSelected = idTool
             iconName,name,nbPoint,initMethode = self.__tools[idTool]
             self._arc_setEndPointDraw(nbPoint)
             self._arc.setInitDrawCallBack(initMethode)

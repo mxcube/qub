@@ -1,5 +1,14 @@
 ##@brief this class is the base class for data action plugins
 #
+#This is a way to add action (Qub::Widget::QubAction::QubImageAction) on a data display object.
+#Action are tools which are display in the tool bar,status bar or context menu of the data display object
+#There is two kind of action :
+# - Those who need data (Qub::Widget::QubDataDisplay::QubDataDisplay::addDataAction)
+# - Those who don't need data (Qub::Widget::QubDataDisplay::QubDataDisplay::addAction)
+#
+#So in the initPlugin function, you just have to insert your action in the data display object by calling addAction or
+#addDataAction
+#
 class QubDataActionPlugin :
     def __init__(self,**keys) :
         pass

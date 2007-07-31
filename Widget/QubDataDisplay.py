@@ -225,7 +225,10 @@ class QubDataDisplay(qt.QWidget) :
     ##@brief add an action witch need data
     #
     #@param action a QubAction
-    #@param dataActionplug a class with a methode setData
+    #@param dataActionplug a class with :
+    # - a methode setData (mandatory) called when source data change
+    # - a methode setScaleClass (optional) to set the scale class (Qub::Data::Scale::QubDataScale::QubDataScale)
+    #
     def addDataAction(self,action,dataActionplug) :
         self.__mainView.addAction([action])
         self.__actionDataActionPlug.append(dataActionplug)
