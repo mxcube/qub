@@ -25,7 +25,13 @@ class QubPad(QubWidgetFromUI):
         
         self.__hAxisName = self.child("__hAxisName")
 
-        self.__hAxisPos = self.child("__hAxisPos")
+        mainFrame = self.child('__mainFrame')
+        gridLayout = mainFrame.layout()
+        self.__hAxisPos = _myLineEdit(mainFrame,'__hAxisPos')
+        gridLayout.addWidget(self.__hAxisPos,0,1)
+        
+        self.__hAxisPos.setSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed)
+        
         self.__hAxisPos.setValidator(qt.QDoubleValidator(self.__hAxisPos))
         qt.QObject.connect(self.__hAxisPos,qt.SIGNAL('returnPressed()'),self.__hAxisSet)
         qt.QObject.connect(self.__hAxisPos,qt.SIGNAL('lostFocus()'),self.__hAxisReset)
@@ -48,7 +54,10 @@ class QubPad(QubWidgetFromUI):
 
         self.__vAxisName = self.child('__vAxisName')
 
-        self.__vAxisPos = self.child('__vAxisPos')
+        self.__vAxisPos = _myLineEdit(mainFrame,'vAxisPos')
+        gridLayout.addWidget(self.__vAxisPos,1,1)
+        self.__vAxisPos.setSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed)
+        
         self.__vAxisPos.setValidator(qt.QDoubleValidator(self.__vAxisPos))
         qt.QObject.connect(self.__vAxisPos,qt.SIGNAL('returnPressed()'),self.__vAxisSet)
         qt.QObject.connect(self.__vAxisPos,qt.SIGNAL('lostFocus()'),self.__vAxisReset)
@@ -72,7 +81,10 @@ class QubPad(QubWidgetFromUI):
         
         self.__rAxisName = self.child('__rAxisName')
 
-        self.__rAxisPos = self.child('__rAxisPos')
+        self.__rAxisPos = _myLineEdit(mainFrame,'__rAxisPos')
+        gridLayout.addWidget(self.__rAxisPos,2,1)
+        self.__rAxisPos.setSizePolicy(qt.QSizePolicy.MinimumExpanding,qt.QSizePolicy.Fixed)
+        
         self.__rAxisPos.setValidator(qt.QDoubleValidator(self.__rAxisPos))
         qt.QObject.connect(self.__rAxisPos,qt.SIGNAL('returnPressed()'),self.__rAxisSet)
         qt.QObject.connect(self.__rAxisPos,qt.SIGNAL('lostFocus()'),self.__rAxisReset)
@@ -1826,6 +1838,22 @@ class _myTestPlug(QubPadPlug) :
         qt.QObject.connect(self.ltimer,qt.SIGNAL('timeout()'),self._padButton.endHMotorMoving)
         self.ltimer.start(3000,True)
 
+class _myLineEdit(qt.QLineEdit) :
+    def __init__(self,*args) :
+        qt.QLineEdit.__init__(self,*args) 
+
+    def sizeHint(self) :
+        sizeHint = qt.QLineEdit.sizeHint(self)
+        fm = qt.QFontMetrics(self.font())
+        text = self.text().latin1()
+        width = fm.width(text)
+        frameWidth = self.frameWidth() * 4
+        return self.style().sizeFromContents(qt.QStyle.CT_LineEdit,self,
+                                             qt.QSize(width + frameWidth,sizeHint.height()))
+    def setText(self,text) :
+        qt.QLineEdit.setText(self,text)
+        self.setMinimumSize(self.sizeHint())
+                                             
 if __name__ == "__main__":
     def print_child(nb,parent) :
         space = '\t' * nb

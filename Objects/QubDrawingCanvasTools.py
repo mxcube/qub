@@ -63,8 +63,8 @@ QubCanvasRectangle = qtcanvas.QCanvasRectangle
 #@ingroup DrawingCanvasToolsPoint
 #@ingroup DrawingCanvasToolsRectangle
 class QubCanvasEllipse(qtcanvas.QCanvasEllipse):
-    def __init__(self,canvas) :
-        qtcanvas.QCanvasEllipse.__init__(self,canvas)
+    def __init__(self,*args) :
+        qtcanvas.QCanvasEllipse.__init__(self,*args)
         self.__centerRayonDrawingMode = False
     def setCenterRayonDrawingMode(self,aFlag) :
         self.__centerRayonDrawingMode = aFlag

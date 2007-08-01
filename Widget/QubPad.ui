@@ -50,25 +50,6 @@
                 <property name="spacing">
                     <number>0</number>
                 </property>
-                <widget class="QLineEdit" row="2" column="1">
-                    <property name="name">
-                        <cstring>__rAxisPos</cstring>
-                    </property>
-                    <property name="sizePolicy">
-                        <sizepolicy>
-                            <hsizetype>7</hsizetype>
-                            <vsizetype>0</vsizetype>
-                            <horstretch>0</horstretch>
-                            <verstretch>0</verstretch>
-                        </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                        <size>
-                            <width>0</width>
-                            <height>0</height>
-                        </size>
-                    </property>
-                </widget>
                 <widget class="QComboBox" row="1" column="3">
                     <property name="name">
                         <cstring>__vStepCombo</cstring>
@@ -109,25 +90,6 @@
                         <bool>true</bool>
                     </property>
                 </widget>
-                <widget class="QLineEdit" row="1" column="1">
-                    <property name="name">
-                        <cstring>__vAxisPos</cstring>
-                    </property>
-                    <property name="sizePolicy">
-                        <sizepolicy>
-                            <hsizetype>7</hsizetype>
-                            <vsizetype>0</vsizetype>
-                            <horstretch>0</horstretch>
-                            <verstretch>0</verstretch>
-                        </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                        <size>
-                            <width>0</width>
-                            <height>0</height>
-                        </size>
-                    </property>
-                </widget>
                 <widget class="QLabel" row="1" column="0">
                     <property name="name">
                         <cstring>__vAxisName</cstring>
@@ -156,25 +118,6 @@
                     </property>
                     <property name="duplicatesEnabled">
                         <bool>false</bool>
-                    </property>
-                </widget>
-                <widget class="QLineEdit" row="0" column="1">
-                    <property name="name">
-                        <cstring>__hAxisPos</cstring>
-                    </property>
-                    <property name="sizePolicy">
-                        <sizepolicy>
-                            <hsizetype>7</hsizetype>
-                            <vsizetype>0</vsizetype>
-                            <horstretch>0</horstretch>
-                            <verstretch>0</verstretch>
-                        </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                        <size>
-                            <width>0</width>
-                            <height>0</height>
-                        </size>
                     </property>
                 </widget>
                 <widget class="QLabel" row="1" column="4">
