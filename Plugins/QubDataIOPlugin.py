@@ -65,9 +65,9 @@ class QubDataIOPlugin:
         ##@brief get data
         #
         #@param index of the data in file
-        #@param roi
+        #@param roi of data a tuple (x,y,width,height)
         #@return a numpy array
-        def get(self,index = 0,roi = None) :
+        def get(self,index = 0,roi = None,**keys) :
             raise NotImplementedError('you have to redefine get in class %s' % self.__class__.__name__)
 
         ##@brief get data source

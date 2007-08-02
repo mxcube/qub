@@ -102,9 +102,11 @@ class QubDataSourceTree(qt.QListView) :
             item.dataDisplay().setFocus()
         except (TypeError,AttributeError):
             dataClass = item.getDataClass()
+            dataGroup = None
             try:
                 actionsNcallback = []
                 if isinstance(dataClass,QubDataGroup) :
+                    dataGroup = dataClass
                     try:
                         child = self.__getIterator(item).next()
                         dataClass = child.getDataClass()
@@ -171,6 +173,7 @@ class QubDataSourceTree(qt.QListView) :
                     c = pluginsClass()
                     try:
                         c.initPlugin(dataDisplay)
+                        c.setDataGroup(dataGroup)
                     except NotImplementedError:
                         import traceback
                         traceback.print_exc()

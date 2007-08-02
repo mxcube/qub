@@ -1754,6 +1754,7 @@ class QubSliderNSpinAction(QubImageAction) :
         try:
             for widget in [self.__slider,self.__spinBox] :
                 widget.setMaxValue(maxVal)
+            self.__spinBox.setMinimumSize(self.__spinBox.sizeHint())
         except AttributeError:
             pass
 

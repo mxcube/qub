@@ -18,6 +18,12 @@ class QubDataActionPlugin :
     def initPlugin(self,dataDisplay) :
         raise NotImplementedError('you have to redefine initPlugin in class %s' % self.__class__.__name__)
 
+    ##@brief set group source
+    #
+    #Group is usefull for series
+    #@param group is a Qub::Data::Class::QubDataClass::QubDataGroup
+    def setDataGroup(self,group) :
+        pass
     ##@brief get information about the plugin
     #
     def getPluginInfo(self) :
