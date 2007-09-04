@@ -53,4 +53,5 @@ class qtTools
 public :
   static QImage getQImageFromImageOpencv(const IplImage*);
   static IplImage* getImageOpencvFromQImage(const QImage*);
+  static IplImage* convertI420Data2YUV(const char *data,int width,int height);
 };

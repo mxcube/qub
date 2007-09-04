@@ -325,15 +325,6 @@ class QubImageAction(QubAction):
         index .. :  Position of the selection widget of the action in its
                     group
         """
-##        name = keys.get("name",None)
-##        qubImage = keys.get("qubImage",None)
-##        autoConnect = keys.get("autoConnect",False)
-##        place = keys.get("place","toolbar")
-##        show = keys.get("show",1)
-##        group = keys.get("group","")
-##        index = keys.get("index",-1)
-        
-        #QubAction.__init__(self, name, place, show, group, index)
         QubAction.__init__(self,**keys)
         if qubImage: self._qubImage = weakref.ref(qubImage)
         else: self._qubImage = None

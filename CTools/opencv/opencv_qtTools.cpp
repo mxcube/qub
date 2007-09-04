@@ -135,3 +135,37 @@ IplImage* qtTools::getImageOpencvFromQImage(const QImage *aQImage)
     }
   return aIplImage;
 }
+
+IplImage* qtTools::convertI420Data2YUV(const char *data,int width,int height)
+{
+  int halfWidth = width >> 1;
+  int halfHeight = height >> 1;
+  IplImage *Y = cvCreateImage(cvSize(width,height),IPL_DEPTH_8U,1);
+  IplImage *V = cvCreateImage(cvSize(width,height),IPL_DEPTH_8U,1);
+  IplImage *Vh = cvCreateImage(cvSize(halfWidth,halfHeight),IPL_DEPTH_8U,1);
+  IplImage *U = cvCreateImage(cvSize(width,height),IPL_DEPTH_8U,1);
+  IplImage *Uh = cvCreateImage(cvSize(halfWidth,halfHeight),IPL_DEPTH_8U,1);
+
+  //COPY
+  int imageSize = width * height;
+  memcpy(Y->imageData,data,imageSize);
+  data += imageSize;
+
+  int halfSize = halfWidth * halfHeight;
+  memcpy(Vh->imageData,data,halfSize);
+  cvResize(Vh,V,CV_INTER_NN);
+  cvReleaseImage(&Vh);
+  data += halfSize;
+  
+  memcpy(Uh->imageData,data,halfSize);
+  cvResize(Uh,U,CV_INTER_NN);
+  cvReleaseImage(&Uh);
+
+  IplImage *aIplImage = cvCreateImage(cvSize(width,height),IPL_DEPTH_8U,3);
+  cvMerge(Y,U,V,NULL,aIplImage);
+  
+  cvReleaseImage(&Y);
+  cvReleaseImage(&U);
+  cvReleaseImage(&V);
+  return aIplImage;
+}

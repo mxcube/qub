@@ -1,6 +1,5 @@
 #include "qimage.h"
-#include "opencv/cxcore.h"
-
+#include "opencv/cv.h"
 
 class qtTools
 {
@@ -13,5 +12,6 @@ public :
 
   static QImage getQImageFromImageOpencv(const IplImage*) throw(Exception);
   static IplImage* getImageOpencvFromQImage(const QImage*);
+  static IplImage* convertI420Data2YUV(const char *data,int width,int height);
 };
 

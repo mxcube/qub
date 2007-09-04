@@ -11,7 +11,7 @@ except ImportError :
 ##@brief This class is use to decompress standard data -> image.
 #data cant be (jpeg,tiff 8 bits...)
 class QubStdData2Image(QubThreadProcess,qt.QObject) :
-    STANDARD,BAYER_RG = (0,1)
+    STANDARD,BAYER_RG,I420 = (0,1,2)
     
     class _data_struct :
         PATH_TYPE,DATA_TYPE = range(2)
@@ -69,8 +69,11 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
         if self.__plug is not None and not self.__plug.isEnd() :
             if self.__imageType == QubStdData2Image.STANDARD :
                 dataStruct = QubStdData2Image._data_struct()
-            else:
+            elif self.__imageType == QubStdData2Image.BAYER_RG:
                 dataStruct = _bayer_struct(width,height)
+            else:
+                dataStruct = _i420_struct(width,height)
+                
             if path is not None :
                 dataStruct.setPath(path)
             else :
@@ -183,16 +186,36 @@ class QubStdData2ImagePlug :
     def setImage(self,imagezoomed,fullimage) :
         return True                     # (END)
 
-##@brief a decompress bayer class
-#
-class _bayer_struct(QubStdData2Image._data_struct) :
-    def __init__(self,w,h) :
+class _cvtColor_struct(QubStdData2Image._data_struct) :
+    def __init__(self,w,h,conversionType,srcSize) :
         QubStdData2Image._data_struct.__init__(self)
-        self.__srcImage = cv.cvCreateImage(cv.cvSize(w,h),cv.IPL_DEPTH_8U,1)
-        self.__destimage = cv.cvCreateImage(cv.cvSize(w,h),cv.IPL_DEPTH_8U,3)
-        self.__widthStep = w
+        self._srcImage = cv.cvCreateImage(cv.cvSize(w,h),cv.IPL_DEPTH_8U,srcSize)
+        self._destimage = cv.cvCreateImage(cv.cvSize(w,h),cv.IPL_DEPTH_8U,3)
+        self._widthStep = w
+        self._conversion = conversionType
         
     def loadFromData(self,data) :
-        self.__srcImage.imageData_set(data)
-        cv.cvCvtColor(self.__srcImage,self.__destimage,cv.CV_BayerRG2RGB)
-        self.image = opencv.qtTools.getQImageFromImageOpencv(self.__destimage)
+        self._srcImage.imageData_set(data)
+        cv.cvCvtColor(self._srcImage,self._destimage,self._conversion)
+        self.image = opencv.qtTools.getQImageFromImageOpencv(self._destimage)
+
+##@brief a decompress bayer class
+#
+class _bayer_struct(_cvtColor_struct) :
+    def __init__(self,w,h) :
+        _cvtColor_struct.__init__(self,w,h,cv.CV_BayerRG2RGB,1)
+
+##@brief a decompress i420 class
+#
+class _i420_struct(QubStdData2Image._data_struct) :
+    def __init__(self,w,h) :
+        QubStdData2Image._data_struct.__init__(self)
+        self.__width = w
+        self.__height = h
+        
+    def loadFromData(self,data) :
+        srcImage = opencv.qtTools.convertI420Data2YUV(data,self.__width,self.__height)
+        destimage = cv.cvCreateImage(cv.cvSize(self.__width,self.__height),cv.IPL_DEPTH_8U,3)
+        cv.cvCvtColor(srcImage,destimage,cv.CV_YCrCb2RGB)
+        self.image = opencv.qtTools.getQImageFromImageOpencv(destimage)
+    

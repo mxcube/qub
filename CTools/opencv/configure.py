@@ -32,7 +32,7 @@ whole_line = ''
 for line in bfile :
     if 'sources' in line :
         begin,end = line.split('=')
-        line = '%s = opencv_qtTools.cpp opencv_bayer.cpp swig_opencv_image.cpp %s' % (begin,end)
+        line = '%s = opencv_qtTools.cpp swig_opencv_image.cpp %s' % (begin,end)
     whole_line += line
 bfile.close()
 bfile = file(build_file,'w')
