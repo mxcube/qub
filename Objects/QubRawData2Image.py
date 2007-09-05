@@ -234,7 +234,7 @@ class QubRawData2ImagePlug:
         #
         #@param lutType is an enum from pixmaptools.LUT, value can be:
         # - pixmaptools.LUT.LINEAR
-        # - pixmaptools.LUT.GAMMA
+        # - pixmaptools.LUT.SHIFT_LOG
         # - pixmaptools.LUT.LOG
         def setLutType(self,lutType) :
             aLock = QubLock(self.__mutex)
