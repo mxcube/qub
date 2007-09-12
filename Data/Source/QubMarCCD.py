@@ -13,11 +13,11 @@ class QubMarCCD(QubDataIOPlugin) :
     class ReadHandler(QubDataIOPlugin.ReadHandler) :
         def __init__(self,fd) :
             QubDataIOPlugin.ReadHandler.__init__(self)
-            fd.seek(2464,0)
-            header = fd.read(4096 - 2464)
-            if header.startswith('Created by: marccd') : # BINGO
-                self.__header = MccdHeader(fd)
-            else: raise IOError('Not a MarCCD image file')
+##            fd.seek(2464,0)
+##            header = fd.read(4096 - 2464)
+##            if header.startswith('Created by: marccd') : # BINGO
+            self.__header = MccdHeader(fd)
+##            else: raise IOError('Not a MarCCD image file')
             fd.seek(0,0)
 
 
