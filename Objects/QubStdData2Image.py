@@ -11,7 +11,7 @@ except ImportError :
 ##@brief This class is use to decompress standard data -> image.
 #data cant be (jpeg,tiff 8 bits...)
 class QubStdData2Image(QubThreadProcess,qt.QObject) :
-    STANDARD,BAYER_RG,I420 = (0,1,2)
+    STANDARD,BAYER_RG,RAW = (0,1,2)
     
     class _data_struct :
         PATH_TYPE,DATA_TYPE = range(2)
@@ -74,8 +74,11 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
             else:
                 try:
                     TangoString,HeaderVersion,videoType,width,height = struct.unpack('<16sq8sqq',arrayData[:48])
-                    dataStruct = _i420_struct(width,height)
-                    arrayData = arrayData[64:]
+                    if videoType.upper().startswith('I420') :
+                        dataStruct = _i420_struct(width,height)
+                        arrayData = arrayData[64:]
+                    else:
+                        dataStruct = QubStdData2Image._data_struct()
                 except struct.error:
                     import traceback
                     traceback.print_exc()
