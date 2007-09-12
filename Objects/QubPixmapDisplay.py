@@ -61,7 +61,8 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
         self.connect(self.__idle,qt.SIGNAL('timeout()'),self.__emitViewPortUpdate)
 
         self.__foregroundColor = qtcanvas.QCanvasView.foregroundColor(self)
-
+        self.__lastImage = None
+        
     ##@name Mouse Events
     #@{
 
@@ -133,12 +134,14 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
     ##@}
     
     def __startIdle(self,x = 0,y = 0) :
+        vp = self.viewport()
         if not self.__idle.isActive() :
             self.__idle.start(0)
             
     def __emitViewPortUpdate(self) :
         self.__idle.stop()
-        self.emit(qt.PYSIGNAL("ViewportUpdated"), ())
+        vp = self.viewport()
+        self.emit(qt.PYSIGNAL("ContentViewChanged"), (self.contentsX(),self.contentsY(),vp.width(),vp.height()))
         self._update()
 
     def _realEmitActionInfo(self,text) :
@@ -171,7 +174,11 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
     #
     #This methode is called before printing
     def getPPP(self):
-        return self.__cvs.backgroundPixmap()
+        if self.__lastImage is not None:
+            return qt.QPixmap(self.__lastImage)
+        else:
+            return qt.QPixmap()
+        
     ##@brief get the in used zoom class
     #@see Qub::Objects::QubImage2Pixmap::QubImage2PixmapPlug::Zoom
     def zoom(self):
@@ -222,6 +229,7 @@ class QubPixmapDisplay(qtcanvas.QCanvasView,QubEventMgr):
     #@param pixmap the pixmap at the zoom asked
     #@param image the full size image
     def setPixmap(self, pixmap, image):
+        self.__lastImage = image
         (cvs_w, cvs_h) = (self.__cvs.width(), self.__cvs.height())
         (pix_w, pix_h) = (pixmap.width(), pixmap.height())
         plug = self.__plug()

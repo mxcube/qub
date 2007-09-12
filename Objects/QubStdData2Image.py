@@ -72,7 +72,14 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
             elif self.__imageType == QubStdData2Image.BAYER_RG:
                 dataStruct = _bayer_struct(width,height)
             else:
-                dataStruct = _i420_struct(width,height)
+                try:
+                    TangoString,HeaderVersion,videoType,width,height = struct.unpack('<16sq8sqq',arrayData[:48])
+                    dataStruct = _i420_struct(width,height)
+                    arrayData = arrayData[64:]
+                except struct.error:
+                    import traceback
+                    traceback.print_exc()
+                    return
                 
             if path is not None :
                 dataStruct.setPath(path)
@@ -205,6 +212,8 @@ class _bayer_struct(_cvtColor_struct) :
     def __init__(self,w,h) :
         _cvtColor_struct.__init__(self,w,h,cv.CV_BayerRG2RGB,1)
 
+import struct
+
 ##@brief a decompress i420 class
 #
 class _i420_struct(QubStdData2Image._data_struct) :
@@ -216,6 +225,6 @@ class _i420_struct(QubStdData2Image._data_struct) :
     def loadFromData(self,data) :
         srcImage = opencv.qtTools.convertI420Data2YUV(data,self.__width,self.__height)
         destimage = cv.cvCreateImage(cv.cvSize(self.__width,self.__height),cv.IPL_DEPTH_8U,3)
-        cv.cvCvtColor(srcImage,destimage,cv.CV_YCrCb2RGB)
+        cv.cvCvtColor(srcImage,destimage,cv.CV_YCrCb2BGR)
         self.image = opencv.qtTools.getQImageFromImageOpencv(destimage)
     

@@ -346,8 +346,6 @@ class QubImageAction(QubAction):
                              "qubImage"
             "MouseReleased" : Mouse has been released inside he viewport of
                               the "qubImage"
-            "ViewportUpdated" : displayed pixmap of "qubImage" has changed 
-                                (new pixmap or new size)
         """
         if self._autoConnect:
             connect = True
@@ -383,8 +381,6 @@ class QubImageAction(QubAction):
                          self.mousePress)
             self.connect(view, qt.PYSIGNAL("MouseReleased"),
                          self.mouseRelease)
-            self.connect(view, qt.PYSIGNAL("ViewportUpdated"),
-                         self.viewportUpdate)
 
             self._sigConnected = True
 
@@ -401,9 +397,6 @@ class QubImageAction(QubAction):
                             self.mousePress)
             self.disconnect(view, qt.PYSIGNAL("MouseReleased"),
                             self.mouseRelease)
-            self.disconnect(view, qt.PYSIGNAL("ViewportUpdated"),
-                            self.viewportUpdate)
-
             self._sigConnected = False
         
                             
@@ -431,13 +424,6 @@ class QubImageAction(QubAction):
     def mouseRelease(self, event):
         """
         Slot connected to "MouseReleased" "qubImage" signal.
-        To be reimplemented.
-        """
-        pass
-    
-    def viewportUpdate(self):
-        """ 
-        Slot connected to "ViewportUpdate" "qubImage" signal.
         To be reimplemented.
         """
         pass

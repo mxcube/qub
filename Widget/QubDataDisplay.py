@@ -69,7 +69,8 @@ class QubDataDisplay(qt.QWidget) :
         self.__image2Pixmap = QubImage2Pixmap()
         self.__mainviewPlug = _MainViewPlug(self.__mainView)
         self.__image2Pixmap.plug(self.__mainviewPlug)
-
+        qt.QObject.connect(self.__mainView.view(),qt.PYSIGNAL("ContentViewChanged"),self.__mainviewPlug.setViewPortPoseNSize)
+        
         #LINK RAW DATA 2 IMAGE
         self.__rawData2Image = QubRawData2Image()
         self.__ImageNViewPlug = _ImageNViewPlug(self,self.__image2Pixmap,self.__mainView)

@@ -366,8 +366,18 @@ class QubImage2PixmapPlug :
             if(pixmapbuffer.width() != zoomedImage.width() or
                pixmapbuffer.height() != zoomedImage.height()) :
                 pixmapbuffer.resize(zoomedImage.width(),zoomedImage.height())
-
-            pixmapIO.putImage(pixmapbuffer,0,0,zoomedImage)
+            cnt = self.__cnt()
+            if cnt and cnt.viewportPosNSize:
+                x,y,vpWidth,vpHeight = cnt.viewportPosNSize
+                imWidth,imHeight = zoomedImage.width(),zoomedImage.height()
+                imWidth -= x
+                imHeight -= y
+                imageCopy = zoomedImage.copy(x,y,min(vpWidth,imWidth),min(vpHeight,imHeight))
+            else:
+                x,y = 0,0
+                imageCopy = zoomedImage
+                
+            pixmapIO.putImage(pixmapbuffer,x,y,imageCopy)
             
             return pixmapbuffer
         ##@}
@@ -379,7 +389,8 @@ class QubImage2PixmapPlug :
         self.__endFlag = False
         self._zoom = QubImage2PixmapPlug.Zoom(self)
         self._mgr = None
-
+        self.viewportPosNSize = None
+        
     ##@brief get the zoom class
     #@return QubImage2PixmapPlug::Zoom
     #
@@ -415,6 +426,14 @@ class QubImage2PixmapPlug :
     #@param aMgr actually is a QubPixmapDisplay
     def setManager(self,aMgr) :
         self._mgr = weakref.ref(aMgr)
+
+    ##@brief viewport callback
+    #
+    #optimisation for the pixmap copy
+    def setViewPortPoseNSize(self,x,y,width,height) :
+        self.viewportPosNSize = (x,y,width,height)
+        self.refresh()
+        
 #Private
 
 

@@ -1,3 +1,4 @@
+import os
 import re
 
 import numpy
@@ -73,7 +74,7 @@ class QubADSC(QubDataIOPlugin) :
             data = numpy.frombuffer(dataRaw,dtype=dtype)
             data.shape = height,width
             return data
-            
+
         def info(self,index = 0) :
             return self.__info
 
