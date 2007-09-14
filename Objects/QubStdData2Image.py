@@ -2,12 +2,16 @@ import qt
 import traceback
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
+from Qub.CTools import pixmaptools
+
 try:
     from opencv import cv
     from Qub.CTools import opencv
 except ImportError :
     cv = None
     opencv = None
+
+import numpy
 ##@brief This class is use to decompress standard data -> image.
 #data cant be (jpeg,tiff 8 bits...)
 class QubStdData2Image(QubThreadProcess,qt.QObject) :
@@ -46,6 +50,7 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
         self.__postSetImage = []
         self.__swap = False
         self.__imageType = QubStdData2Image.STANDARD
+        self.palette = pixmaptools.LUT.Palette(pixmaptools.LUT.Palette.GREYSCALE)
         
     def plug(self,plug):
         if isinstance(plug,QubStdData2ImagePlug) :
@@ -77,8 +82,22 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
                     if videoType.upper().startswith('I420') :
                         dataStruct = _i420_struct(width,height)
                         arrayData = arrayData[64:]
+                    elif videoType.upper().startswith('RGB24') :
+                        arrayData = arrayData[64:]
+                        dataStruct = _rgb_8_struct(width,height)
+                        dataStruct.swapBand()
+                    elif videoType.upper().startswith('BGR24') :
+                        arrayData = arrayData[64:]
+                        dataStruct = _rgb_8_struct(width,height)
+                    elif videoType.upper().startswith('Y8'):
+                        arrayData = arrayData[64:]
+                        dataStruct = _mono8_struct(width,height)
+                    elif videoType.upper().startswith('Y16') :
+                        arrayData = arrayData[64:]
+                        dataStruct = _mono16_struct(self,width,height)
                     else:
-                        dataStruct = QubStdData2Image._data_struct()
+                        print 'VideoType: %s not managed' % videoType
+                        return
                 except struct.error:
                     import traceback
                     traceback.print_exc()
@@ -231,3 +250,56 @@ class _i420_struct(QubStdData2Image._data_struct) :
         cv.cvCvtColor(srcImage,destimage,cv.CV_YCrCb2BGR)
         self.image = opencv.qtTools.getQImageFromImageOpencv(destimage)
     
+
+##@brief a decompress rgb 8 bits
+#
+class _rgb_8_struct(QubStdData2Image._data_struct) :
+    def __init__(self,w,h) :
+        QubStdData2Image._data_struct.__init__(self)
+        self.__width = w
+        self.__height = h
+        self.__swap = False
+        
+    def swapBand(self) :
+        self.__swap = True
+        
+    def loadFromData(self,data) :
+        destimage = cv.cvCreateImage(cv.cvSize(self.__width,self.__height),cv.IPL_DEPTH_8U,3)
+        destimage.imageData_set(data)
+        self.image = opencv.qtTools.getQImageFromImageOpencv(destimage)
+        if self.__swap:
+            self.image = self.image.swapRGB()
+        
+
+##@brief a decompress mono 8 bits
+#
+class _mono8_struct(QubStdData2Image._data_struct) :
+    def __init__(self,w,h) :
+        QubStdData2Image._data_struct.__init__(self)
+        self.__width = w
+        self.__height = h
+
+    def loadFromData(self,data) :
+        destimage = cv.cvCreateImage(cv.cvSize(self.__width,self.__height),cv.IPL_DEPTH_8U,1)
+        destimage.imageData_set(data)
+        self.image = opencv.qtTools.getQImageFromImageOpencv(destimage)
+
+##@brief a decompress mono 16 bits
+#
+class _mono16_struct(QubStdData2Image._data_struct) :
+    def __init__(self,cnt,w,h) :
+        QubStdData2Image._data_struct.__init__(self)
+        self.__width = w
+        self.__height = h
+        self.__palette = cnt.palette
+        
+    def loadFromData(self,data) :
+        array = numpy.fromstring(data,dtype=numpy.uint16)
+        array = array.byteswap()
+        array.shape = self.__height,self.__width
+        try:
+            self.image,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(array,self.__palette,pixmaptools.LUT.LINEAR)
+        except pixmaptools.LutError,err :
+            print err.msg()
+            return
+        
