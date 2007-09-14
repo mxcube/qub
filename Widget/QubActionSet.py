@@ -33,6 +33,7 @@ from Qub.Objects.QubDrawingCanvasTools import QubCanvasHomotheticRectangle
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasHLine
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasVLine
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasRuler
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget
 
 from Qub.Objects.QubDrawingEvent import QubDrawingEvent
 from Qub.Objects.QubDrawingEvent import QubFollowMouseOnClick
@@ -2123,6 +2124,8 @@ class QubScaleAction(QubToggleImageAction) :
                 self.__scale.show()
             else:
                 self.__scale.hide()
+                
+                
 #####################################################################
 ##########                  QubRulerAction                 ##########
 #####################################################################
@@ -2215,6 +2218,53 @@ class QubRulerAction(QubToggleImageAction) :
         self.__ruler[QubRulerAction.HORIZONTAL].setCursorPosition(1,43)
         self.__ruler[QubRulerAction.VERTICAL].setCursorPosition(0,2.1)
         self.__ruler[QubRulerAction.VERTICAL].setCursorPosition(1,-1.5)
+        
+####################################################################
+##########                                                ##########
+##########               QubSelectPointAction             ##########
+##########                                                ##########
+####################################################################
+class QubSelectPointAction(QubToggleImageAction) :
+    def __init__(self,iconName='movetopos',**keys) :
+        QubToggleImageAction.__init__(self,**keys)
+        self.__iconName = iconName
+        
+        self.drawingMgrPt = QubPointDrawingMgr(None)
+        drawingobjectPt = QubCanvasTarget(None)
+        self.drawingMgrPt.setDrawingEvent(QubMoveNPressed1Point)
+        self.drawingMgrPt.addDrawingObject(drawingobjectPt)
+        self.drawingMgrPt.setEndDrawCallBack(self.pointSelected)
+            
+    def viewConnect(self,qubImage) :
+        QubToggleImageAction.viewConnect(self,qubImage)
+        self.drawingMgrPt.setCanvas(qubImage.canvas())
+        qubImage.addDrawingMgr(self.drawingMgrPt)
+        self.connect(qubImage,qt.PYSIGNAL("ForegroundColorChanged"),
+                     self.drawingMgrPt.setColor)
+            
+    ##@brief create widget for the view toolbar
+    def addToolWidget(self, parent):
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent,self._name)
+            self._widget.setAutoRaise(True)
+            self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png" % self.__iconName)))
+            self._widget.setToggleButton(True)
+            self._widget.connect(self._widget, qt.SIGNAL("toggled(bool)"),
+                                 self._setState)
+            qt.QToolTip.add(self._widget, "%s"%self._name)
+
+        return self._widget
+
+    def _setState(self,aFlag) :
+        if aFlag:
+            self.drawingMgrPt.show()
+            self.drawingMgrPt.startDrawing()
+        else:
+            self.drawingMgrPt.hide()
+            self.drawingMgrPt.stopDrawing()
+     
+    def pointSelected(self, drawingMgr):
+        self.emit(qt.PYSIGNAL("PointSelected"), (drawingMgr,))
         
 ####################################################################
 ##########                                                ##########
