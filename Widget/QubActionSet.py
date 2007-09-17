@@ -2202,6 +2202,15 @@ class QubRulerAction(QubToggleImageAction) :
             if aFlag: ruler.show()
             else: ruler.hide()
 
+    def addMenuWidget(self, menu):
+        """
+        Create context menu item pushbutton
+        """
+        self._menu = menu
+        icon = qt.QIconSet(loadIcon("%s.png"%self.__iconName))
+        self._item = menu.insertItem(icon, qt.QString("%s"%self._name),
+                                      self.menuChecked)
+
     def test(self) :
         self.__ruler[QubRulerAction.HORIZONTAL].setLabel(0,'samy')
         self.__ruler[QubRulerAction.HORIZONTAL].setLabel(1,'sampy')
@@ -2254,6 +2263,15 @@ class QubSelectPointAction(QubToggleImageAction) :
             qt.QToolTip.add(self._widget, "%s"%self._name)
 
         return self._widget
+
+    def addMenuWidget(self, menu):
+        """
+        Create context menu item pushbutton
+        """
+        self._menu = menu
+        icon = qt.QIconSet(loadIcon("%s.png"%self.__iconName))
+        self._item = menu.insertItem(icon, qt.QString("%s"%self._name),
+                                      self.menuChecked)
 
     def _setState(self,aFlag) :
         if aFlag:
