@@ -442,6 +442,7 @@ class QubCanvasHLine(qtcanvas.QCanvasLine) :
 ##@brief this is a pixmap display object
 #@ingroup DrawingCanvasToolsRectangle
 class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
+    RTTI = 2000
     def __init__(self,canvas) :
         qtcanvas.QCanvasRectangle.__init__(self,canvas)
         if isinstance(canvas,QubCanvasPixmap) :
@@ -451,19 +452,56 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
         self.__pixmap = qt.QPixmap()
         self.__pixmapIO = pixmaptools.IO()
         self.__pixmapIO.setShmPolicy(pixmaptools.IO.ShmKeepAndGrow)
-
+        self.__scrollView = None
+        self.__mosaicImage = None
+        
     def setImage(self,image) :
         self.__image = image
 
+    def setScrollView(self,scrollView) :
+        self.__scrollView = scrollView
+
+    def setMosaicImage(self,mosaicImage) :
+        self.__mosaicImage = weakref.ref(mosaicImage)
+
+    def mosaicImage(self) :
+        return self.__mosaicImage and self.__mosaicImage() or None
+    
     def draw(self,painter) :
         if self.__image:
-            image = self.__image.scale(self.width(),self.height())
+            if self.__scrollView :
+                xOri,yOri = (self.__scrollView.contentsX(),self.__scrollView.contentsY())
+                viewSizeX,viewSizeY = (self.__scrollView.visibleWidth(),self.__scrollView.visibleHeight())
+                viewRect = qt.QRect(xOri,yOri,viewSizeX,viewSizeY)
+                boundingBox = viewRect.intersect(self.boundingRect())
+
+                if boundingBox.isNull(): return # Nothing to do rectangle is not in the view space
+
+                boundingBox.moveBy(-self.x(),-self.y())
+                imageWidth,imageHeight = self.__image.width(),self.__image.height()
+                xOriPixmapCpy,yOriPixmapCpy = boundingBox.x(),boundingBox.y()
+                scaleWidth,scaleHeight = boundingBox.width(),boundingBox.height()
+                matrix = qt.QWMatrix(float(imageWidth) / self.width(),0,0,
+                                     float(imageHeight) / self.height(),0,0)
+                boundingBox = matrix.map(boundingBox)
+                image = self.__image.copy(boundingBox)
+            else:
+                xOriPixmapCpy,yOriPixmapCpy = 0,0
+                scaleWidth,scaleHeight = self.width(),self.height()
+                image = self.__image
+                
+            image = image.scale(scaleWidth,scaleHeight)
             if self.__pixmap.size != image.size() :
                 self.__pixmap.resize(image.size())
             self.__pixmapIO.putImage(self.__pixmap,0,0,image)
-            painter.drawPixmap(self.x(),self.y(),self.__pixmap)
-        qtcanvas.QCanvasRectangle.draw(self,painter)
+
             
+            painter.drawPixmap(self.x() + xOriPixmapCpy,self.y() + yOriPixmapCpy,self.__pixmap)
+        qtcanvas.QCanvasRectangle.draw(self,painter)
+
+    def rtti(self) :
+        return QubCanvasPixmap.RTTI
+    
 ##@brief this object display the scale on bottom left of the image
 #@ingroup DrawingCanvasToolsContainer
 class QubCanvasScale(qtcanvas.QCanvasRectangle) :

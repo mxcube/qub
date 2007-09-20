@@ -1205,13 +1205,6 @@ class QubZoomListAction(QubAction):
             self._widget.setPopup(self._listPopupMenu)
             self._widget.setText(qt.QString('%d%%' % int(self._zoomValList[idDefaultZoom] * 100)))
             
-    def setZoomOnFullImage(self,flag) :
-        if self._keepROI == flag :
-            self._keepROI = not flag
-            qubImage = self._qubImage and self._qubImage() or None
-            if qubImage is not None :
-                qubImage.setZoom(self._zoomVal, self._zoomVal,self._keepROI)
-
     def addToolWidget(self, parent):
         """
         Creates widgets to be added in the toolbar
