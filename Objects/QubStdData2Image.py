@@ -44,7 +44,6 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
         qt.QObject.__init__(self)
         self.__plug = None
         self.__mutex = qt.QMutex()
-        self.__cond = qt.QWaitCondition()
         self.__dataPending = []
         self.__actif = False
         self.__postSetImage = []
@@ -163,7 +162,6 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
             except :
                 traceback.print_exc()
                 self.__dataPending.remove(aWorkingStruct)
-            self.__cond.wakeOne()
             aLock.unLock()
             #send event
             event = qt.QCustomEvent(qt.QEvent.User)

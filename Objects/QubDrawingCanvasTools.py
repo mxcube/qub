@@ -457,7 +457,10 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
         
     def setImage(self,image) :
         self.__image = image
-
+        self.update()
+        canvas = self.canvas()
+        if canvas: canvas.update()
+        
     def setScrollView(self,scrollView) :
         self.__scrollView = scrollView
 

@@ -12,8 +12,9 @@ def _mosaicViewRefresh(func) :
     return c
 
 class QubMosaicImage :
-    def __init__(self,image = None,motX = None,motY = None,layer = 0) :
+    def __init__(self,image = None,motX = None,motY = None,layer = 0,imageId = None) :
         self.__image = image
+        self.__imageId = imageId
         self.__motX = motX
         self.__motY = motY
         self.__pixelSize = (1,1)
@@ -22,7 +23,7 @@ class QubMosaicImage :
         self.__drawingManager = None
         self.__layer = layer
         self.__isShown = False
-
+        
     def __del__(self) :
         self.__isShown = False
         if self.mosaicView is not None:
@@ -37,6 +38,16 @@ class QubMosaicImage :
 
     def image(self) :
         return self.__image
+
+    ##@brief set an private id to the image
+    #
+    #@param imageId could be what you want as it's private
+    def setImageId(self,imageId) :
+        self.__imageId = imageId
+
+    def imageId(self) :
+        return self.__imageId
+
     ##@brief set image position
     #
     #@param motX can be a X pixel position if you don't use ChangePixelCalibration and ChangeBeamPosition

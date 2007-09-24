@@ -11,8 +11,7 @@ class QubCanvasViewBase(qtcanvas.QCanvasView,QubEventMgr) :
     ##@param parent the parent widget
     #@param name widget name
     def __init__(self, parent=None, name=None):
-        qtcanvas.QCanvasView.__init__(self, parent, name,
-                                      0)# qt.Qt.WNoAutoErase)|qt.Qt.WStaticContents) 
+        qtcanvas.QCanvasView.__init__(self, parent, name,qt.Qt.WNoAutoErase|qt.Qt.WStaticContents) 
                                            
         QubEventMgr.__init__(self)
         self.setFocusPolicy(qt.QWidget.WheelFocus)

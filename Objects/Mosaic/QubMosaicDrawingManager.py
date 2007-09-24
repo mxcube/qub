@@ -20,7 +20,8 @@ class QubMosaicPoint:
         self.refPoint = None
         self.calibration = None
         self.absPoint = None
-
+        self.imageId = None
+        
 def _mosaicPoints(canvas,matrix,points) :
     returnPoints = []
     allPointSucced = True
@@ -40,6 +41,7 @@ def _mosaicPoints(canvas,matrix,points) :
             p.refPoint = mosaicImage.refPoint()
             p.calibration = mosaicImage.calibration()
             p.absPoint = mosaicImage.position()
+            p.imageId = mosaicImage.imageId()
         else:
             if matrix: p.point = matrix.invert()[0].map(x,y)
             else: p.point = x,y
@@ -76,6 +78,7 @@ def _mosaicPointsFromRect(canvas,boundingRect,points) :
             p.refPoint = mosaicImage.refPoint()
             p.calibration = mosaicImage.calibration()
             p.absPoint = mosaicImage.position()
+            p.imageId = mosaicImage.imageId()
             returnPoints.append(p)
     return returnPoints
 
@@ -84,7 +87,8 @@ def _mosaicPointsFromRect(canvas,boundingRect,points) :
 class QubMosaicPointDrawingMgr(QubPointDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
         QubPointDrawingMgr.__init__(self,aCanvas,aMatrix)
-
+        self.__defaultZ = 2**31
+        
     def mosaicPoints(self) :
         if self._matrix is not None :
             x,y = self._matrix.map(self._x,self._y)
@@ -92,9 +96,13 @@ class QubMosaicPointDrawingMgr(QubPointDrawingMgr) :
             x,y = self._x,self._y
         returnPoints,_ = _mosaicPoints(self._canvas,self._matrix,[(x,y)])
         return returnPoints
+
+    def setDefaultZ(self,z) :
+        self.__defaultZ = z
+        
     def show(self) :
         QubPointDrawingMgr.show(self)
-        self.setZ(2**31)
+        self.setZ(self.__defaultZ)
 
 ##@brief this class manage all drawing object
 #that can be define with a line on a mosaic
@@ -102,6 +110,7 @@ class QubMosaicPointDrawingMgr(QubPointDrawingMgr) :
 class QubMosaicLineDrawingMgr(QubLineDrawingMgr) :
     def __init__(self,aCanvas,aMatrix = None) :
         QubLineDrawingMgr.__init__(self,aCanvas,aMatrix)
+        self.__defaultZ = 2**31
 
     def mosaicPoints(self) :
         if self._matrix is not None :
@@ -116,6 +125,10 @@ class QubMosaicLineDrawingMgr(QubLineDrawingMgr) :
             if tmpPoints: returnPoints = tmpPoints
         return returnPoints
 
+    def setDefaultZ(self,z) :
+        self.__defaultZ = z
+        
     def show(self) :
         QubLineDrawingMgr.show(self)
-        self.setZ(2**31)
+        self.setZ(self.__defaultZ)
+
