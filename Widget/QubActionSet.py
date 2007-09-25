@@ -2227,20 +2227,18 @@ class QubRulerAction(QubToggleImageAction) :
 ##########                                                ##########
 ####################################################################
 class QubSelectPointAction(QubToggleImageAction) :
-    def __init__(self,iconName='movetopos',**keys) :
+    def __init__(self,iconName='movetopos',actionInfo=None,**keys) :
         QubToggleImageAction.__init__(self,**keys)
         self.__iconName = iconName
-        
-        self.drawingMgrPt = QubPointDrawingMgr(None)
-        drawingobjectPt = QubCanvasTarget(None)
-        self.drawingMgrPt.setDrawingEvent(QubMoveNPressed1Point)
-        self.drawingMgrPt.addDrawingObject(drawingobjectPt)
-        self.drawingMgrPt.setEndDrawCallBack(self.pointSelected)
-            
+        self.__actionInfo = actionInfo
+        self.drawingMgrPt = None
+
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self,qubImage)
-        self.drawingMgrPt.setCanvas(qubImage.canvas())
-        qubImage.addDrawingMgr(self.drawingMgrPt)
+        self.drawingMgrPt,_ = QubAddDrawing(qubImage,QubPointDrawingMgr,QubCanvasTarget)
+        self.drawingMgrPt.setDrawingEvent(QubMoveNPressed1Point)
+        self.drawingMgrPt.setEndDrawCallBack(self.pointSelected)
+        if self.__actionInfo: self.drawingMgrPt.setActionInfo(self.__actionInfo)
         self.connect(qubImage,qt.PYSIGNAL("ForegroundColorChanged"),
                      self.drawingMgrPt.setColor)
             
