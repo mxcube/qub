@@ -1056,6 +1056,9 @@ class QubCanvasCloseLinePolygone(qtcanvas.QCanvasPolygon) :
         self.setPoints(self._areaPoints())
         return False                    # NEVER END
     
+    def setPoints(self,points) :
+        self.__points = points
+        
     def pen(self) :
         return self.__pen
     def setPen(self,pen) :

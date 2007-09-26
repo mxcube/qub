@@ -64,13 +64,13 @@ class QubDrawingMgr :
         for drawingObject in self._drawingObjects :
             drawingObject.update()
             drawingObject.setCanvas(None)
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
         
         for link,canvas,matrix,objectlist in self._foreignObjects :
             for drawingObject in objectlist :
                 drawingObject.update()
                 drawingObject.setCanvas(None)
-            canvas.update()
+            if canvas: canvas.update()
         
     def __nonzero__(self):
         return True
@@ -206,14 +206,14 @@ class QubDrawingMgr :
                 pen.setColor(color)
                 drawingObject.setPen(pen)
                 drawingObject.update()
-            self._canvas.update()
+            if self._canvas: self._canvas.update()
             
             for link,canvas,matrix,objectlist in self._foreignObjects :
                 for drawingObject in objectlist :
                     pen = drawingObject.pen()
                     pen.setColor(color)
                     drawingObject.setPen(pen)
-                canvas.update()
+                if canvas: canvas.update()
         except:
             import traceback
             traceback.print_exc()
@@ -404,12 +404,12 @@ class QubContainerDrawingMgr(QubDrawingMgr) :
         try :
             for drawingObject in self._drawingObjects :
                 drawingObject.update()
-            self._canvas.update()
+            if self._canvas: self._canvas.update()
             
             for link,canvas,matrix,objectlist in self._foreignObjects :
                 for drawingObject in objectlist :
                     drawingObject.update()
-                canvas.update()
+                if canvas: canvas.update()
         except:
             import traceback
             traceback.print_exc()
@@ -449,7 +449,7 @@ class QubPointDrawingMgr(QubDrawingMgr) :
 
         for drawingObject in self._drawingObjects :
             drawingObject.move(x,y)
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
         
         self._drawForeignObject()
 
@@ -461,7 +461,7 @@ class QubPointDrawingMgr(QubDrawingMgr) :
             
         for drawingObject in self._drawingObjects :
             drawingObject.move(x,y)
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
         
         self._drawForeignObject()
         
@@ -478,7 +478,7 @@ class QubPointDrawingMgr(QubDrawingMgr) :
                     x,y = matrix.map(x,y)
                 for drawingObject in objectlist :
                     drawingObject.move(x,y)
-                canvas.update()
+                if canvas: canvas.update()
         except:
             import traceback
             traceback.print_exc()
@@ -529,7 +529,7 @@ class QubLineDrawingMgr(QubDrawingMgr) :
 
         for drawingObject in self._drawingObjects :
             drawingObject.setPoints(x,y,x2,y2)
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
         
         self._drawForeignObject()
         
@@ -551,7 +551,7 @@ class QubLineDrawingMgr(QubDrawingMgr) :
 
         for drawingObject in self._drawingObjects :
             drawingObject.setPoints(x1,y1,x,y)
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
         
         self._drawForeignObject()
 
@@ -566,7 +566,7 @@ class QubLineDrawingMgr(QubDrawingMgr) :
         for drawingObject in self._drawingObjects :
             drawingObject.setPoints(x1,y1,x2,y2)
 
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
 
         self._drawForeignObject()
     ##@brief get a modify class to move or resize the line
@@ -592,7 +592,7 @@ class QubLineDrawingMgr(QubDrawingMgr) :
                 
             for drawingObject in objectlist :
                 drawingObject.setPoints(x1,y1,x2,y2)
-            canvas.update()
+            if canvas: canvas.update()
     ##@}
 
 ##@brief manage all object that can be define with a 2 points rectangle
@@ -708,7 +708,7 @@ class Qub2PointSurfaceDrawingMgr(QubDrawingMgr) :
         for drawingObject in self._drawingObjects :
             drawingObject.move(x,y)
             drawingObject.setSize(width,height)
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
         
         self._drawForeignObject()
         
@@ -751,7 +751,7 @@ class Qub2PointSurfaceDrawingMgr(QubDrawingMgr) :
             for drawingObject in objectlist :
                 drawingObject.move(x,y)
                 drawingObject.setSize(width,height)
-            canvas.update()
+            if canvas: canvas.update()
 
 ##@brief manage all object which can be define with 3 points or more
 #@ingroup DrawingManager
@@ -768,12 +768,12 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
     def setBrush(self,brush) :
         for drawingObject in self._drawingObjects :
             drawingObject.setBrush(brush)
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
         
         for link,canvas,matrix,objectlist in self._foreignObjects :
             for drawingObject in objectlist :
                 drawingObject.setBrush(brush)
-            canvas.update()
+            if canvas: canvas.update()
             
     ##@brief set the list of points
     #@param pointList this is a list a tuple (x,y)
@@ -809,7 +809,7 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         aEndFlag = False
         for drawingObject in self._drawingObjects :
             aEndFlag = drawingObject.move(x,y,point_id) or aEndFlag
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
         
         self._drawForeignObject(point_id)
 
@@ -828,13 +828,13 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         for drawingObject in self._drawingObjects:
             if hasattr(drawingObject,"update") :
                 drawingObject.update()
-        self._canvas.update()
+        if self._canvas: self._canvas.update()
         
         for link,canvas,matrix,objectlist in self._foreignObjects :
             for drawingObject in objectlist :
                 if hasattr(drawingObject,"update") :
                     drawingObject.update()
-            canvas.update()
+            if canvas: canvas.update()
     ##@}
     def addDrawingObject(self,aDrawingObject) :
         QubDrawingMgr.addDrawingObject(self,aDrawingObject)
@@ -884,7 +884,7 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
                     x,y = matrix.map(x,y)
                 for drawingObject in objectlist :
                     drawingObject.move(x,y,point_id)
-                canvas.update()
+                if canvas: canvas.update()
         except:
             import traceback
             traceback.print_exc()

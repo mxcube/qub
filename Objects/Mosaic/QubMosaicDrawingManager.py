@@ -21,6 +21,7 @@ class QubMosaicPoint:
         self.calibration = None
         self.absPoint = None
         self.imageId = None
+        self.qimage = None
         
 def _mosaicPoints(canvas,matrix,points) :
     returnPoints = []
@@ -42,6 +43,7 @@ def _mosaicPoints(canvas,matrix,points) :
             p.calibration = mosaicImage.calibration()
             p.absPoint = mosaicImage.position()
             p.imageId = mosaicImage.imageId()
+            p.qimage = qimage
         else:
             if matrix: p.point = matrix.invert()[0].map(x,y)
             else: p.point = x,y
@@ -79,6 +81,7 @@ def _mosaicPointsFromRect(canvas,boundingRect,points) :
             p.calibration = mosaicImage.calibration()
             p.absPoint = mosaicImage.position()
             p.imageId = mosaicImage.imageId()
+            p.qimage = qimage
             returnPoints.append(p)
     return returnPoints
 
