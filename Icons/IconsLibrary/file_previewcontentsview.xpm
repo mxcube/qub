@@ -1,0 +1,21 @@
+/* XPM */
+static const char* const previewcontentsview_xpm[]={
+    "14 13 5 1",
+    ". c #00007f",
+    "a c black",
+    "c c #7f007f",
+    "# c #cec6bd",
+    "b c #000000",
+    "..#####aaaaaaa",
+    ".#.#bb#a#####a",
+    "...####a#ccc#a",
+    "#######a#ccc#a",
+    "#######a#####a",
+    "..#####a#bbb#a",
+    ".#.#bb#a#####a",
+    "...####a#bbb#a",
+    "#######a#####a",
+    "#######a#bbb#a",
+    "..#####a#####a",
+    ".#.#bb#a#####a",
+    "...####aaaaaaa"};
