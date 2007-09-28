@@ -539,10 +539,11 @@ class QubLineDataSelectionAction(QubToggleImageAction):
                                      [math.sin(-angle),math.cos(-angle)]])
             translation = numpy.array([startx,starty])
 
-            lines = lines - translation
-            lines = lines * rotation
-            lines = lines + translation
-
+            try:
+                lines = lines - translation
+                lines = lines * rotation
+                lines = lines + translation
+            except ValueError: return
 
             inter_result = datafuncs.interpol([range(self._data.shape[1]),range(self._data.shape[0])],self._data.T,lines,0)
             inter_result.shape = inter_result.shape[0] / len(abscis),len(abscis)

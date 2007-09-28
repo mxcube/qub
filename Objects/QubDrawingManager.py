@@ -21,22 +21,6 @@ def QubAddDrawing(drawing, mngr_class, *args):
     drawing.addDrawingMgr(mngr)
     return (mngr,) + tuple(objs)
 
-class _calleach:
-    def __init__(self, method, objs):
-        self.method = method
-        self.objs = objs
-    def __call__(self, *args, **kwargs):
-        returnValues = []
-        for obj in self.objs:
-          m = getattr(obj, self.method)
-
-          try:
-             returnValues.append(m(*args))
-          except Exception, err:
-            # error description is in 'err'
-            pass
-        return returnValues
-
 ##@brief Base class of Drawing manager
 #
 #@ingroup DrawingManager
@@ -78,17 +62,35 @@ class QubDrawingMgr :
     def __getattr__(self, attr):
         if attr.startswith("__"):
             raise AttributeError, attr
-        
+   
         objects_to_call = self._drawingObjects
         for link,canvas,matrix,objectlist in self._foreignObjects:
             objects_to_call += objectlist
+        objects_to_call = [x for x in objects_to_call if hasattr(x, attr)]
 
-        objects_to_call = filter(None, [hasattr(x, attr) and x or None for x in objects_to_call])
-        
-        if len(objects_to_call):
-            return _calleach(attr, objects_to_call)
-        
-        raise AttributeError, attr
+        if not objects_to_call:
+            raise AttributeError, attr
+
+        def call_objects(self, *args):
+            objects_to_call = self._drawingObjects
+            for link,canvas,matrix,objectlist in self._foreignObjects:
+                objects_to_call += objectlist
+            objects_to_call = [x for x in objects_to_call if hasattr(x, attr)]
+          
+            returnValues = []
+            for obj in objects_to_call:
+                m = getattr(obj, attr)
+            
+                try:
+                    returnValues.append(m(*args))
+                except Exception, err:
+                    # error description is in 'err'
+                    pass
+            return returnValues
+
+        m=new.instancemethod(call_objects, self, self.__class__)
+        self.__dict__[attr]=m
+        return m               
             
  
     ##@brief add a drawing canvas object in this manager

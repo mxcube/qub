@@ -54,6 +54,10 @@ class QubImage2Pixmap(qt.QObject) :
         def getPlugs(self) :
             aLock = QubLock(self.__mutex)
             return list(self.__plugs)
+        ##@return get the Last images zoomedImage and fullImage
+        #
+        def getLastImages(self) :
+            return self.__PrevImageNeedZoom
         ##@brief add an image in the pending stack
         #
         #All image are transformed to Pixmap asynchronously, there is two way:
@@ -432,7 +436,12 @@ class QubImage2PixmapPlug :
     #optimisation for the pixmap copy
     def setViewPortPoseNSize(self,x,y,width,height) :
         self.viewportPosNSize = (x,y,width,height)
-        self.refresh()
+        if self._mgr :
+            mgr = self._mgr()
+            if mgr:
+                zoomedImage,fullimage = mgr.getLastImages()
+                pixmap = self.zoom().getPixmapFrom(zoomedImage)
+                self.setPixmap(pixmap,fullimage)
         
 #Private
 
