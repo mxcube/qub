@@ -1,6 +1,5 @@
 import weakref
 import qt
-import numpy # TODO REMOVE AS SOON AS EDF MODULE USE NUMPY
 
 if __name__ == "__main__" :
     a = qt.QApplication([])
@@ -52,7 +51,7 @@ class QubDataDisplay(qt.QWidget) :
     #@param noAction if True no action will be created
     def __init__(self,parent=None,data=None,name='',
                  zoomValList = [0.1,0.25,0.5,0.75,1,1.5,2],keepROI=False,
-                 noAction=False,**keys) :
+                 noAction=False,noToolbarAction=False,**keys) :
         qt.QWidget.__init__(self,parent,name,qt.Qt.WDestructiveClose)
 
         self.__curentdata = None
@@ -98,19 +97,19 @@ class QubDataDisplay(qt.QWidget) :
         self.__updateAction = None
         dataArray,captionName = self.setDataSource(data)
                      ####### PRINT ACTION #######
-        if not noAction:
+        if not noAction and not noToolbarAction:
             printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
             printAction.previewConnect(getPrintPreviewDialog())
             actions.append(printAction)
                       ####### SAVE IMAGE #######
         self.__saveDialog = None
-        if not noAction:
+        if not noAction and not noToolbarAction:
             saveAction = QubOpenDialogAction(parent=mainWidget,label='Save image',name="save", iconName='save',group="admin")
             saveAction.setConnectCallBack(self._save_dialog_new)
             actions.append(saveAction)
                      ####### STAT ACTION #######
         mdiParent,mainWindow = QubMdiCheckIfParentIsMdi(self)
-        if not noAction:
+        if not noAction and not noToolbarAction:
             if mdiParent :
                 self.__dataStat = QubDataStatWidget(parent = mdiParent)
                 mdiParent.addNewChildOfMainWindow(mainWindow,self.__dataStat)
@@ -122,7 +121,7 @@ class QubDataDisplay(qt.QWidget) :
         else:
             self.__dataStat = None
                      ####### HEADER INFO #######
-        if not noAction:
+        if not noAction and not noToolbarAction:
             if mdiParent:
                 self.__headerInfo = QubInfoTableWidget(parent = mdiParent,iconName='datatable',name = 'Header Info')
                 mdiParent.addNewChildOfMainWindow(mainWindow,self.__headerInfo)
@@ -133,13 +132,13 @@ class QubDataDisplay(qt.QWidget) :
             actions.append(headerInfoAction)
         else: self.__headerInfo = None
                        ####### ZOOM LIST #######
-        if not noAction:
+        if not noAction and not noToolbarAction:
             zoomActionList = QubZoomListAction(place = "toolbar",
                                                initZoom = 1,zoomValList = zoomValList,keepROI = keepROI,
                                                show = 1,group = "image")
             actions.append(zoomActionList)
                      ####### ZOOM Action #######
-        if not noAction:
+        if not noAction and not noToolbarAction:
             zoomFitOrFill = QubZoomAction(keepROI = keepROI,place = "toolbar",group = "image")
             actions.append(zoomFitOrFill)
         
@@ -149,7 +148,7 @@ class QubDataDisplay(qt.QWidget) :
             zoomActionList.setActionZoomMode(zoomFitOrFill)
                    ####### COLORMAP ACTION #######
         self.__colormapDialog = None
-        if not noAction:
+        if not noAction and not noToolbarAction:
             colorMapAction = QubOpenDialogAction(parent=self,name='colormap',iconName='colormap',
                                                  label='ColorMap',group="color")
             actions.append(colorMapAction)
@@ -164,26 +163,26 @@ class QubDataDisplay(qt.QWidget) :
                                                               self.refresh)
             self.__ImageNViewPlug.setColorMapDialog(self.__colormapDialog)
                ####### CHANGE FOREGROUND COLOR #######
-        if not noAction:
+        if not noAction and not noToolbarAction:
             fcoloraction = QubForegroundColorAction(name="color", group="selection")
             actions.append(fcoloraction)
 
                  ####### Horizontal selection #######
-        if not noAction:
+        if not noAction and not noToolbarAction:
             self.__hLineSelection = QubHLineDataSelectionAction(parent=mainWidget,group="selection")
             self.__hLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
             actions.append(self.__hLineSelection)
             self.__actionDataActionPlug.append(self.__hLineSelection)
         else: self.__hLineSelection = None
                  ####### Vertical selection #######
-        if not noAction:
+        if not noAction and not noToolbarAction:
             self.__vLineSelection = QubVLineDataSelectionAction(parent=mainWidget,group="selection")
             self.__vLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
             actions.append(self.__vLineSelection)
             self.__actionDataActionPlug.append(self.__vLineSelection)
         else: self.__vLineSelection = None
                     ####### Line selection #######
-        if not noAction:
+        if not noAction and not noToolbarAction:
             self.__lineSelection = QubLineDataSelectionAction(parent=mainWidget,group="selection")
             self.__lineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
             actions.append(self.__lineSelection)
@@ -220,6 +219,11 @@ class QubDataDisplay(qt.QWidget) :
     #@return a QubPixmapDisplayView
     def getView(self) :
         return self.__mainView
+    ##@brief get the colormap controler
+    #
+    #This is a low level object (Qub::Objects::QubRawData2Image::QubRawData2ImagePlug::Colormap)
+    def getColormapPlug(self) :
+        return self.__ImageNViewPlug.colormap()
     ##@brief add an action witch need data
     #
     #@param action a QubAction
