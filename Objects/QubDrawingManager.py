@@ -40,6 +40,7 @@ class QubDrawingMgr :
         self.__cantBeModify = True
         self._endDrawCbk = None
         self._initDrawCbk = None
+        self._dubModeCbk = None
         self._keyPressedCbk = None
         self._keyReleasedCbk = None
         self._actionInfo = ''
@@ -258,6 +259,14 @@ class QubDrawingMgr :
     #<b>cbk(self,Qub::Objects::QubDrawingMgr::QubDrawingMgr)</b>
     def setInitDrawCallBack(self,cbk) :
         self._initDrawCbk = QubWeakref.createWeakrefMethod(cbk)
+
+    ##@brief set a callback for the dub mode
+    #
+    #@param cbk is the addresse of a function or a methode with this signature
+    #<b>cbk(self,drawingManager,aFlag)</b> if the flag is True the DrawingManager is Dub
+    #It doesn't receved event anymore
+    def setDubModeCallBack(self,cbk) :
+        self._dubModeCbk = QubWeakref.createWeakrefMethod(cbk)
     ##@brief set the keyPressed callback
     #
     #@param cbk is the addresse of a function or a methode with this signature
@@ -305,10 +314,14 @@ class QubDrawingMgr :
     def endDraw(self) :
         if self._endDrawCbk is not None :
             self._endDrawCbk(self)
+    ##@brief the init callback procedure (intern use)
     def initDraw(self) :
         if self._initDrawCbk is not None :
             self._initDrawCbk(self)
-            
+    ##@brief the dub callback procedure (intern use)
+    def setDubMode(self,aFlag) :
+        if self._dubModeCbk is not None:
+            self._dubModeCbk(self,aFlag)
     ##@brief key pressed callback
     def rawKeyPressed(self,keyevent) :
         if self._keyPressedCbk:

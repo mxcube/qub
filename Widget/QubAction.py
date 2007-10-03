@@ -9,39 +9,45 @@ from Qub.Icons.QubIcons import loadIcon
 ################################################################################
 ####################                QubAction               ####################
 ################################################################################
+
+##@brief Mother class of all action
+#
+#Associated with a QubView widget, QubAction is the base Class to perform
+#interaction with Qub display widgets (QubImage, QubGraph, QubTable).
+#QubAction take care of the creation of action widget and their
+#placement in the QubView widget, either in the ToolBar/ContextMenu or in the
+#StatusBar. This class is responsible for placement, creation/destruction
+#and show/hide of the action widgets.
+#Inheriting from QubAction and reimpleting methods allows to perform actions 
+#acting on different Display Widgets.
+#In order to keep track of all action class, there is a global array
+#ACTION_LIST, indexing by the name of the action and containing the class
 class QubAction(qt.QObject):
-    """
-    Associated with a QubView widget, QubAction is the base Class to perform
-    interaction with Qub display widgets (QubImage, QubGraph, QubTable).
-    QubAction take care of the creation of action widget and their
-    placement in the QubView widget, either in the ToolBar/ContextMenu or in the
-    StatusBar. This class is responsible for placement, creation/destruction
-    and show/hide of the action widgets.
-    Inheriting from QubAction and reimpleting methods allows to perform actions 
-    acting on different Display Widgets.
-    In order to keep track of all action class, there is a global array
-    ACTION_LIST, indexing by the name of the action and containing the class
-    name.
-    """
+    ##@brief Constructor method
+    #
+    #@param name string name of the action.
+    #@param place where to put in the view widget, the selection widget
+    #of the action
+    # - toolbar
+    # - statusbar
+    # - contextmenu
+    # - None
+    #
+    #@param show If in view toolbar, tells to put it in the toolbar
+    #itself or in the context menu.
+    #@param group actions may grouped. Tells the name of the group the
+    #action belongs to. If not present, a "misc." group is
+    #automatically created and the action is added to it.
+    #
+    #@param index Position of the selection widget of the action in its group.
+    #@param iconName the icon file name
     def __init__(self,name = None,place = 'toolbar',show = True,
-                 group = '',index = -1,**keys) :
+                 group = '',index = -1,iconName = None,**keys) :
      
-        """
-        Constructor method
-        name ... :  string name of the action.
-        place .. :  where to put in the view widget, the selection widget
-                    of the action ("toolbar", "statusbar", None).
-        show ... :  If in view toolbar, tells to put it in the toolbar
-                    itself or in the context menu.
-        group .. :  actions may grouped. Tells the name of the group the
-                    action belongs to. If not present, a "misc." group is
-                    automatically created and the action is added to it.
-        index .. :  Position of the selection widget of the action in its
-                    group.
-        """
-        
+            
         qt.QObject.__init__(self)
         self._name  = name
+        self._iconName = iconName or name
         
         self.__place    = place
         self.__show     = show
@@ -537,6 +543,9 @@ class QubToggleImageAction(QubImageAction):
         Should be reimplemented
         """
         pass
+
+    def _unactiveAction(self,drawingMgr,aFlag) :
+        self.setState(not aFlag)
               
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################

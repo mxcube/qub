@@ -272,14 +272,19 @@ class QubDataDisplay(qt.QWidget) :
                     if not self.__updateAction:
                         self.__updateAction = QubToggleAction(name="update",group="image",index=0,initState=True)
                         needConnection = True
-                        
+                    if self.__dataPlug:
+                        qt.QObject.disconnect(self.__updateAction,qt.PYSIGNAL("StateChanged"),self.__dataPlug.updateCBK)
+
                     self.__dataPlug = _ShmDataPlug(self.__specShm,self.__updateAction,self)
                     self.__dataPlug.setDataReceiver(self.__rawData2Image)
                     self.__specShm.plug(self.__dataPlug)
-
+                    
+                    qt.QObject.connect(self.__updateAction,qt.PYSIGNAL("StateChanged"),self.__dataPlug.updateCBK)
+                    
                     if needConnection:
-                        qt.QObject.connect(self.__updateAction,qt.PYSIGNAL("StateChanged"),self.__dataPlug.updateCBK)
                         self.__mainView.addAction([self.__updateAction])
+                    self.__updateAction.setState(True)
+
                     captionName = 'Spec shm : %s' % data
                 else:
                     raise StandardError("Can't find the spec version %s" % specv)
@@ -292,6 +297,7 @@ class QubDataDisplay(qt.QWidget) :
                 if self.__updateAction :
                     self.__mainView.delAction(self.__updateAction)
                     qt.QObject.disconnect(self.__updateAction,qt.PYSIGNAL("StateChanged"),self.__dataPlug.updateCBK)
+                    self.__dataPlug = None
                     self.__updateAction = None
                 self.setData(dataArray)
             try:
@@ -407,7 +413,8 @@ class _ShmDataPlug(QubPlug) :
         self.__specShm = specShm
         self.__cnt = weakref.ref(cnt)
         self.__updateToggle = weakref.ref(updateToggle)
-
+        self.__refreshFlag = True
+        
     def setDataReceiver(self,dataReceiver) :
         self.__dataReceiver = weakref.ref(dataReceiver)
 

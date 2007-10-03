@@ -167,14 +167,10 @@ class QubPixmapDisplay(QubCanvasViewBase) :
                 if mode == "Auto":
                     self.setHScrollBarMode(self.Auto)
                     self.setVScrollBarMode(self.Auto)
-                    if plug is not None :
-                        plug.zoom().setZoom(1, 1)
 
                 elif mode == "AlwaysOff":
                     self.setHScrollBarMode(self.AlwaysOff)
                     self.setVScrollBarMode(self.AlwaysOff)
-                    if plug is not None :
-                        plug.zoom().setZoom(1, 1)
 
                 elif mode == "Fit2Screen" or mode == "FillScreen":
                     self.setHScrollBarMode(self.AlwaysOff)

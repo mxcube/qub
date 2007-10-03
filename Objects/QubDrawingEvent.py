@@ -78,7 +78,10 @@ class _DrawingEventNDrawingMgr(QubDrawingEvent):
         drawingMgr = self._drawingMgr()
         if drawingMgr:
             drawingMgr.rawKeyReleased(keyevent)
-
+    def setDubMode(self,aFlag) :
+        d = self._drawingMgr()
+        if d: d.setDubMode(aFlag)
+            
 ##@brief A point event behaviour manager.
 #@ingroup DrawingEvent
 #

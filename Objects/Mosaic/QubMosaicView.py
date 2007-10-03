@@ -7,9 +7,10 @@ from Qub.Widget.QubView import QubView
 from Qub.Objects.QubCanvasViewBase import QubCanvasViewBase
 
 class _MosaicCanvas(QubCanvasViewBase) :
-    def __init__(self,*args,**keys) :
-        QubCanvasViewBase.__init__(self,*args,**keys)
-
+    def __init__(self,parent,*args,**keys) :
+        QubCanvasViewBase.__init__(self,parent,*args,**keys)
+        self.__cnt = parent
+        
     def setZoom(self,zoomX,zoomY,*args) :
         oldZoomx,oldZoomy = self._matrix.m11(),self._matrix.m22()
         oldDx,oldDy = self._matrix.dx() / float(oldZoomx),self._matrix.dy() / float(oldZoomy)
@@ -20,6 +21,26 @@ class _MosaicCanvas(QubCanvasViewBase) :
         self._cvs.resize(cWidth * zoomX,cHeight * zoomY)
         self._update()
 
+    ##@brief Change the scroll bar policy
+    #@param mode accepted string values:
+    # -# <b>"Auto"</b>: Scrollbars are shown if needed
+    # -# <b>"AlwaysOff"</b>: Scrollbars are never displayed
+    # -# <b>"Fit2Screen"</b>: Displayed mosaic size follow CanvasView size 
+    #                       keeping data mosaic ratio
+    # -# <b>"FillScreen"</b>: Displayed mosaic size is CanvasView size without 
+    #                       keeping data mosaic ratio
+    def setScrollbarMode(self,mode) :
+        if mode in ["Auto", "AlwaysOff", "Fit2Screen", "FillScreen"]:
+            self._scrollMode = mode
+            if mode == "Auto":
+                self.setHScrollBarMode(self.Auto)
+                self.setVScrollBarMode(self.Auto)
+
+            elif mode == "AlwaysOff" or mode == "Fit2Screen" or mode == "FillScreen":
+                self.setHScrollBarMode(self.AlwaysOff)
+                self.setVScrollBarMode(self.AlwaysOff)
+                self.__cnt.refresh()
+                
 class QubMosaicView(QubView) :
     def __init__(self,parent=None, name=None, actions=None):
         QubView.__init__(self, parent, name, 0)
@@ -73,7 +94,7 @@ class QubMosaicView(QubView) :
         imagesDisplay = []
         for imageRef in self.__mosaicImage :
             image = imageRef()
-            if image and image.isShown():
+            if image and image.image() and image.isShown():
                 #Calc top left corner position
                 try:
                     xSize,ySize = image.calibration()
@@ -109,12 +130,33 @@ class QubMosaicView(QubView) :
                 imagesDisplay.append((image.layer(),xPos,yPos,width,height,drawingManager))
 
             boundingRect = qt.QRect()
+            allRect = qt.QRect()
             for layer,x,y,width,height,drawingManager in imagesDisplay :
                 drawingManager.setRect(x - self.__xOffset,y - self.__yOffSet,
                                        width,height)
                 boundingRect = boundingRect.unite(drawingManager.boundingRect())
                 drawingManager.setZ(layer)
+                allRect = allRect.unite(drawingManager.rect())
 
             view = self.view()
             view.canvas().resize(boundingRect.width(),boundingRect.height())
-            view.canvas().update()
+
+            scrollMode = view.scrollbarMode()
+            if scrollMode == "Fit2Screen" or scrollMode == "FillScreen" :
+                vp = view.viewport()
+                viewWidth,viewHeight = vp.width(),vp.height()
+                zoomX = float(viewWidth) / allRect.width()
+                zoomY = float(viewHeight) / allRect.height()
+
+                matrix = view.matrix()
+                oldZoomX = matrix.m11()
+                oldZoomY = matrix.m22()
+
+                if scrollMode == "Fit2Screen" :
+                    zoom = min(zoomX,zoomY)
+                    if abs(oldZoomX - zoom) > 1e-3 or abs(oldZoomY - zoom) > 1e-3 :
+                        view.setZoom(zoom,zoom)
+                elif scrollMode == "FillScreen" :
+                    if abs(oldZoomX - zoomX) > 1e-3 or abs(oldZoomY - zoomY) > 1e-3:
+                        view.setZoom(zoomX,zoomY)
+        view.canvas().update()

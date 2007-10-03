@@ -6,7 +6,7 @@ from Qub.Objects.QubDrawingCanvasTools import QubCanvasPixmap
 def _mosaicViewRefresh(func) :
     def c(className,*args,**keys) :
         retVal = func(className,*args,**keys)
-        if className.mosaicView is not None:
+        if className.mosaicView is not None and className.isShown():
             className.mosaicView.refresh()
         return retVal
     return c
@@ -23,6 +23,7 @@ class QubMosaicImage :
         self.__drawingManager = None
         self.__layer = layer
         self.__isShown = False
+        self.__lastImageSize = None
         
     def __del__(self) :
         self.__isShown = False
@@ -35,6 +36,12 @@ class QubMosaicImage :
         self.__image = image
         if self.__drawingManager is not None:
             self.__drawingManager.setImage(image)
+
+        if self.__lastImageSize is None or \
+           self.__lastImageSize[0] != image.width() or self.__lastImageSize[1] != image.height() :
+            self.__lastImageSize = image.width(),image.height()
+            if self.mosaicView is not None and self.isShown() :
+                self.mosaicView.refresh()
 
     def image(self) :
         return self.__image

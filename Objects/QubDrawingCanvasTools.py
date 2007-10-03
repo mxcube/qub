@@ -460,6 +460,11 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
         self.update()
         canvas = self.canvas()
         if canvas: canvas.update()
+
+    def hide(self) :
+        qtcanvas.QCanvasRectangle.hide(self)
+        canvas = self.canvas()
+        if canvas: canvas.update()
         
     def setScrollView(self,scrollView) :
         self.__scrollView = scrollView
@@ -478,14 +483,18 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
                 viewRect = qt.QRect(xOri,yOri,viewSizeX,viewSizeY)
                 boundingBox = viewRect.intersect(self.boundingRect())
 
-                if boundingBox.isNull(): return # Nothing to do rectangle is not in the view space
+                if boundingBox.isNull():
+                    print 'Nothing to do rectangle is not in the view space'
+                    return # Nothing to do rectangle is not in the view space
 
                 boundingBox.moveBy(-self.x(),-self.y())
                 imageWidth,imageHeight = self.__image.width(),self.__image.height()
                 xOriPixmapCpy,yOriPixmapCpy = boundingBox.x(),boundingBox.y()
                 scaleWidth,scaleHeight = boundingBox.width(),boundingBox.height()
-                matrix = qt.QWMatrix(float(imageWidth) / self.width(),0,0,
-                                     float(imageHeight) / self.height(),0,0)
+                try:
+                    matrix = qt.QWMatrix(float(imageWidth) / self.width(),0,0,
+                                         float(imageHeight) / self.height(),0,0)
+                except ZeroDivisionError: return
                 boundingBox = matrix.map(boundingBox)
                 image = self.__image.copy(boundingBox)
             else:

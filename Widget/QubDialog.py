@@ -86,12 +86,16 @@ class QubMeasureListDialog(qt.QDialog):
     #@see QCanvas
     #@see QWMatrix
     #@see Qub::Objects::QubEventMgr::QubEventMgr
-    def __init__(self,*args,**keys) :
-        qt.QDialog.__init__(self,*args)
+    def __init__(self,parent = None,name = 'MeasureWindow',
+                 canvas = None,matrix = None,
+                 eventMgr = None,drawingObjectLayer = None,**keys) :
+        qt.QDialog.__init__(self,parent,name)
 
-        self.__canvas = keys.get('canvas',None)
-        self.__matrix = keys.get('matrix',None)
-        self.__eventMgr = keys.get('eventMgr',None)
+        self.__canvas = canvas
+        self.__matrix = matrix
+        self.__eventMgr = eventMgr
+        self.__drawingObjectLayer = drawingObjectLayer
+        
         ## Description tools table
         # (name,DrawingManager,DrawingObject,end draw callback)
         self.__tools = [('point',QubPointDrawingMgr,QubCanvasTarget,self.__endPointDrawing),
@@ -104,10 +108,6 @@ class QubMeasureListDialog(qt.QDialog):
         self.__lastdrawingMgr = None
         self.__mesID = 0
         
-        if len(args) < 2:
-            self.setName("MeasureWindow")
-
-
         MeasureWindowLayout = qt.QVBoxLayout(self,11,6,"MeasureWindowLayout")
 
         layout2 = qt.QHBoxLayout(None,0,6,"layout2")
@@ -178,7 +178,6 @@ class QubMeasureListDialog(qt.QDialog):
     def __tr(self,s,c = None):
         return qt.qApp.translate("MeasureWindow",s,c)
 
-    ##
     def __createPopMenu(self,parent) :
         popMenu = qt.QPopupMenu(parent)
 
@@ -194,11 +193,10 @@ class QubMeasureListDialog(qt.QDialog):
         self.__measureTool.setText(self.__tools[self.__ToolIdSelected][0])
         
     def __startMeasure(self) :
-        try :
+        try:
             if self.__lastdrawingMgr is not None :
                 self.__lastdrawingMgr.stopDrawing()
             self.__lastdrawingMgr = self.__tools[self.__ToolIdSelected][1](self.__canvas,self.__matrix)
-            
             if self.__ToolIdSelected == 0:
                 self.__lastdrawingMgr.setDrawingEvent(QubMoveNPressed1Point)
             self.__lastdrawingMgr.setAutoDisconnectEvent(True)
@@ -212,6 +210,9 @@ class QubMeasureListDialog(qt.QDialog):
             self.__lastdrawingMgr.setColor(self.__defaultColor)
             self.__lastdrawingMgr.setActionInfo('Drawing Mesure %d' % self.__mesID)
             self.__mesID += 1
+
+            if self.__drawingObjectLayer:
+                self.__lastdrawingMgr.setZ(self.__drawingObjectLayer)
         except:
             import traceback
             traceback.print_exc()

@@ -439,10 +439,11 @@ class QubImage2PixmapPlug :
         if self._mgr :
             mgr = self._mgr()
             if mgr:
-                zoomedImage,fullimage = mgr.getLastImages()
-                pixmap = self.zoom().getPixmapFrom(zoomedImage)
-                self.setPixmap(pixmap,fullimage)
-        
+                try:
+                    zoomedImage,fullimage = mgr.getLastImages()
+                    pixmap = self.zoom().getPixmapFrom(zoomedImage)
+                    self.setPixmap(pixmap,fullimage)
+                except TypeError: pass
 #Private
 
 

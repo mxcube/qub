@@ -127,6 +127,9 @@ class QubCanvasViewBase(qtcanvas.QCanvasView,QubEventMgr) :
     def matrix(self) :
         return self._matrix
 
+    def zoomValue(self) :
+        return self._matrix.m11(),self._matrix.m22()
+
     ##@brief get the default foreground color of the drawing vector
     def foregroundColor(self) :
         return self._foregroundColor
