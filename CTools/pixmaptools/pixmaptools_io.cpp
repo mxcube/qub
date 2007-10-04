@@ -158,8 +158,11 @@ void IO::putImage(QPixmap *dst, int dx, int dy, const QImage *src)
     {
       initXImage(src->width(), src->height());
       convertToXImage(*src);
+//       XShmPutImage(qt_xdisplay(), dst->handle(), qt_xget_temp_gc(qt_xscreen(),false), d->ximage,
+// 		   dx, dy, 0, 0, src->width(), src->height(), false);
       XShmPutImage(qt_xdisplay(), dst->handle(), qt_xget_temp_gc(qt_xscreen(),false), d->ximage,
-		   dx, dy, 0, 0, src->width(), src->height(), false);
+ 		   0,0,dx, dy, src->width(), src->height(), false);
+
       XSync(qt_xdisplay(), false);
       doneXImage();
     } 
