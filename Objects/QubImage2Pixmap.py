@@ -323,7 +323,7 @@ class QubImage2PixmapPlug :
                 cv.cvSetImageROI(imageOpencv,cv.cvRect(self.__ox,self.__oy,self.__width,self.__height))
             aLock.unLock()              # UNLOCK
 
-            destImage = cv.cvCreateImage(cv.cvSize(width,height),imageOpencv.depth,imageOpencv.nChannels)
+            destImage = cv.cvCreateImage(cv.cvSize(width,max(1,height)),imageOpencv.depth,imageOpencv.nChannels)
 
             cv.cvResize(imageOpencv,destImage,self.__interpolationInUse)
 

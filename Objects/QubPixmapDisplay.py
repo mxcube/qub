@@ -60,6 +60,9 @@ class QubPixmapDisplay(QubCanvasViewBase) :
                 return plug.zoom()
         
         raise StandardError("QubPixmapDisplay object not plugged")
+
+    def zoomValue(self) :
+        return self.zoom().zoom()
     ##@brief set the horizontal and vertical zoom
     #
     #@param zoomx the values of the horizontal zoom ie: zoomx == 1 == 100%

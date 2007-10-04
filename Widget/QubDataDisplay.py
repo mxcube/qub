@@ -95,7 +95,6 @@ class QubDataDisplay(qt.QWidget) :
             ####### MOUSE POSITION AND DATA VALUE #######
         self.__posaction = 1
         self.__updateAction = None
-        dataArray,captionName = self.setDataSource(data)
                      ####### PRINT ACTION #######
         if not noAction and not noToolbarAction:
             printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
@@ -202,6 +201,8 @@ class QubDataDisplay(qt.QWidget) :
         except:
             import traceback
             traceback.print_exc()
+
+        dataArray,captionName = self.setDataSource(data)
         self.__setCaption(captionName)
         if dataArray is not None :
             self.__rawData2Image.putRawData(dataArray)
@@ -260,9 +261,9 @@ class QubDataDisplay(qt.QWidget) :
             try:
                 specv,shmname = data.split(':')
                 specVersions = getSpecVersions()
-                self.__source = specVersions.getObjects(specv)
-                if self.__source :
-                    self.__specShm = self.__source.getObjects(shmname)
+                source = specVersions.getObjects(specv)
+                if source :
+                    self.__specShm = source.getObjects(shmname)
                     if self.__specShm is None :
                         raise StandardError("There is no shm array %s" % data)
                     
@@ -286,6 +287,7 @@ class QubDataDisplay(qt.QWidget) :
                     self.__updateAction.setState(True)
 
                     captionName = 'Spec shm : %s' % data
+                    self.tryReconnect = None
                 else:
                     raise StandardError("Can't find the spec version %s" % specv)
             except ValueError:          # MAY BE a FILE
@@ -414,11 +416,12 @@ class _ShmDataPlug(QubPlug) :
         self.__cnt = weakref.ref(cnt)
         self.__updateToggle = weakref.ref(updateToggle)
         self.__refreshFlag = True
-        
+
     def setDataReceiver(self,dataReceiver) :
         self.__dataReceiver = weakref.ref(dataReceiver)
 
     def update(self,specVersion,specShm,dataArray) :
+        if dataArray is None: return
         aEndFlag = False
         if self.__refreshFlag:
             dataReceiver = self.__dataReceiver()
@@ -438,8 +441,38 @@ class _ShmDataPlug(QubPlug) :
         aEndFlag = False
         if self.__specShm.name() in shmObjects :
             aEndFlag = True
-            try: self.__updateToggle().delToolWidget()
-            except: pass
+            cnt = self.__cnt()
+            if cnt:
+                cnt._QubDataDisplay__dataPlug = None
+                cnt._QubDataDisplay__specShm = None
+                cnt._QubDataDisplay__mainView.delAction([cnt._QubDataDisplay__updateAction])
+                cnt._QubDataDisplay__updateAction = None
+                class TryReconnect:
+                    def __init__(self,cnt,specSourceName) : 
+                        cnt.tryReconnect = self
+                        self.__specSourceName = specSourceName
+                        self.__cnt = weakref.ref(cnt)
+
+                        self.__timer = qt.QTimer(cnt)
+                        qt.QObject.connect(self.__timer,qt.SIGNAL('timeout()'),self.__tryReconnect)
+                        self.__timer.start(1000)
+                    def __del__(self) :
+                        self.__timer.stop()
+                        
+                    def __tryReconnect(self) :
+                        cnt = self.__cnt()
+                        if cnt:
+                            try:
+                                cnt.setDataSource(self.__specSourceName)
+                            except: return
+
+                        self.__timer.stop()
+            else:
+                try: self.__updateToggle().delToolWidget()
+                except: pass
+
+            TryReconnect(cnt,'%s:%s' % (specVersion.name(),self.__specShm.name()))
+                            
         return aEndFlag
 
 class _MainViewPlug(QubImage2PixmapPlug) :
@@ -464,7 +497,7 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
         
     def setImage(self,imagezoomed,fullimage) :
         dataDisplay = self.__dataDisplay()
-        if dataDisplay:
+        if dataDisplay and not imagezoomed.isNull() and not fullimage.isNull():
             iconPixmap = qt.QPixmap(imagezoomed.smoothScale(22,22,fullimage.ScaleMin))
             dataDisplay.setIcon(iconPixmap)
             if dataDisplay.quickScrollAction :
@@ -472,8 +505,9 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
             
         if self.__colormapDialog:
             fulldata,resizedData = self.data()
-            self.__colormapDialog.setData(resizedData)
-            self.__dataPositionValueAction.setData(resizedData)
+            if resizedData.any() :
+                self.__colormapDialog.setData(resizedData)
+                self.__dataPositionValueAction.setData(resizedData)
         receiver = self.__receiver()
         if receiver:
             receiver.putImage(imagezoomed,fullimage)

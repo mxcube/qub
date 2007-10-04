@@ -56,13 +56,13 @@ class _ShmCheckUpDate(QubPlug) :
 
     def update(self,specVersion,specShm,dataArray) :
         item = self.__item()
-        if item:
+        if item and dataArray is not None:
             item.setText(1,'%d,%d' % dataArray.shape)
             try:
                 item.setText(2,_TypeCode[dataArray.dtype])
             except KeyError:
                 item.setText(2,'?')
-        return not item
+        return not item or dataArray is None
             
 class QubSpecShmTree(qt.QListView) :
     def __init__(self,parent = None,name = "",f = 0):
@@ -75,7 +75,17 @@ class QubSpecShmTree(qt.QListView) :
         specSource.plug(_SpecVersionPlug(self))
         qt.QObject.connect(self,qt.SIGNAL('doubleClicked (QListViewItem *,const QPoint &,int )'),
                            self.__dbclickedCBK)
+        self.init()
 
+        self.__reinitTimer = qt.QTimer(self)
+        qt.QObject.connect(self.__reinitTimer,qt.SIGNAL('timeout()'),self.init)
+        self.__reinitTimer.start(10000)
+        
+    def init(self) :
+        for item in self.__getIterator() :
+            self.takeItem(item)
+
+        specSource = getSpecVersions()
         for specversion_name in sps.getspeclist() :
             self.newSpecVersion(specSource,specversion_name)
             specVersion = specSource.getObjects(specversion_name)
