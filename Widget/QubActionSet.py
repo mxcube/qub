@@ -1273,7 +1273,8 @@ class QubZoomListAction(QubAction):
             """        
             try:
                 if self._actionZoomMode is not None :
-                    self._actionZoomMode.setState(False)
+                    actionZoomMode = self._actionZoomMode()
+                    if actionZoomMode: self._actionZoomMode.setState(False)
                 self._applyZoom(self._zoomValList[index])
                 self.__lastIdSelected = index
             except :
@@ -1328,7 +1329,7 @@ class QubZoomListAction(QubAction):
     def setActionZoomMode(self,anActionZoomMode) :
         """link Action zoom list with ActionZoomMod (QubZoomAction)
         """
-        self._actionZoomMode = anActionZoomMode
+        self._actionZoomMode = weakref.ref(anActionZoomMode)
 
 ###############################################################################
 ####################              QubZoomAction            ####################
@@ -1439,25 +1440,28 @@ class QubZoomAction(QubAction):
                 and link update zoom value to the view resize event
                 """
                 if self._listAction is not None:
-                                       
-                    if self._selName == "Fit2Screen":
-                        if self._sigConnected == False:
-                            self.connect(qubImage,
-                                         qt.PYSIGNAL("ContentViewChanged"),
-                                         self._updateZoomValue)
-                            self._sigConnected = True
-                    else:
-                        if self._sigConnected == True:
-                            self.disconnect(qubImage,
-                                            qt.PYSIGNAL("ContentViewChanged"),
-                                            self._updateZoomValue)
-                            self._sigConnected = False
+                    listAction = self._listAction()
+                    if listAction:
+                        if self._selName == "Fit2Screen":
+                            if self._sigConnected == False:
+                                self.connect(qubImage,
+                                             qt.PYSIGNAL("ContentViewChanged"),
+                                             self._updateZoomValue)
+                                self._sigConnected = True
+                        else:
+                            if self._sigConnected == True:
+                                self.disconnect(qubImage,
+                                                qt.PYSIGNAL("ContentViewChanged"),
+                                                self._updateZoomValue)
+                                self._sigConnected = False
             else:
                 qubImage.setScrollbarMode("Auto")
                 if self._listAction is not None :
-                    zoom = self._listAction.zoom()
-                    qubImage.setZoom(zoom,zoom,self._keepROI)
-                    self._updateZoomValue()
+                    listAction = self._listAction()
+                    if listAction:
+                        zoom = listAction.zoom()
+                        qubImage.setZoom(zoom,zoom,self._keepROI)
+                        self._updateZoomValue()
                     
                 if self._sigConnected == True:
                     self.disconnect(qubImage,
@@ -1484,7 +1488,7 @@ class QubZoomAction(QubAction):
             self.setState(1)
         
     def setList(self, listAction):
-        self._listAction = listAction
+        self._listAction = weakref.ref(listAction)
         
     def _updateZoomValue(self,*args):
         """
@@ -1493,13 +1497,15 @@ class QubZoomAction(QubAction):
         """
         qubImage = self._qubImage and self._qubImage() or None
         if qubImage and self._listAction is not None:
-            (zoomx, zoomy) = qubImage.zoomValue()
-            if zoomx == zoomy:
-                strVal = "%d%%"%(int(zoomx*100))
-            else:
-                strVal = "???"
-                    
-            self._listAction.writeStrValue(strVal)
+            listAction = self._listAction()
+            if listAction:
+                (zoomx, zoomy) = qubImage.zoomValue()
+                if zoomx == zoomy:
+                    strVal = "%d%%"%(int(zoomx*100))
+                else:
+                    strVal = "???"
+
+                self._listAction.writeStrValue(strVal)
         
 
 
@@ -1628,9 +1634,10 @@ class QubPositionAction(QubImageAction):
         class _MouseFollow(QubDrawingEvent) :
             def __init__(self,cnt) :
                 QubDrawingEvent.__init__(self,False)
-                self.__cnt = cnt
+                self.__cnt = weakref.ref(cnt)
             def mouseMove(self,x,y) :
-                self.__cnt.mouseFollow(x,y)
+                cnt = self.__cnt()
+                if cnt: cnt.mouseFollow(x,y)
         self.__event = _MouseFollow(self)
         view.addDrawingEvent(self.__event)
         

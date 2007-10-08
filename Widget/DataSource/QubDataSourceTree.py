@@ -173,7 +173,7 @@ class QubDataSourceTree(qt.QListView) :
                     c = pluginsClass()
                     try:
                         c.initPlugin(dataDisplay)
-                        c.setDataGroup(dataGroup)
+                        c.setDataGroup(dataGroup,QubDataSourcePlugin.interface(self))
                     except NotImplementedError:
                         import traceback
                         traceback.print_exc()

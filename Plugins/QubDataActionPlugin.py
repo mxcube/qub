@@ -22,7 +22,8 @@ class QubDataActionPlugin :
     #
     #Group is usefull for series
     #@param group is a Qub::Data::Class::QubDataClass::QubDataGroup
-    def setDataGroup(self,group) :
+    #@param interface a Qub::Plugins::QubDataSourcePlugin:QubDataSourcePlugin::interface
+    def setDataGroup(self,group,interface) :
         pass
     ##@brief get information about the plugin
     #

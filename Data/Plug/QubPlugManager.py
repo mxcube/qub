@@ -25,7 +25,7 @@ class QubPlugManager :
         Plug object connection
         """
         if(isinstance(aQubPlug,QubPlug)) :
-            self.__plugs.append(aQubPlug)
+            self.__plugs.append(weakref.ref(aQubPlug))
             aQubPlug.setPlugMgr(self)
             if(aQubPlug.isActive()) :
                 self.__pollplug.start(aQubPlug.timeout())
@@ -38,7 +38,7 @@ class QubPlugManager :
         """
         if(isinstance(aQubPlug,QubPlug)) :
             try:
-                self.__plugs.remove(aQubPlug)
+                self.__plugs.remove(weakref.ref(aQubPlug))
             except ValueError:
                 return
             aQubPlug.rmPlugMgr(self)
@@ -69,8 +69,9 @@ class QubPlugManager :
         timeout = self.__timeout
         if not timeout :
             timeout = 1
-        for plug in self.__plugs :
-            if not plug.isEnd() :
+        for plugRef in self.__plugs :
+            plug = plugRef()
+            if plug and not plug.isEnd() :
                 if plug.isActive() :
                     nbActivePlug += 1
                     plug.timeLeft -= timeout
@@ -84,7 +85,7 @@ class QubPlugManager :
                     if(timerInterval > plug.timeLeft) :
                         timerInterval = plug.timeLeft
             else:
-                try: self.__plugs.remove(plug)
+                try: self.__plugs.remove(plugRef)
                 except: pass
 
 
@@ -100,11 +101,12 @@ class QubPlugManager :
         """
         Methode called when container is destroy
         """
-        for plug in self.__plugs :
-            if not plug.isEnd() :
+        for plugRef in self.__plugs :
+            plug = plugRef()
+            if plug and not plug.isEnd() :
                 if plug.containerDestroy(*args) :
                     plug.rmPlugMgr(self)
-                    self.__plugs.remove(plug)
+                    self.__plugs.remove(plugRef)
         aEndFlag = not len(self.__plugs)
         if aEndFlag :
             self.__pollplug.stop()
@@ -114,11 +116,12 @@ class QubPlugManager :
         """
         Methode called when container is object of a container is destroy
         """
-        for plug in self.__plugs :
-            if not plug.isEnd() :
+        for plugRef in self.__plugs :
+            plug = plugRef()
+            if plug and not plug.isEnd() :
                 if plug.destroy(*args) :
                     plug.rmPlugMgr(self)
-                    self.__plugs.remove(plug)
+                    self.__plugs.remove(plugRef)
         aEndFlag = not len(self.__plugs)
         if(aEndFlag) :
             self.__pollplug.stop()
@@ -129,13 +132,14 @@ class QubPlugManager :
         Methode called when new container object may be available
         """
         nbActivePlug = 0
-        for plug in self.__plugs :
-            if not plug.isEnd() :
+        for plugRef in self.__plugs :
+            plug = plugRef()
+            if plug and not plug.isEnd() :
                 if plug.isActive() :
                     nbActivePlug += 1
                     plug.newContainerObject(*args)
             else :
-                self.__plugs.remove(plug)
+                self.__plugs.remove(plugRef)
 
         nbPlug = len(self.__plugs)
         if not nbPlug or not nbActivePlug:
