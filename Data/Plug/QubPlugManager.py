@@ -84,11 +84,8 @@ class QubPlugManager :
 
                     if(timerInterval > plug.timeLeft) :
                         timerInterval = plug.timeLeft
-            else:
-                try: self.__plugs.remove(plugRef)
-                except: pass
-
-
+        self.__plugs = [plug for plug in self.__plugs if (plug and plug()) and not plug().isEnd()]
+        
         nbPlug = len(self.__plugs)
         if not nbPlug or not nbActivePlug:
             self.__pollplug.stop()
