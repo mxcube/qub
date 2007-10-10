@@ -208,10 +208,6 @@ class QubDataDisplay(qt.QWidget) :
             self.__rawData2Image.putRawData(dataArray)
             self.setData4Action(dataArray)
 
-    def __del__(self) :
-        if self.__dataPlug:
-            self.__specShm.unplug(self.__dataPlug)
-        
     ##@brief get the drawing view for QubDrawingManager Object
     #@return a QubPixmapDisplay
     def getDrawing(self) :

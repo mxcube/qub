@@ -923,9 +923,10 @@ class QubBrightnessContrastDialog(qt.QDialog):
 #
 #This class can also drive a scrollView
 class QubQuickView(qt.QLabel) :
-    def __init__(self,parent = None,name = "Quick view",**keys) :
-        qt.QLabel.__init__(self,parent,name,
-                           qt.Qt.WStyle_StaysOnTop | qt.Qt.WStyle_Customize | qt.Qt.WStyle_NoBorder | qt.Qt.WStyle_Tool | qt.Qt.WX11BypassWM)
+    def __init__(self,parent = None,name = "Quick view",autoclose = False,**keys) :
+        flags = qt.Qt.WStyle_StaysOnTop | qt.Qt.WStyle_Customize | qt.Qt.WStyle_NoBorder | qt.Qt.WStyle_Tool | qt.Qt.WX11BypassWM
+        if autoclose: flags |= qt.Qt.WDestructiveClose
+        qt.QLabel.__init__(self,parent,name,flags)
         self.__width = 128
         self.__height = 128
         self.__pixmap = None
@@ -1002,7 +1003,7 @@ class QubQuickView(qt.QLabel) :
         if self.__popUpMode :
             self.__popUpMode = False
             self.releaseMouse ()
-            self.hide()
+            self.close()
 
     def mouseMoveEvent(self,mouseMoveEvent) :
         if mouseMoveEvent.state() == qt.Qt.LeftButton:

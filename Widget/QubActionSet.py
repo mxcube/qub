@@ -465,7 +465,7 @@ class QubLineDataSelectionAction(QubToggleImageAction):
         
     ##@brief set the data array
     def setData(self,data) :
-        self._data = data
+        self._data = data is not None and weakref.ref(data) or None
         self._refreshIdle()
 
     ##@brief set Data Zoom
@@ -495,82 +495,86 @@ class QubLineDataSelectionAction(QubToggleImageAction):
 
     def _refreshIdle(self) :
         if not self._idle.isActive() :
-            if self._points and self._data is not None:
-                self._graph.show()
+            if self._data:
+                data = self._data()
+                if self._points and data is not None:
+                    self._graph.show()
             self._idle.start(0)
 
     def _refreshGraph(self) :
         self._idle.stop()
         if not self._graph.isShown() : return
 
-        if self._points and self._data is not None:
-            if self._zoom: xzoom,yzoom = self._zoom.zoom()
-            else: xzoom,yzoom = 1,1
-            
-            startx,starty,endx,endy = [round(zoom * pos) / zoom for zoom,pos in zip ([xzoom,yzoom,xzoom,yzoom],self._points)]
-            distx,disty = endx - startx,endy - starty
-            nbLine = self._lineWidth
+        if self._data:
+            data = self._data()
+            if self._points and data is not None:
+                if self._zoom: xzoom,yzoom = self._zoom.zoom()
+                else: xzoom,yzoom = 1,1
 
-            #ANGLE CALC WITH SCALAR
-            X,Y = (endx - startx,endy - starty)
-            dist = math.sqrt(X ** 2 + Y ** 2)
-            try:
-                angle = math.acos(X / dist)
-            except ZeroDivisionError:
-                angle = 0
-            if endy - starty < 0 : angle = -angle
+                startx,starty,endx,endy = [round(zoom * pos) / zoom for zoom,pos in zip ([xzoom,yzoom,xzoom,yzoom],self._points)]
+                distx,disty = endx - startx,endy - starty
+                nbLine = self._lineWidth
 
-            if abs(distx) > abs(disty) :
-                if self._average and self._zoom :
-                    _,yzoom = self._zoom.zoom()
-                    if yzoom < 1. :
-                        nbLine = (1 / yzoom) * self._lineWidth
-                ys = range(int(math.ceil(starty)),int(math.floor(starty + nbLine)),1)
-                if int(starty) != starty: ys.insert(0,starty)
-                if int(starty + nbLine) != (starty + nbLine): ys.append(starty + nbLine)
-                xs = numpy.arange(startx,startx + int(math.ceil(math.sqrt(distx ** 2 + disty ** 2))),1)
-                abscis = xs
-                lines = numpy.array([[x,y] for y in ys for x in xs])
-                self._graph.setAxisTitle(self._graph.xBottom,'X value')
-                self._graph.setAxisTitle(self._graph.xTop,'Y value')
-                self._graph.setAxisScale(self._graph.xTop,starty,endy)
-            else:
-                if self._average and self._zoom:
-                    xzoom,_ = self._zoom.zoom()
-                    if xzoom < 1.:
-                        nbLine = (1 / xzoom) * self._lineWidth
-                xs = range(int(math.ceil(startx)),int(math.floor(startx + nbLine)),1)
-                if int(startx) != startx: xs.insert(0,startx)
-                if int(startx + nbLine) != (startx + nbLine): xs.append(startx + nbLine)
-                ys = numpy.arange(starty,starty + int(math.ceil(math.sqrt(distx ** 2 + disty ** 2))),1)
-                angle -= math.pi / 2
-                abscis = ys
-                lines = numpy.array([[x,y] for x in xs for y in ys])
-                self._graph.setAxisTitle(self._graph.xBottom,'Y value')
-                self._graph.setAxisTitle(self._graph.xTop,'X value')
-                self._graph.setAxisScale(self._graph.xTop,startx,endx)
+                #ANGLE CALC WITH SCALAR
+                X,Y = (endx - startx,endy - starty)
+                dist = math.sqrt(X ** 2 + Y ** 2)
+                try:
+                    angle = math.acos(X / dist)
+                except ZeroDivisionError:
+                    angle = 0
+                if endy - starty < 0 : angle = -angle
 
-            rotation = numpy.matrix([[math.cos(-angle),-math.sin(-angle)],
-                                     [math.sin(-angle),math.cos(-angle)]])
-            translation = numpy.array([startx,starty])
+                if abs(distx) > abs(disty) :
+                    if self._average and self._zoom :
+                        _,yzoom = self._zoom.zoom()
+                        if yzoom < 1. :
+                            nbLine = (1 / yzoom) * self._lineWidth
+                    ys = range(int(math.ceil(starty)),int(math.floor(starty + nbLine)),1)
+                    if int(starty) != starty: ys.insert(0,starty)
+                    if int(starty + nbLine) != (starty + nbLine): ys.append(starty + nbLine)
+                    xs = numpy.arange(startx,startx + int(math.ceil(math.sqrt(distx ** 2 + disty ** 2))),1)
+                    abscis = xs
+                    lines = numpy.array([[x,y] for y in ys for x in xs])
+                    self._graph.setAxisTitle(self._graph.xBottom,'X value')
+                    self._graph.setAxisTitle(self._graph.xTop,'Y value')
+                    self._graph.setAxisScale(self._graph.xTop,starty,endy)
+                else:
+                    if self._average and self._zoom:
+                        xzoom,_ = self._zoom.zoom()
+                        if xzoom < 1.:
+                            nbLine = (1 / xzoom) * self._lineWidth
+                    xs = range(int(math.ceil(startx)),int(math.floor(startx + nbLine)),1)
+                    if int(startx) != startx: xs.insert(0,startx)
+                    if int(startx + nbLine) != (startx + nbLine): xs.append(startx + nbLine)
+                    ys = numpy.arange(starty,starty + int(math.ceil(math.sqrt(distx ** 2 + disty ** 2))),1)
+                    angle -= math.pi / 2
+                    abscis = ys
+                    lines = numpy.array([[x,y] for x in xs for y in ys])
+                    self._graph.setAxisTitle(self._graph.xBottom,'Y value')
+                    self._graph.setAxisTitle(self._graph.xTop,'X value')
+                    self._graph.setAxisScale(self._graph.xTop,startx,endx)
 
-            try:
-                lines = lines - translation
-                lines = lines * rotation
-                lines = lines + translation
-            except ValueError: return
+                rotation = numpy.matrix([[math.cos(-angle),-math.sin(-angle)],
+                                         [math.sin(-angle),math.cos(-angle)]])
+                translation = numpy.array([startx,starty])
 
-            inter_result = datafuncs.interpol([range(self._data.shape[1]),range(self._data.shape[0])],self._data.T,lines,0)
-            inter_result.shape = inter_result.shape[0] / len(abscis),len(abscis)
-                        
-            average = numpy.zeros(len(inter_result[0]))
-            for line in inter_result:
-                average = average + line
-            average = average / len(inter_result)
+                try:
+                    lines = lines - translation
+                    lines = lines * rotation
+                    lines = lines + translation
+                except ValueError: return
 
-            self._curve.setData(abscis,average)
-            self._graph.replot()
-            self._graph.setTitle('%s X(%d,%d) Y(%d,%d)' % (self._graphLegend,startx,endx,starty,endy))
+                inter_result = datafuncs.interpol([range(data.shape[1]),range(data.shape[0])],data.T,lines,0)
+                inter_result.shape = inter_result.shape[0] / len(abscis),len(abscis)
+
+                average = numpy.zeros(len(inter_result[0]))
+                for line in inter_result:
+                    average = average + line
+                average = average / len(inter_result)
+
+                self._curve.setData(abscis,average)
+                self._graph.replot()
+                self._graph.setTitle('%s X(%d,%d) Y(%d,%d)' % (self._graphLegend,startx,endx,starty,endy))
 
     def __averageCBK(self,aFlag) :
         self._average = aFlag
@@ -652,7 +656,7 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
          self._captionPrefix = captionPrefix
     ##@brief set the data array
     def setData(self,data) :
-        self._data = data
+        self._data = data is not None and weakref.ref(data) or None
         self._refreshIdle()
     ##@brief set Data Zoom
     def setDataZoom(self,zoom) :
@@ -683,14 +687,15 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
 
         
     def __rawKeyPressed(self,keyevent) :
-        if self._data is not None:
+        data = self._data and self._data() is not None or None
+        if data is not None:
             key = keyevent.key()
             if key == qt.Qt.Key_Up :
                 self._lineId -= 1
                 if self._lineId <= 0: self._lineId = 0
             elif key == qt.Qt.Key_Down :
                 self._lineId += 1
-                nbLine,_ = self._data.shape
+                nbLine,_ = data.shape
                 if self._lineId > nbLine: self._lineId = nbLine
             self._line.setPoint(self._columnId,self._lineId)
             canvas = self._line.canvas()[0]
@@ -700,7 +705,8 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
     def _refreshIdle(self) :
         if not self._idle.isActive() :
             if self._columnId >= 0 and self._lineId >= 0 and self._data is not None:
-                self._graph.show()
+                data = self._data()
+                if data is not None: self._graph.show()
             self._idle.start(0)
 
     def _refreshGraph(self) :
@@ -708,50 +714,52 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
         if not self._graph.isShown() : return
         
         if self._lineId >= 0 and self._data is not None:
-            nbLine,yzoom = self._lineWidth,1
-            if self._average and self._zoom :
-                _,yzoom = self._zoom.zoom()
-                if yzoom < 1.:
-                    nbLine = (1 / yzoom) * self._lineWidth
-            if self._zoom.isRoiZoom() :
-                ori,_,width,_ = self._zoom.roi()
-                data = self._data[:,ori:ori+width]
-            else:
-                ori = 0
-                data = self._data
-                
-            if int(nbLine) != nbLine:
-                 startPos = round(yzoom * self._lineId) / yzoom
-                 endPos = startPos + nbLine
-                 try :
-                     lines = [x for x in data[int(startPos):int(endPos) + 1]]
-                 except IndexError,err:
-                     return
-                 if lines:
-                     startFrac = math.ceil(startPos) - startPos
-                     lines[0] = lines[0] * startFrac
-                     endFrac = endPos - math.floor(endPos)
-                     lines[-1] = lines[-1] * endFrac
-                     caption = '(start,end lines : %.2f,%.2f)' % (startPos,endPos)
-            else:
-                 if nbLine > 1:
-                      caption = '(start,end lines : %d,%d)' % (self._lineId,self._lineId + nbLine - 1)
-                 else:
-                      caption = '(line : %d)' % (self._lineId)
-                 try :
-                     lines = [x for x in data[self._lineId:self._lineId + nbLine]]
-                 except IndexError,err:
-                     return
-            
-            if lines:
-                yVales = numpy.zeros(len(lines[0]))
-                for line in lines :
-                     yVales = yVales + line
-                yVales = yVales / nbLine
-                self._curve.setData(numpy.arange(ori,ori + len(yVales)),yVales)
-                self._graph.replot()
-                self._graph.setTitle('%s %s' % (self._graphLegend,caption))
-                self._graph.setCaption('%s %s' % (self._captionPrefix,caption))
+            rawdata = self._data()
+            if rawdata is not None:
+                nbLine,yzoom = self._lineWidth,1
+                if self._average and self._zoom :
+                    _,yzoom = self._zoom.zoom()
+                    if yzoom < 1.:
+                        nbLine = (1 / yzoom) * self._lineWidth
+                if self._zoom.isRoiZoom() :
+                    ori,_,width,_ = self._zoom.roi()
+                    data = rawdata[:,ori:ori+width]
+                else:
+                    ori = 0
+                    data = rawdata
+
+                if int(nbLine) != nbLine:
+                     startPos = round(yzoom * self._lineId) / yzoom
+                     endPos = startPos + nbLine
+                     try :
+                         lines = [x for x in data[int(startPos):int(endPos) + 1]]
+                     except IndexError,err:
+                         return
+                     if lines:
+                         startFrac = math.ceil(startPos) - startPos
+                         lines[0] = lines[0] * startFrac
+                         endFrac = endPos - math.floor(endPos)
+                         lines[-1] = lines[-1] * endFrac
+                         caption = '(start,end lines : %.2f,%.2f)' % (startPos,endPos)
+                else:
+                     if nbLine > 1:
+                          caption = '(start,end lines : %d,%d)' % (self._lineId,self._lineId + nbLine - 1)
+                     else:
+                          caption = '(line : %d)' % (self._lineId)
+                     try :
+                         lines = [x for x in data[self._lineId:self._lineId + nbLine]]
+                     except IndexError,err:
+                         return
+
+                if lines:
+                    yVales = numpy.zeros(len(lines[0]))
+                    for line in lines :
+                         yVales = yVales + line
+                    yVales = yVales / nbLine
+                    self._curve.setData(numpy.arange(ori,ori + len(yVales)),yVales)
+                    self._graph.replot()
+                    self._graph.setTitle('%s %s' % (self._graphLegend,caption))
+                    self._graph.setCaption('%s %s' % (self._captionPrefix,caption))
 
     def __averageCBK(self,aFlag) :
         self._average = aFlag
@@ -783,68 +791,71 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
          self._graph.setAxisTitle(self._graph.xBottom,'Y value')
 
      def __rawKeyPressed(self,keyevent) :
-         if self._data is not None:
-             key = keyevent.key()
-             if key == qt.Qt.Key_Left :
-                 self._columnId -= 1
-                 if self._columnId <= 0: self._columnId = 0
-             elif key == qt.Qt.Key_Right :
-                 self._columnId += 1
-                 _,nbColumn = self._data.shape
-                 if self._columnId > nbColumn: self._columnId = nbColumn
-             self._line.setPoint(self._columnId,self._lineId)
-             canvas = self._line.canvas()[0]
-             canvas.update()
-             self._refreshIdle()
+         if self._data:
+             data = self._data()
+             if data is not None:
+                 key = keyevent.key()
+                 if key == qt.Qt.Key_Left :
+                     self._columnId -= 1
+                     if self._columnId <= 0: self._columnId = 0
+                 elif key == qt.Qt.Key_Right :
+                     self._columnId += 1
+                     _,nbColumn = data.shape
+                     if self._columnId > nbColumn: self._columnId = nbColumn
+                 self._line.setPoint(self._columnId,self._lineId)
+                 canvas = self._line.canvas()[0]
+                 canvas.update()
+                 self._refreshIdle()
 
      def _refreshGraph(self) :
          self._idle.stop()
          if not self._graph.isShown() : return
-
-         if self._columnId >= 0 and self._data is not None:
-             nbCol,xzoom = self._lineWidth,1
-             if self._average and self._zoom :
-                 xzoom,_ = self._zoom.zoom()
-                 if xzoom < 1.:
-                     nbCol = (1 / xzoom) * self._lineWidth
-             if self._zoom.isRoiZoom() :
-                 _,ori,_,height = self._zoom.roi()
-                 data = self._data[ori:ori + height,:]
-             else:
-                 ori = 0
-                 data = self._data
-                 
-             if int(nbCol) != nbCol:
-                 startPos = round(xzoom * self._columnId) / xzoom
-                 endPos = startPos + nbCol
-                 try:
-                     columns = [x for x in data.T[int(startPos):int(endPos) + 1]]
-                 except IndexError,err:
-                     return
-                 if columns:
-                     startFrac = math.ceil(startPos) - startPos
-                     columns[0] = columns[0] * startFrac
-                     endFrac = endPos - math.floor(endPos)
-                     columns[-1] = columns[-1] * endFrac
-                     caption = '(start,end columns : %.2f,%.2f)' % (startPos,endPos)
-             else:
-                 if nbCol > 1:
-                     caption = '(start,end columns : %d,%d)' % (self._columnId,self._columnId + nbCol - 1)
+         if self._data:
+             rawdata = self._data()
+             if self._columnId >= 0 and rawdata is not None:
+                 nbCol,xzoom = self._lineWidth,1
+                 if self._average and self._zoom :
+                     xzoom,_ = self._zoom.zoom()
+                     if xzoom < 1.:
+                         nbCol = (1 / xzoom) * self._lineWidth
+                 if self._zoom.isRoiZoom() :
+                     _,ori,_,height = self._zoom.roi()
+                     data = rawdata[ori:ori + height,:]
                  else:
-                     caption = '(column : %d)' % (self._columnId)
-                 try:
-                     columns = [x for x in data.T[self._columnId:self._columnId + nbCol]]
-                 except IndexError,err:
-                     return
-             if columns:
-                 xVales = numpy.zeros(len(columns[0]))
-                 for column in columns :
-                     xVales = xVales + column
-                 xVales = xVales / nbCol
-                 self._curve.setData(numpy.arange(ori,ori + len(xVales)),xVales)
-                 self._graph.setTitle('%s %s' % (self._graphLegend,caption))
-                 self._graph.replot()
-                 self._graph.setCaption('%s %s' %(self._captionPrefix,caption))
+                     ori = 0
+                     data = rawdata
+
+                 if int(nbCol) != nbCol:
+                     startPos = round(xzoom * self._columnId) / xzoom
+                     endPos = startPos + nbCol
+                     try:
+                         columns = [x for x in data.T[int(startPos):int(endPos) + 1]]
+                     except IndexError,err:
+                         return
+                     if columns:
+                         startFrac = math.ceil(startPos) - startPos
+                         columns[0] = columns[0] * startFrac
+                         endFrac = endPos - math.floor(endPos)
+                         columns[-1] = columns[-1] * endFrac
+                         caption = '(start,end columns : %.2f,%.2f)' % (startPos,endPos)
+                 else:
+                     if nbCol > 1:
+                         caption = '(start,end columns : %d,%d)' % (self._columnId,self._columnId + nbCol - 1)
+                     else:
+                         caption = '(column : %d)' % (self._columnId)
+                     try:
+                         columns = [x for x in data.T[self._columnId:self._columnId + nbCol]]
+                     except IndexError,err:
+                         return
+                 if columns:
+                     xVales = numpy.zeros(len(columns[0]))
+                     for column in columns :
+                         xVales = xVales + column
+                     xVales = xVales / nbCol
+                     self._curve.setData(numpy.arange(ori,ori + len(xVales)),xVales)
+                     self._graph.setTitle('%s %s' % (self._graphLegend,caption))
+                     self._graph.replot()
+                     self._graph.setCaption('%s %s' %(self._captionPrefix,caption))
 
 ###############################################################################
 #######                   QubArcDataSelection                           #######
@@ -924,7 +935,7 @@ class QubArcDataSelection(QubToggleImageAction):
         self._initDrawing()
 
     def setData(self,data) :
-        self._data = data
+        self._data = data is not None and weakref.ref(data) or None
         self._refreshIdle()
         
     def setColor(self,color) :
@@ -992,42 +1003,44 @@ class QubArcDataSelection(QubToggleImageAction):
         
     def _refreshIdle(self) :
         if not self._idle.isActive() :
-            if self.__center and self._data is not None:
+            data = self._data and self._data() is not None or None
+            if self.__center and data is not None:
                 self._graph.show()
             self._idle.start(0)
             
     def _refreshGraph(self) :
         self._idle.stop()
         if not self._graph.isShown() : return
+        if self._data:
+            rawdata = self._data()
+            if self.__center is not None and rawdata is not None:
+                angles = numpy.arange(self.__angleStart,self.__angleStart + self.__angleLenght,math.pi / (180 << 4)) # step == 1/16 deg
+                rayons = numpy.arange(self.__inRayon,self.__inRayon + self.__discWidth)
+                rayons.shape = -1,1
+                x = rayons * numpy.cos(angles) + self.__center[0]
+                x.shape = -1,1
+                y = rayons * numpy.sin(angles) + self.__center[1]
+                y.shape = -1,1
+                inter_result = datafuncs.interpol([range(rawdata.shape[1]),range(rawdata.shape[0])],rawdata.T,numpy.concatenate((x,y),axis = 1),0)
+                inter_result.shape = rayons.shape[0],-1
+                result = numpy.zeros(angles.shape[0])
+                for arc in inter_result:
+                    result += arc
+                result /= angles.shape[0]
 
-        if self.__center is not None and self._data is not None:
-            angles = numpy.arange(self.__angleStart,self.__angleStart + self.__angleLenght,math.pi / (180 << 4)) # step == 1/16 deg
-            rayons = numpy.arange(self.__inRayon,self.__inRayon + self.__discWidth)
-            rayons.shape = -1,1
-            x = rayons * numpy.cos(angles) + self.__center[0]
-            x.shape = -1,1
-            y = rayons * numpy.sin(angles) + self.__center[1]
-            y.shape = -1,1
-            inter_result = datafuncs.interpol([range(self._data.shape[1]),range(self._data.shape[0])],self._data.T,numpy.concatenate((x,y),axis = 1),0)
-            inter_result.shape = rayons.shape[0],-1
-            result = numpy.zeros(angles.shape[0])
-            for arc in inter_result:
-                result += arc
-            result /= angles.shape[0]
+                self._curve.setData(angles * 180 / numpy.pi,result)
+                self._graph.replot()
 
-            self._curve.setData(angles * 180 / numpy.pi,result)
-            self._graph.replot()
-            
-            startAngle = self.__angleStart * 180 / math.pi
-            endAngles = startAngle + (self.__angleLenght * 180 / math.pi)
-            self._graph.setTitle('%s center (%d,%d) from %.2f deg to %.2f deg width = %d' % (self._graphLegend,self.__center[0],self.__center[1],
-                                                                                             startAngle,endAngles,self.__discWidth))
-                                                                                             
-                    
-            toolName = self.__tools[self.__idToolSelected][1]
-            self._graph.setCaption('%s %s' % (self._captionPrefix or '',toolName))
-            self._graph.setIcon(loadIcon(self.__tools[self.__idToolSelected][0]))
-            self._graph.setName(toolName)
+                startAngle = self.__angleStart * 180 / math.pi
+                endAngles = startAngle + (self.__angleLenght * 180 / math.pi)
+                self._graph.setTitle('%s center (%d,%d) from %.2f deg to %.2f deg width = %d' % (self._graphLegend,self.__center[0],self.__center[1],
+                                                                                                 startAngle,endAngles,self.__discWidth))
+
+
+                toolName = self.__tools[self.__idToolSelected][1]
+                self._graph.setCaption('%s %s' % (self._captionPrefix or '',toolName))
+                self._graph.setIcon(loadIcon(self.__tools[self.__idToolSelected][0]))
+                self._graph.setName(toolName)
             
     def __toolSelected(self,idTool) :
         try:
@@ -1274,7 +1287,7 @@ class QubZoomListAction(QubAction):
             try:
                 if self._actionZoomMode is not None :
                     actionZoomMode = self._actionZoomMode()
-                    if actionZoomMode: self._actionZoomMode.setState(False)
+                    if actionZoomMode: actionZoomMode.setState(False)
                 self._applyZoom(self._zoomValList[index])
                 self.__lastIdSelected = index
             except :
@@ -1505,7 +1518,7 @@ class QubZoomAction(QubAction):
                 else:
                     strVal = "???"
 
-                self._listAction.writeStrValue(strVal)
+                listAction.writeStrValue(strVal)
         
 
 
@@ -1661,7 +1674,7 @@ class QubDataPositionValueAction(QubPositionAction):
         self.__scaleClass = None
         
     def setData(self,data) :
-        self.__data = data
+        self.__data = data is not None and weakref.ref(data) or None
 
     ##@brief this methode is called by Qub::Widget::QubDataDisplay:QubDataDisplay
     #
@@ -1715,7 +1728,8 @@ class QubDataPositionValueAction(QubPositionAction):
             if yScale > 1. : y /= yScale
 
             try:
-                value = self.__data[y][x]
+                data = self.__data()
+                value = data[y][x]
                 if isinstance(value,int) :
                     self.__valueLabel.setText("%s" % str(value))
                 else:
@@ -1798,15 +1812,22 @@ class QubQuickScroll(QubImageAction) :
     class _Label(qt.QLabel) :
         def __init__(self,parent) :
             qt.QLabel.__init__(self,parent)
-            self.quickView = QubQuickView(None)
+            self.__image = None
+            self.__scrollView = None
             self.setMouseTracking(True)
-            
-        def __del__(self) :
-            del self.quickView
-            
+
+        def setImage(self,image) :
+            self.__image = image
+
+        def setScrollView(self,scrollView) :
+            self.__scrollView = scrollView
             
         def mousePressEvent(self,mouseEvent) :
+            self.quickView = QubQuickView(None,autoclose = True)
+            self.quickView.setScrollView(self.__scrollView)
+            self.quickView.setImage(self.__image)
             self.quickView.popAt(mouseEvent.globalX(),mouseEvent.globalY())
+
         
     def __init__(self,autoConnect=True,**keys):
         QubImageAction.__init__(self,autoConnect=autoConnect,**keys)
@@ -1818,10 +1839,10 @@ class QubQuickScroll(QubImageAction) :
         return self._widget
 
     def viewConnect(self,view) :
-        self._widget.quickView.setScrollView(view)
+        self._widget.setScrollView(view)
         
     def setImageNPixmap(self,image,pixmap = None) :
-        self._widget.quickView.setImage(image)
+        self._widget.setImage(image)
         if pixmap is None :
             pixmap = qt.QPixmap(image.smoothScale(22,22,fullimage.ScaleMin))
         self._widget.setPixmap(pixmap)
@@ -1876,7 +1897,7 @@ class QubSubDataViewAction(QubToggleImageAction) :
         self.__drawingMgr.setColor(color)
 
     def setData(self,data) :
-        self.__data = data
+        self.__data = data is not None and weakref.ref(data) or None
 
     def setColormapObject(self,colormap):
         self.__colormap = colormap
@@ -1932,57 +1953,59 @@ class QubSubDataViewAction(QubToggleImageAction) :
             
     def __refreshPixmap(self) :
         self.__idle.stop()
-        if self.__data is not None and self.__colormap and self.__x >= 0 and self.__y >= 0 :
-            ymin = self.__y - 4
-            if ymin < 0 : ymin = 0
-            ymax = ymin + 10
-            line,cols = self.__data.shape
-            if ymax > line: ymax = line
+        if self.__data:
+            data = self.__data()
+            if data is not None and self.__colormap and self.__x >= 0 and self.__y >= 0 :
+                ymin = self.__y - 4
+                if ymin < 0 : ymin = 0
+                ymax = ymin + 10
+                line,cols = data.shape
+                if ymax > line: ymax = line
 
-            xmin = self.__x - 4
-            if xmin < 0 : xmin = 0
-            xmax = xmin + 10
-            if xmax > cols: xmax = cols
-            
-            FloatArrayType = numpy.typecodes['Float']
-            if FloatArrayType.find(self.__data.dtype.char) > -1 :
-                valueFormatString = '%s<td>%s%.2f%s</td>'
-            else:
-                valueFormatString = '%s<td>%s%d%s</td>'
-            self.__dataCrop = self.__data[ymin:ymax,xmin:xmax]
-            try:
-                image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(self.__dataCrop,self.__colormap.palette(),
-                                                                            self.__colormap.lutType())
-            except pixmaptools.LutError,err:
-                print err.msg()
-                return
-            if not image.width() or not image.height(): return
-            self._widget.setPixmap(qt.QPixmap(image.scale(20,20)))
-            tooltipstring = '<table><tr><th><b>rows/col</b></th>'
-            xOn,yOn = self.__xOn / 2,self.__yOn / 2
-            for cols in range(xmin,xmax) :
-                tooltipstring = '%s<th><b>%d</b></th>' % (tooltipstring,cols)
-            tooltipstring = '%s</tr>' % tooltipstring
-            for y,(line,lineId) in enumerate(zip(self.__dataCrop,range(ymin,ymax))):
-                tooltipstring = '%s<tr><td><b>%d</b></td>' % (tooltipstring,lineId)
-                for x,column in enumerate(line):
-                    size = len('%d' % column)
-                    if x == xOn and y == yOn :
-                        startColor,stopColor = '<font COLOR=red>','</font>'
-                    else:
-                        startColor,stopColor = '',''
-                    tooltipstring = valueFormatString % (tooltipstring,startColor,column,stopColor)
+                xmin = self.__x - 4
+                if xmin < 0 : xmin = 0
+                xmax = xmin + 10
+                if xmax > cols: xmax = cols
+
+                FloatArrayType = numpy.typecodes['Float']
+                if FloatArrayType.find(data.dtype.char) > -1 :
+                    valueFormatString = '%s<td>%s%.2f%s</td>'
+                else:
+                    valueFormatString = '%s<td>%s%d%s</td>'
+                self.__dataCrop = data[ymin:ymax,xmin:xmax]
+                try:
+                    image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(self.__dataCrop,self.__colormap.palette(),
+                                                                                self.__colormap.lutType())
+                except pixmaptools.LutError,err:
+                    print err.msg()
+                    return
+                if not image.width() or not image.height(): return
+                self._widget.setPixmap(qt.QPixmap(image.scale(20,20)))
+                tooltipstring = '<table><tr><th><b>rows/col</b></th>'
+                xOn,yOn = self.__xOn / 2,self.__yOn / 2
+                for cols in range(xmin,xmax) :
+                    tooltipstring = '%s<th><b>%d</b></th>' % (tooltipstring,cols)
                 tooltipstring = '%s</tr>' % tooltipstring
-            tooltipstring = '%s</table>' % tooltipstring
-            self.__toolTip.setText(tooltipstring)
-            tootipSize = self.__toolTip.sizeHint()
-            point = self._widget.mapToGlobal(qt.QPoint(self._widget.width(),0))
-            scr = qt.QApplication.desktop().screenNumber(self._widget);
-            screen = qt.QApplication.desktop().screen(scr)
-            if point.y() + tootipSize.height() > screen.height(): point.setY(screen.height() - tootipSize.height())
-            if point.x() + tootipSize.width() > screen.width() : point.setX(point.x() - tootipSize.width() - self._widget.width())
-            self.__toolTip.setFixedSize(tootipSize)
-            self.__toolTip.move(point)
+                for y,(line,lineId) in enumerate(zip(self.__dataCrop,range(ymin,ymax))):
+                    tooltipstring = '%s<tr><td><b>%d</b></td>' % (tooltipstring,lineId)
+                    for x,column in enumerate(line):
+                        size = len('%d' % column)
+                        if x == xOn and y == yOn :
+                            startColor,stopColor = '<font COLOR=red>','</font>'
+                        else:
+                            startColor,stopColor = '',''
+                        tooltipstring = valueFormatString % (tooltipstring,startColor,column,stopColor)
+                    tooltipstring = '%s</tr>' % tooltipstring
+                tooltipstring = '%s</table>' % tooltipstring
+                self.__toolTip.setText(tooltipstring)
+                tootipSize = self.__toolTip.sizeHint()
+                point = self._widget.mapToGlobal(qt.QPoint(self._widget.width(),0))
+                scr = qt.QApplication.desktop().screenNumber(self._widget);
+                screen = qt.QApplication.desktop().screen(scr)
+                if point.y() + tootipSize.height() > screen.height(): point.setY(screen.height() - tootipSize.height())
+                if point.x() + tootipSize.width() > screen.width() : point.setX(point.x() - tootipSize.width() - self._widget.width())
+                self.__toolTip.setFixedSize(tootipSize)
+                self.__toolTip.move(point)
         
 ####################################################################
 ##########                                                ##########

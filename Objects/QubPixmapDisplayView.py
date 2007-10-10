@@ -22,9 +22,6 @@ class QubPixmapDisplayView(QubView):
         if actions is not None:
             self.addAction(actions)
 
-    def __del__(self) :
-        self.setView(None)
-        
     ##@brief Set the Qpixmap to be displayed and tells the
     #Qub::Objects::QubPixmapDisplay::QubPixmapDisplay widget to
     #display it
@@ -110,8 +107,6 @@ if  __name__ == '__main__':
             self.__display = display
             self.__action = action
             qt.QObject.connect(action,qt.PYSIGNAL('RectangleSelected'),self.__cbk)
-        def __del__(self) :
-            qt.QObject.disconnect(self.__action,qt.PYSIGNAL('RectangleSelected'),self.__cbk)
 
         def __cbk(self,x,y,width,height) :
             if width < 0 or height < 0 :

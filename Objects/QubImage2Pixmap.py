@@ -184,10 +184,6 @@ class QubImage2Pixmap(qt.QObject) :
         qt.QObject.__init__(self)
         self.__idle = QubImage2Pixmap._Idle(self,skipSmooth)
 
-    def __del__(self) :
-        self.__idle.stop()
-        
-        
     ##@brief Asynchronous Image Put, the copy to pixmap will be made on idle
     def putImage(self,imageZoomed,fullimage) :
         self.__idle.putImage((imageZoomed,fullimage))
