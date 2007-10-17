@@ -465,6 +465,9 @@ class QubLineDataSelectionAction(QubToggleImageAction):
         
     ##@brief set the data array
     def setData(self,data) :
+        if self._data and data is None:
+            self._curve.setData([0])
+            self._graph.replot()
         self._data = data is not None and weakref.ref(data) or None
         self._refreshIdle()
 
@@ -656,6 +659,10 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
          self._captionPrefix = captionPrefix
     ##@brief set the data array
     def setData(self,data) :
+        if self._data and data is None:
+            self._curve.setData([0])
+            self._graph.replot()
+
         self._data = data is not None and weakref.ref(data) or None
         self._refreshIdle()
     ##@brief set Data Zoom

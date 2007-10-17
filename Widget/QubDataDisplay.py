@@ -501,7 +501,7 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
             
         if self.__colormapDialog:
             fulldata,resizedData = self.data()
-            if resizedData.any() :
+            if resizedData is not None :
                 self.__colormapDialog.setData(resizedData)
                 self.__dataPositionValueAction.setData(resizedData)
         receiver = self.__receiver()

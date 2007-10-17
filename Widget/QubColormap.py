@@ -460,7 +460,7 @@ class QubColormapDialog(qt.QWidget):
             
     def show(self) :
         qt.QWidget.show(self)
-        self.__calcHistogram()
+        self.__histoTimer.start(1000)
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################

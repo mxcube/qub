@@ -121,6 +121,8 @@ class QubView(qt.QWidget):
         This method does not connect the action to its its view !!!
         """
 
+        if not isinstance(actions,list) and not isinstance(actions,tuple):
+            actions = [actions]
         
         for action in actions:
             """
@@ -178,6 +180,9 @@ class QubView(qt.QWidget):
         Remove actions in the "actions" list from the QubView widget.
         Related widgets are destroyed.
         """
+        if not isinstance(actions,list) and not isinstance(actions,tuple):
+            actions = [actions]
+
         for action in actions:
             if action.name() in self.__actionList.keys():
                 if action.place() == "toolbar":

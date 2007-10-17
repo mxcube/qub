@@ -94,8 +94,9 @@ class QubGraphView(QubView) :
     def show(self):
         shownFlag = self.isShown()
         QubView.show(self)
-        sizeHint = self.sizeHint()
-        width,height = sizeHint.width(),sizeHint.height()
-        self.setMinimumSize(sizeHint)
-        if not shownFlag :
-            self.resize(max(width,height * 16 / 9),height)
+        if isinstance(self.parent(),qt.QWorkspace) or self.parent() is None:
+            sizeHint = self.sizeHint()
+            width,height = sizeHint.width(),sizeHint.height()
+            self.setMinimumSize(sizeHint)
+            if not shownFlag :
+                self.resize(max(width,height * 16 / 9),height)

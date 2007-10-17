@@ -47,7 +47,12 @@ class QubPixmapDisplay(QubCanvasViewBase) :
     #This methode is called before printing
     def getPPP(self):
         if self.__lastImage is not None:
-            return qt.QPixmap(self.__lastImage)
+            zoom = self.zoom()
+            if zoom.isRoiZoom() :
+                image = self.__lastImage.copy(*zoom.roi())
+            else:
+                image = self.__lastImage
+            return qt.QPixmap(image)
         else:
             return qt.QPixmap()
         
@@ -110,7 +115,7 @@ class QubPixmapDisplay(QubCanvasViewBase) :
         plug = self.__plug()
         if plug:
             zoomClass = plug.zoom()
-            if self._scrollMode in ["Auto", "AlwaysOff"]:
+            if self._scrollMode in ["Auto", "AlwaysOff"] or (not pix_w and not pix_h):
                 if (cvs_w, cvs_h) != (pix_w, pix_h):
                     self._cvs.resize(pix_w, pix_h)
                     self._startIdle()

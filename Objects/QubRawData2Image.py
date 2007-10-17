@@ -358,50 +358,53 @@ class _DataZoomProcess(QubThreadProcess) :
                     if not plugs: continue
                     zoom = plug.zoom()
                     dataArray = s.data
-                    if zoom.needZoom() :
-                        xzoom,yzoom = zoom.zoom()
-                        if xzoom < 1. or yzoom < 1.:
-                            if xzoom > 1. : xzoom = 1.
-                            if yzoom > 1. : yzoom = 1.
-                            if zoom.isRoiZoom():
-                                ox,oy,width,height = zoom.roi()
-                                dataArray = datafuncs.down_size(s.data,ox,oy,width,height,xzoom,yzoom)
+                    if dataArray is not None:
+                        if zoom.needZoom() :
+                            xzoom,yzoom = zoom.zoom()
+                            if xzoom < 1. or yzoom < 1.:
+                                if xzoom > 1. : xzoom = 1.
+                                if yzoom > 1. : yzoom = 1.
+                                if zoom.isRoiZoom():
+                                    ox,oy,width,height = zoom.roi()
+                                    dataArray = datafuncs.down_size(s.data,ox,oy,width,height,xzoom,yzoom)
+                                else:
+                                    height,width = s.data.shape
+                                    dataArray = datafuncs.down_size(s.data,0,0,width,height,xzoom,yzoom)
+                            elif zoom.isRoiZoom() :
+                                x,y,width,height = zoom.roi()
+                                if x < 0:
+                                    width += x
+                                    x = 0
+                                if y < 0 :
+                                    height += y
+                                    y = 0
+                                dataArray = dataArray[y:y+height,x:x+width]
+
+                        colormap = plug.colormap()
+                        try:
+                            if colormap.autoscale() :
+                                image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(dataArray,colormap.palette(),
+                                                                                            colormap.lutType())
+                                colormap.setMinMaxMappingMethode(minVal,maxVal)
                             else:
-                                height,width = s.data.shape
-                                dataArray = datafuncs.down_size(s.data,0,0,width,height,xzoom,yzoom)
-                        elif zoom.isRoiZoom() :
-                            x,y,width,height = zoom.roi()
-                            if x < 0:
-                                width += x
-                                x = 0
-                            if y < 0 :
-                                height += y
-                                y = 0
-                            dataArray = dataArray[y:y+height,x:x+width]
-                            
-                    colormap = plug.colormap()
-                    try:
-                        if colormap.autoscale() :
-                            image ,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(dataArray,colormap.palette(),
-                                                                                        colormap.lutType())
-                            colormap.setMinMaxMappingMethode(minVal,maxVal)
-                        else:
-                           image,(minVal,maxVal) = pixmaptools.LUT.map(dataArray,colormap.palette(),
-                                                                       colormap.lutType(),*colormap.minMax())
-                    except pixmaptools.LutError,err :
-                        print err.msg()
-                        return
-                    if zoom.needZoom() :
-                        xzoom,yzoom = zoom.zoom()
-                        if xzoom > 1. or yzoom > 1. :
-                            if xzoom < 1. : xzoom = 1.
-                            if yzoom < 1. : yzoom = 1.
-                            width,height = image.width(),image.height()
-                            width *= xzoom
-                            height *= yzoom
-                            image = image.scale(width,height)
-                    if fullImage is None and not zoom.needZoom() :
-                        fullImage = image
+                               image,(minVal,maxVal) = pixmaptools.LUT.map(dataArray,colormap.palette(),
+                                                                           colormap.lutType(),*colormap.minMax())
+                        except pixmaptools.LutError,err :
+                            print err.msg()
+                            return
+                        if zoom.needZoom() :
+                            xzoom,yzoom = zoom.zoom()
+                            if xzoom > 1. or yzoom > 1. :
+                                if xzoom < 1. : xzoom = 1.
+                                if yzoom < 1. : yzoom = 1.
+                                width,height = image.width(),image.height()
+                                width *= xzoom
+                                height *= yzoom
+                                image = image.scale(width,height)
+                        if fullImage is None and not zoom.needZoom() :
+                            fullImage = image
+                    else:
+                        image,fullImage = qt.QImage(),qt.QImage()
                     plug.setData(s.data,dataArray)
                     plugNImage.append((plug,image))
 
