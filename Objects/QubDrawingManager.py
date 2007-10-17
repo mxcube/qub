@@ -613,9 +613,37 @@ class QubLineDrawingMgr(QubDrawingMgr) :
 ##@brief manage all object that can be define with a 2 points rectangle
 #@ingroup DrawingManager
 class Qub2PointSurfaceDrawingMgr(QubDrawingMgr) :
+    class _Rect(qt.QRect) :
+        def __init__(self,*args) :
+            qt.QRect.__init__(self,*args)
+            self.__subXPix = 0
+            self.__subYPix = 0
+            
+        def setCoords(self,*args) :
+            self.__subXPix = 0
+            self.__subYPix = 0
+            qt.QRect.setCoords(self,*args)
+        def setRect(self,*args) :
+            self.__subXPix = 0
+            self.__subYPix = 0
+            qt.QRect.setRect(self,*args)
+
+        def normalize(self):
+            rect = qt.QRect.normalize(self)
+            return Qub2PointSurfaceDrawingMgr._Rect(rect)
+        
+        def moveBy(self,dx,dy) :
+            self.__subXPix += dx
+            self.__subYPix += dy
+            rDx = int(self.__subXPix)
+            rDy = int(self.__subYPix)
+            qt.QRect.moveBy(self,rDx,rDy)
+            self.__subXPix -= rDx
+            self.__subYPix -= rDy
+
     def __init__(self,aCanvas,aMatrix = None) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
-        self._rect = qt.QRect(0,0,1,1)
+        self._rect = Qub2PointSurfaceDrawingMgr._Rect(0,0,1,1)
         self._drawingEvent = QubPressedNDrag2Point
         
     ##@brief set absolute position of top left and bottom right point
@@ -682,7 +710,7 @@ class Qub2PointSurfaceDrawingMgr(QubDrawingMgr) :
 
     def moveRelativeRectangle(self, dx, dy):
         if self._matrix is not None :
-            dxNew,dyNew = self._matrix.invert()[0].map(dx,dy)
+            dxNew,dyNew = self._matrix.invert()[0].map(float(dx),float(dy))
         else:
             dxNew,dyNew = dx, dy
         self._rect.moveBy(dxNew, dyNew)
