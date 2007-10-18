@@ -184,15 +184,15 @@ class QubView(qt.QWidget):
             actions = [actions]
 
         for action in actions:
-            if action.name() in self.__actionList.keys():
-                if action.place() == "toolbar":
-                    self.__toolbar.delAction(action)                
+            try:
+                findAction = self.__actionList.pop(action)
+            except KeyError: continue
+            else:
+                if findAction.place() == "toolbar":
+                    self.__toolbar.delAction(findAction)
+                elif findAction.place() == "statusbar":
+                    self.__statusbar.delAction(findAction)
                 
-                if action.place() == "statusbar":
-                    self.__statusbar.delAction(action)
-                
-                del(self.__actionList[action.name()])
-
     def getAction(self, name):
         if name in self.__actionList.keys():
             return self.__actionList[name]

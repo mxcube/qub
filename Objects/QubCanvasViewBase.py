@@ -22,7 +22,7 @@ class QubCanvasViewBase(qtcanvas.QCanvasView,QubEventMgr) :
         self._matrix = qt.QWMatrix(1,0,0,1,0,0)
         self._matrix.setTransformationMode(qt.QWMatrix.Areas)
 
-        self._cvs = qtcanvas.QCanvas(1,1)
+        self._cvs = _canvas(1,1)
         self.setCanvas(self._cvs)
 
         ##@brief By default set the scrollbar mode to automatic
@@ -140,5 +140,16 @@ class QubCanvasViewBase(qtcanvas.QCanvasView,QubEventMgr) :
                   (self._foregroundColor,))
 
 
+class _canvas(qtcanvas.QCanvas) :
+    def __init__(self,*args) :
+        qtcanvas.QCanvas.__init__(self,*args)
+        self.__updateIdle = qt.QTimer(self)
+        qt.QObject.connect(self.__updateIdle,qt.SIGNAL('timeout()'),self.__update)
 
+    def update(self) :
+        if not self.__updateIdle.isActive():
+            self.__updateIdle.start(0)
 
+    def __update(self) :
+        self.__updateIdle.stop()
+        qtcanvas.QCanvas.update(self)
