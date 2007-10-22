@@ -695,15 +695,12 @@ class QubDataStatWidget(Histogram) :
         self.__refreshIdle()
         
     def setData(self,data) :
-        if self.__roi is not None:
-            x,y,width,height = self.__roi
-            self.__data = data[y:y + height,x:x + width]
-        else:
-            self.__data = data
+        self.__data = data
         self.__refreshIdle()
 
     def setDataRoi(self,x,y,width,height) :
         self.__roi = (x,y,width,height)
+        self.__refreshIdle()
         
     def __refreshIdle(self) :
         if self.isVisible() and not self.__idle.isActive() :
@@ -712,12 +709,20 @@ class QubDataStatWidget(Histogram) :
     def __refresh(self) :
         self.__idle.stop()
         if self.isVisible() and self.__data is not None:
-            height,width = self.__data.shape
+            if self.__roi is not None:
+                x,y,width,height = self.__roi
+                if x < 0: x = 0
+                if y < 0 : y = 0
+                data = self.__data[y:y + height,x:x + width]
+            else:
+                data = self.__data
+
+            height,width = data.shape
             nbPixel = height * width
-            integralVal = self.__data.sum()
+            integralVal = data.sum()
             average = float(integralVal) / nbPixel
-            minVal,maxVal = self.__data.min(),self.__data.max()
-            stdDeviation = self.__data.std()
+            minVal,maxVal = data.min(),data.max()
+            stdDeviation = data.std()
 
             for value,childName in [(height,'__heightLE'),(width,'__widthLE'),
                                     (minVal,'__minValLE'),(maxVal,'__maxValLE'),
@@ -744,7 +749,7 @@ class QubDataStatWidget(Histogram) :
             bins,ok = stringVal.toInt()
 
             if ok:
-                YHisto,XHisto = numpy.histogram(self.__data,bins = bins,range=[minHisto,maxHisto])
+                YHisto,XHisto = numpy.histogram(data,bins = bins,range=[minHisto,maxHisto])
                 self.__curve.setData(XHisto,YHisto)
                 self.__graph.replot()
 
