@@ -446,12 +446,17 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
     def __init__(self,canvas) :
         qtcanvas.QCanvasRectangle.__init__(self,canvas)
         if isinstance(canvas,QubCanvasPixmap) :
-            self.__image = canvas.QubCanvasPixmap__image.copy()
+            self.__image = canvas._QubCanvasPixmap__image.copy()
+            class pixmapIO :
+                def putImage(self,pixmap,x,y,image) :
+                    pixmap.convertFromImage(image)
+            self.__pixmapIO = pixmapIO()
         else:
             self.__image = qt.QImage()
+            self.__pixmapIO = pixmaptools.IO()
+            self.__pixmapIO.setShmPolicy(pixmaptools.IO.ShmKeepAndGrow)
+
         self.__pixmap = qt.QPixmap()
-        self.__pixmapIO = pixmaptools.IO()
-        self.__pixmapIO.setShmPolicy(pixmaptools.IO.ShmKeepAndGrow)
         self.__scrollView = None
         self.__mosaicImage = None
         
@@ -509,7 +514,6 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
 
             
             painter.drawPixmap(self.x() + xOriPixmapCpy,self.y() + yOriPixmapCpy,self.__pixmap)
-        qtcanvas.QCanvasRectangle.draw(self,painter)
 
     def rtti(self) :
         return QubCanvasPixmap.RTTI

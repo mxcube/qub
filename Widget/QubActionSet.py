@@ -45,7 +45,6 @@ from Qub.Widget.Graph.QubGraphCurve import QubGraphCurve
 
 from Qub.Widget.QubMdi import QubMdiCheckIfParentIsMdi
 
-from Qub.Widget.QubDialog import QubBrightnessContrastDialog
 from Qub.Widget.QubDialog import QubQuickView
 
 from Qub.Print.QubPrintPreview import getPrintPreviewDialog
@@ -1584,6 +1583,10 @@ class QubForegroundColorAction(QubAction):
                                          qt.QString("Color"), self._colorMenu)
             menu.connectItem(self._item, self._colorMenu.exec_loop)
 
+    def setColor(self,color) :
+        self._colorMenu.setColor(color)
+        self.colorChanged(color)
+        
     def colorChanged(self, color):
         view = self._view and self._view() or None
         if view is not None:
@@ -2352,11 +2355,23 @@ class QubOpenDialogAction(QubAction):
     def __init__(self,label=None,iconName='fileopen',**keys):
         QubAction.__init__(self,iconName=iconName,**keys)
 
-        self.__dialog = None
+        self._dialog = None
         self.__connectCBK = None
         if label : self._label = label
         else: self._label = self._name
-        
+
+    def __nonzero__(self) :
+        return True
+
+    def __getattr__(self, attr):
+        if not attr.startswith("__") :
+            try:
+                return getattr(self._dialog,attr)
+            except AttributeError,err:
+                raise AttributeError,'QubOpenDialogAction instance has not attribute %s' % attr
+        else:
+                raise AttributeError,'QubOpenDialogAction instance has not attribute %s' % attr
+    
     def addToolWidget(self, parent):
         """
         create save pushbutton in the toolbar of the view
@@ -2371,7 +2386,7 @@ class QubOpenDialogAction(QubAction):
             self._widget.setAutoRaise(True)
             self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png" % self._iconName)))
             self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
-                            self.__showSaveDialog)
+                            self._showDialog)
             qt.QToolTip.add(self._widget,self._label)
 
         return self._widget
@@ -2383,7 +2398,7 @@ class QubOpenDialogAction(QubAction):
         self._menu = menu
         iconSet = qt.QIconSet(loadIcon("%s.png" % self._iconName))
         self._item = menu.insertItem(iconSet, qt.QString(self._label),
-                                      self.__showSaveDialog)
+                                      self._showDialog)
         
     def setDialog(self,dialog) :
         """ Interface to manage the dialogue window.
@@ -2391,15 +2406,15 @@ class QubOpenDialogAction(QubAction):
              -> show()
              -> raiseW()
         """
-        self.__dialog = dialog
+        self._dialog = dialog
         
     def setConnectCallBack(self,cbk) :
         self.__connectCBK = createWeakrefMethod(cbk)
         
-    def __showSaveDialog(self):
-        if self.__dialog is not None :
-            self.__dialog.show()
-            self.__dialog.raiseW()
+    def _showDialog(self):
+        if self._dialog is not None :
+            self._dialog.show()
+            self._dialog.raiseW()
 
     def viewConnect(self,parent) :
         if self.__connectCBK is not None:
@@ -2409,60 +2424,8 @@ class QubOpenDialogAction(QubAction):
                 import traceback
                 traceback.print_exc()
             
-            if hasattr(self.__dialog, "refresh"):
-                self.__dialog.refresh()
-
-####################################################################
-##########                                                ##########
-##########            QubBrightnessContrastAction         ##########
-##########                                                ##########
-####################################################################
-class QubBrightnessContrastAction(QubAction):
-    """
-    This action will allow to open a dialog 
-    """
-    def __init__(self,label = None,iconName = 'bright-cont',**keys):
-        QubAction.__init__(self,iconName=iconName,**keys)
-
-        self.__dialog = QubBrightnessContrastDialog(None)
-        if label : self._label = label
-        else: self._label = self._name
-        
-    def addToolWidget(self, parent):
-        """
-        create save pushbutton in the toolbar of the view
-        create the save dialog if not already done
-        """
-        
-        """
-        create widget for the view toolbar
-        """   
-        if self._widget is None:
-            self._widget = qt.QToolButton(parent,self._name)
-            self._widget.setAutoRaise(True)
-            self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png" % self._iconName)))
-            self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
-                            self.__showDialog)
-            qt.QToolTip.add(self._widget,self._label)
-
-        return self._widget
-        
-    def addMenuWidget(self, menu):
-        """
-        Create context menu item pushbutton
-        """
-        self._menu = menu
-        iconSet = qt.QIconSet(loadIcon("%s.png" % self._iconName))
-        self._item = menu.insertItem(iconSet, qt.QString(self._label),
-                                      self.__showSaveDialog)
-                
-    def __showDialog(self):
-        if self.__dialog is not None :
-            self.__dialog.show()
-            self.__dialog.raiseW()
-
-    def setCamera(self, camera):
-        self.__dialog.setCamera(camera)
+            if hasattr(self._dialog, "refresh"):
+                self._dialog.refresh()
 
 ###############################################################################
 #                         QubSaveImageAction                                  #

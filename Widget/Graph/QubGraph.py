@@ -4,6 +4,9 @@ import Qwt5 as qwt
 from Qub.Widget.QubView import QubView
 
 from Qub.Widget.Graph.QubGraphCurveMarker import QubGraphCurvePointFollowMarked
+
+from Qub.Widget.QubMdi import QubMdiCheckIfParentIsMdi
+
 ##@defgroup GraphDisplay Tools to display curves histogram...
 #
 
@@ -94,7 +97,8 @@ class QubGraphView(QubView) :
     def show(self):
         shownFlag = self.isShown()
         QubView.show(self)
-        if isinstance(self.parent(),qt.QWorkspace) or self.parent() is None:
+        _,mainWidget = QubMdiCheckIfParentIsMdi(self)
+        if mainWidget or self.parent() is None:
             sizeHint = self.sizeHint()
             width,height = sizeHint.width(),sizeHint.height()
             self.setMinimumSize(sizeHint)

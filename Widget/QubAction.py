@@ -344,14 +344,8 @@ class QubImageAction(QubAction):
     def viewConnect(self, qubImage):
         """
         Register the "qubImage" object
-        Connect action to "qubImage" signals:
+        Connect action to "qubImage" signal:
             "ForegroundColorChanged" : Foreground color has been changed
-            "MouseMoved" : Mouse has been moved inside the viewport of the
-                           "qubImage"
-            "MousePressed" : Mouse has been pressed inside he viewport of the
-                             "qubImage"
-            "MouseReleased" : Mouse has been released inside he viewport of
-                              the "qubImage"
         """
         if self._autoConnect:
             connect = True
@@ -381,13 +375,6 @@ class QubImageAction(QubAction):
         if not self._sigConnected:
             self.connect(view, qt.PYSIGNAL("ForegroundColorChanged"),
                          self.setColor)
-            self.connect(view, qt.PYSIGNAL("MouseMoved"),
-                         self.mouseMove)
-            self.connect(view, qt.PYSIGNAL("MousePressed"),
-                         self.mousePress)
-            self.connect(view, qt.PYSIGNAL("MouseReleased"),
-                         self.mouseRelease)
-
             self._sigConnected = True
 
     def signalDisconnect(self, view):
@@ -397,39 +384,12 @@ class QubImageAction(QubAction):
         if self._sigConnected:
             self.disconnect(view, qt.PYSIGNAL("ForegroundColorChanged"),
                             self.setColor)
-            self.disconnect(view, qt.PYSIGNAL("MouseMoved"),
-                            self.mouseMove)
-            self.disconnect(view, qt.PYSIGNAL("MousePressed"),
-                            self.mousePress)
-            self.disconnect(view, qt.PYSIGNAL("MouseReleased"),
-                            self.mouseRelease)
             self._sigConnected = False
         
                             
     def setColor(self, color):
         """
         Slot connected to "ForegroundColorChanged" "qubImage" signal
-        To be reimplemented.
-        """
-        pass
-        
-    def mouseMove(self, event):
-        """
-        Slot connected to "MouseMoved" "qubImage" signal.
-        To be reimplemented.
-        """
-        pass
-
-    def mousePress(self,  event):
-        """
-        Slot connected to "MousePressed" "qubImage" signal.
-        To be reimplemented.
-        """
-        pass
-
-    def mouseRelease(self, event):
-        """
-        Slot connected to "MouseReleased" "qubImage" signal.
         To be reimplemented.
         """
         pass

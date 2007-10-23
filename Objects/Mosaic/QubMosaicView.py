@@ -129,34 +129,35 @@ class QubMosaicView(QubView) :
 
                 imagesDisplay.append((image.layer(),xPos,yPos,width,height,drawingManager))
 
-            boundingRect = qt.QRect()
-            allRect = qt.QRect()
-            for layer,x,y,width,height,drawingManager in imagesDisplay :
-                drawingManager.setRect(x - self.__xOffset,y - self.__yOffSet,
-                                       width,height)
-                boundingRect = boundingRect.unite(drawingManager.boundingRect())
-                drawingManager.setZ(layer)
-                allRect = allRect.unite(drawingManager.rect())
+        boundingRect = qt.QRect()
+        allRect = qt.QRect()
+        for layer,x,y,width,height,drawingManager in imagesDisplay :
+            drawingManager.setRect(x - self.__xOffset,y - self.__yOffSet,
+                                   width,height)
+            boundingRect = boundingRect.unite(drawingManager.boundingRect())
+            drawingManager.setZ(layer)
+            allRect = allRect.unite(drawingManager.rect())
 
-            view = self.view()
-            view.canvas().resize(boundingRect.width(),boundingRect.height())
-
-            scrollMode = view.scrollbarMode()
-            if scrollMode == "Fit2Screen" or scrollMode == "FillScreen" :
-                vp = view.viewport()
-                viewWidth,viewHeight = vp.width(),vp.height()
+        view = self.view()
+        view.canvas().resize(boundingRect.width(),boundingRect.height())
+        scrollMode = view.scrollbarMode()
+        if scrollMode == "Fit2Screen" or scrollMode == "FillScreen" :
+            vp = view.viewport()
+            viewWidth,viewHeight = vp.width(),vp.height()
+            try:
                 zoomX = float(viewWidth) / allRect.width()
                 zoomY = float(viewHeight) / allRect.height()
+            except ZeroDivisionError:
+                return
+            matrix = view.matrix()
+            oldZoomX = matrix.m11()
+            oldZoomY = matrix.m22()
 
-                matrix = view.matrix()
-                oldZoomX = matrix.m11()
-                oldZoomY = matrix.m22()
-
-                if scrollMode == "Fit2Screen" :
-                    zoom = min(zoomX,zoomY)
-                    if abs(oldZoomX - zoom) > 1e-3 or abs(oldZoomY - zoom) > 1e-3 :
-                        view.setZoom(zoom,zoom)
-                elif scrollMode == "FillScreen" :
-                    if abs(oldZoomX - zoomX) > 1e-3 or abs(oldZoomY - zoomY) > 1e-3:
-                        view.setZoom(zoomX,zoomY)
+            if scrollMode == "Fit2Screen" :
+                zoom = min(zoomX,zoomY)
+                if abs(oldZoomX - zoom) > 1e-3 or abs(oldZoomY - zoom) > 1e-3 :
+                    view.setZoom(zoom,zoom)
+            elif scrollMode == "FillScreen" :
+                if abs(oldZoomX - zoomX) > 1e-3 or abs(oldZoomY - zoomY) > 1e-3:
+                    view.setZoom(zoomX,zoomY)
         view.canvas().update()

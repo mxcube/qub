@@ -401,7 +401,13 @@ class _DataZoomProcess(QubThreadProcess) :
                                 width *= xzoom
                                 height *= yzoom
                                 if fullImage is None: fullImage = image
-                                image = image.scale(width,height)
+                                # limit (we enter in this case usually we a fit to screen is ask and
+                                #when you switch to a bigger image
+                                if((xzoom > 5 or yzoom > 5) and
+                                   (width > 4096 or height > 4096)) :
+                                    image = image
+                                else:
+                                    image = image.scale(width,height)
                         if fullImage is None and not zoom.needZoom() :
                             fullImage = image
                     else:

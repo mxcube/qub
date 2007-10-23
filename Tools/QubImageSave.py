@@ -5,9 +5,9 @@ import logging
 import qt
 
 
-def save(filepath, image, canvas = None, zoom=1, format="PNG"):
+def save(filepath, image, canvas = None, zoom=1, format="PNG",allCanvasItems = False):
     if format.lower() == 'svg' :
-        im = _SvgImageSave(image,canvas,zoom)
+        im = _SvgImageSave(image,canvas,zoom,allCanvasItems)
         im.save(filepath)
     else:
 
@@ -42,15 +42,18 @@ def save(filepath, image, canvas = None, zoom=1, format="PNG"):
 class _SvgImageSave :
     ##The constructor
     #
-    #@param image the QImage you want to save
+    #@param images the QImage you want to save or a list of tuple : [(or1X,or1Y,image1),(or2X,or2Y,image2),...]
     #@param canvasOrcanvasList :
     # - a canvas (QCanvas) or
     # - a canvas item list (QCanvasItem)
     #
     #@param zoom the zoom of the canvas or canvas item
-    def __init__(self,image,canvasOrcanvasList = None,zoom = 1) :
+    def __init__(self,images,canvasOrcanvasList = None,zoom = 1,allCanvasItems = False) :
         self.__items = []
-        self.__image = image
+        if images and not isinstance(images,list) :
+            self.__image = [(0,0,images)]
+        else:
+            self.__image = images
         self.__zoom = zoom
         self.__path2ellipseExp = re.compile('^.*<path (.+?) d="M ([0-9.]+) ([0-9.]+) A ([0-9.]+) ([0-9.]+).*$')
         if canvasOrcanvasList is not None :
@@ -60,7 +63,7 @@ class _SvgImageSave :
                 itemsList = canvasOrcanvasList.allItems()
             for item in itemsList :
                 if item.isVisible() :
-                    if hasattr(item,'setScrollView') : # remove standalone items
+                    if not allCanvasItems and hasattr(item,'setScrollView') : # remove standalone items
                         continue
                     newObject = item.__class__(item)
                     newObject.setCanvas(None)
@@ -78,9 +81,9 @@ class _SvgImageSave :
             pass
         device = qt.QPicture()
         painter = qt.QPainter(device)
-        
-        if self.__image is not None :
-            painter.drawImage(0,0,self.__image)
+        if self.__image:
+            for orx,ory,image in self.__image :
+                painter.drawImage(orx,ory,image)
         zoom = 1 / self.__zoom
         painter.setWorldMatrix(qt.QWMatrix(zoom,0,0,zoom,0,0))
         for item in self.__items :

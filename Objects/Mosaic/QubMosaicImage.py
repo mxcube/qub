@@ -6,7 +6,7 @@ from Qub.Objects.QubDrawingCanvasTools import QubCanvasPixmap
 def _mosaicViewRefresh(func) :
     def c(className,*args,**keys) :
         retVal = func(className,*args,**keys)
-        if className.mosaicView is not None and className.isShown():
+        if className.mosaicView is not None:
             className.mosaicView.refresh()
         return retVal
     return c

@@ -42,6 +42,12 @@ import EdfFile
 ##@brief This class display all kind of 2D data
 #
 class QubDataDisplay(qt.QWidget) :
+    ##@brief standard enum action
+    (QUICK_SCROLL,SUB_DATA_VIEW,PRINT_PREVIEW,SAVE_IMAGE,
+     STAT_ACTION,HEADER_INFO,ZOOM,COLORMAP,CHANGE_FOREGROUND_COLOR,
+     HORIZONTAL_SELECTION, VERTICAL_SELECTION,LINE_SELECTION,
+     POSITION_AND_VALUE) = range(13)
+
     ##@brief Constuctor
     #
     #@param data :
@@ -49,15 +55,14 @@ class QubDataDisplay(qt.QWidget) :
     # - in case of file the file path
     #@param zoomValList a zoom list default [0.1,0.25,0.5,0.75,1,1.5,2]
     #@param noAction if True no action will be created
+    #@param noToolbarAction if True no toolbar action will be created
     def __init__(self,parent=None,data=None,name='',
                  zoomValList = [0.1,0.25,0.5,0.75,1,1.5,2],keepROI=False,
                  noAction=False,noToolbarAction=False,**keys) :
         qt.QWidget.__init__(self,parent,name,qt.Qt.WDestructiveClose)
-
+        
         self.__curentdata = None
         self.__roi = None
-        _,mainWidget = QubMdiCheckIfParentIsMdi(self)
-
         self.__dataPlug = None
         layout = qt.QHBoxLayout(self)
         self.__mainView = QubPixmapDisplayView(parent=self)
@@ -79,129 +84,40 @@ class QubDataDisplay(qt.QWidget) :
         self.__idle = qt.QTimer(self)
         self.connect(self.__idle,qt.SIGNAL('timeout()'),self.__refresh)
                          ####### ACTION #######
-        actions = []
         self.__actionDataActionPlug = []          # action witch need data
-                     ####### QUICK SCROLL #######
-        if not noAction :
-            self.quickScrollAction = QubQuickScroll(parent=self,group="image",place="statusbar")
-            actions.append(self.quickScrollAction)
-        else: self.quickScrollAction = None
-                       ####### SUB VIEW #######
-        if not noAction:
-            self.__subDataView = QubSubDataViewAction(parent=self,group="image",place="statusbar")
-            self.__subDataView.setColormapObject(self.__ImageNViewPlug.colormap())
-            self.__actionDataActionPlug.append(self.__subDataView)
-            actions.append(self.__subDataView)
-            ####### MOUSE POSITION AND DATA VALUE #######
+        self.quickScrollAction = None
         self.__posaction = 1
         self.__updateAction = None
-                     ####### PRINT ACTION #######
-        if not noAction and not noToolbarAction:
-            printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
-            printAction.previewConnect(getPrintPreviewDialog())
-            actions.append(printAction)
-                      ####### SAVE IMAGE #######
         self.__saveDialog = None
-        if not noAction and not noToolbarAction:
-            saveAction = QubOpenDialogAction(parent=mainWidget,label='Save image',name="save", iconName='save',group="admin")
-            saveAction.setConnectCallBack(self._save_dialog_new)
-            actions.append(saveAction)
-                     ####### STAT ACTION #######
-        mdiParent,mainWindow = QubMdiCheckIfParentIsMdi(self)
-        if not noAction and not noToolbarAction:
-            if mdiParent :
-                self.__dataStat = QubDataStatWidget(parent = mdiParent)
-                mdiParent.addNewChildOfMainWindow(mainWindow,self.__dataStat)
-            else: self.__dataStat = QubDataStatDialog(parent = mainWidget)
-            dataStatAction = QubOpenDialogAction(parent=mainWidget,name='Data statistic',iconName='histogram',group='admin')
-            dataStatAction.setDialog(self.__dataStat)
-            actions.append(dataStatAction)
-            self.__actionDataActionPlug.append(self.__dataStat)
-        else:
-            self.__dataStat = None
-                     ####### HEADER INFO #######
-        if not noAction and not noToolbarAction:
-            if mdiParent:
-                self.__headerInfo = QubInfoTableWidget(parent = mdiParent,iconName='datatable',name = 'Header Info')
-                mdiParent.addNewChildOfMainWindow(mainWindow,self.__headerInfo)
-            else: self.__headerInfo = QubInfoTableDialog(parent = mainWidget,iconName='datatable',name = 'Header Info')
-            headerInfoAction = QubOpenDialogAction(parent=mainWidget,name='Header info',iconName='datatable',group='admin',
-                                                   place='contextmenu')
-            headerInfoAction.setDialog(self.__headerInfo)
-            actions.append(headerInfoAction)
-        else: self.__headerInfo = None
-                       ####### ZOOM LIST #######
-        if not noAction and not noToolbarAction:
-            zoomActionList = QubZoomListAction(place = "toolbar",
-                                               initZoom = 1,zoomValList = zoomValList,keepROI = keepROI,
-                                               show = 1,group = "image")
-            actions.append(zoomActionList)
-                     ####### ZOOM Action #######
-        if not noAction and not noToolbarAction:
-            zoomFitOrFill = QubZoomAction(keepROI = keepROI,place = "toolbar",group = "image")
-            actions.append(zoomFitOrFill)
-        
-
-                   ####### LINK ZOOM ACTION #######
-            zoomFitOrFill.setList(zoomActionList)
-            zoomActionList.setActionZoomMode(zoomFitOrFill)
-                   ####### COLORMAP ACTION #######
+        self.__dataStat = None
+        self.__headerInfo = None
         self.__colormapDialog = None
-        if not noAction and not noToolbarAction:
-            colorMapAction = QubOpenDialogAction(parent=self,name='colormap',iconName='colormap',
-                                                 label='ColorMap',group="color")
-            actions.append(colorMapAction)
+        self.__hLineSelection = None
+        self.__vLineSelection = None
+        self.__lineSelection = None
+        self.__dataPositionValueAction = None
+        self.__zoomValList = zoomValList
+        self.__keepROI = keepROI
+        action_enum = []
 
-            if mdiParent:
-                self.__colormapDialog = QubColormapDialog(parent=mdiParent)
-                mdiParent.addNewChildOfMainWindow(mainWindow,self.__colormapDialog)
-            else:
-                self.__colormapDialog = QubColormapDialog(parent=None)
-            colorMapAction.setDialog(self.__colormapDialog)
-            self.__colormapDialog.setColormapNRefreshCallBack(self.__ImageNViewPlug.colormap(),
-                                                              self.refresh)
-            self.__ImageNViewPlug.setColorMapDialog(self.__colormapDialog)
-               ####### CHANGE FOREGROUND COLOR #######
-        if not noAction and not noToolbarAction:
-            fcoloraction = QubForegroundColorAction(name="color", group="selection")
-            actions.append(fcoloraction)
-
-                 ####### Horizontal selection #######
-        if not noAction and not noToolbarAction:
-            self.__hLineSelection = QubHLineDataSelectionAction(parent=mainWidget,group="selection")
-            self.__hLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
-            actions.append(self.__hLineSelection)
-            self.__actionDataActionPlug.append(self.__hLineSelection)
-        else: self.__hLineSelection = None
-                 ####### Vertical selection #######
-        if not noAction and not noToolbarAction:
-            self.__vLineSelection = QubVLineDataSelectionAction(parent=mainWidget,group="selection")
-            self.__vLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
-            actions.append(self.__vLineSelection)
-            self.__actionDataActionPlug.append(self.__vLineSelection)
-        else: self.__vLineSelection = None
-                    ####### Line selection #######
-        if not noAction and not noToolbarAction:
-            self.__lineSelection = QubLineDataSelectionAction(parent=mainWidget,group="selection")
-            self.__lineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
-            actions.append(self.__lineSelection)
-            self.__actionDataActionPlug.append(self.__lineSelection)
-        else: self.__lineSelection = None
-                  ####### Position and Value #######
         if not noAction:
-            self.__dataPositionValueAction = QubDataPositionValueAction(name="position",
-                                                                        group="image",place="statusbar")
-
-            self.__ImageNViewPlug.setDataPositionValue(self.__dataPositionValueAction)
-            actions.append(self.__dataPositionValueAction)
-        else: self.__dataPositionValueAction = None
-
-        try:
-            self.__mainView.addAction(actions)
-        except:
-            import traceback
-            traceback.print_exc()
-
+            action_enum.extend([QubDataDisplay.QUICK_SCROLL,
+                                QubDataDisplay.SUB_DATA_VIEW,
+                                QubDataDisplay.HEADER_INFO,
+                                QubDataDisplay.POSITION_AND_VALUE])
+                        
+        if not noToolbarAction:
+            action_enum.extend([QubDataDisplay.PRINT_PREVIEW,
+                                QubDataDisplay.SAVE_IMAGE,
+                                QubDataDisplay.STAT_ACTION,
+                                QubDataDisplay.ZOOM,
+                                QubDataDisplay.COLORMAP,
+                                QubDataDisplay.CHANGE_FOREGROUND_COLOR,
+                                QubDataDisplay.HORIZONTAL_SELECTION,
+                                QubDataDisplay.VERTICAL_SELECTION,
+                                QubDataDisplay.LINE_SELECTION])
+        self.addStdAction(action_enum)
+                
         dataArray,captionName = self.setDataSource(data)
         self.__setCaption(captionName)
         if dataArray is not None :
@@ -239,6 +155,135 @@ class QubDataDisplay(qt.QWidget) :
         if not isinstance(action,list) :
             action = [action]
         self.__mainView.addAction(action)
+    ##@brief add standard action
+    #@param action can be one or a list of this enum:
+    # - QubDataDisplay.QUICK_SCROLL
+    # - QubDataDisplay.SUB_DATA_VIEW
+    # - QubDataDisplay.PRINT_PREVIEW
+    # - QubDataDisplay.SAVE_IMAGE
+    # - QubDataDisplay.STAT_ACTION
+    # - QubDataDisplay.HEADER_INFO
+    # - QubDataDisplay.ZOOM
+    # - QubDataDisplay.COLORMAP
+    # - QubDataDisplay.CHANGE_FOREGROUND_COLOR
+    # - QubDataDisplay.HORIZONTAL_SELECTION
+    # - QubDataDisplay.VERTICAL_SELECTION
+    # - QubDataDisplay.LINE_SELECTION
+    # - QubDataDisplay.POSITION_AND_VALUE
+    def addStdAction(self,action_enum) :
+        _,mainWidget = QubMdiCheckIfParentIsMdi(self)
+
+        if not isinstance(action_enum,list) :
+            action_enum = [action_enum]
+                        ####### ACTION #######
+        action_list = []
+                     ####### QUICK SCROLL #######
+        if QubDataDisplay.QUICK_SCROLL in action_enum :
+            self.quickScrollAction = QubQuickScroll(parent=self,group="image",place="statusbar")
+            action_list.append(self.quickScrollAction)
+                       ####### SUB VIEW #######
+        if QubDataDisplay.SUB_DATA_VIEW in action_enum:
+            subDataView = QubSubDataViewAction(parent=self,group="image",place="statusbar")
+            subDataView.setColormapObject(self.__ImageNViewPlug.colormap())
+            self.__actionDataActionPlug.append(subDataView)
+            action_list.append(subDataView)
+            ####### MOUSE POSITION AND DATA VALUE #######
+                     ####### PRINT ACTION #######
+        if QubDataDisplay.PRINT_PREVIEW in action_enum:
+            printAction = QubPrintPreviewAction(name="print",group="admin",withVectorMenu=True)
+            printAction.previewConnect(getPrintPreviewDialog())
+            action_list.append(printAction)
+                      ####### SAVE IMAGE #######
+        if QubDataDisplay.SAVE_IMAGE in action_enum:
+            saveAction = QubOpenDialogAction(parent=mainWidget,label='Save image',name="save", iconName='save',group="admin")
+            saveAction.setConnectCallBack(self._save_dialog_new)
+            action_list.append(saveAction)
+                     ####### STAT ACTION #######
+        mdiParent,mainWindow = QubMdiCheckIfParentIsMdi(self)
+        if QubDataDisplay.STAT_ACTION in action_enum:
+            if mdiParent :
+                self.__dataStat = QubDataStatWidget(parent = mdiParent)
+                mdiParent.addNewChildOfMainWindow(mainWindow,self.__dataStat)
+            else: self.__dataStat = QubDataStatDialog(parent = mainWidget)
+            dataStatAction = QubOpenDialogAction(parent=mainWidget,name='Data statistic',iconName='histogram',group='admin')
+            dataStatAction.setDialog(self.__dataStat)
+            action_list.append(dataStatAction)
+            self.__actionDataActionPlug.append(self.__dataStat)
+                     ####### HEADER INFO #######
+        if QubDataDisplay.HEADER_INFO in action_enum:
+            if mdiParent:
+                self.__headerInfo = QubInfoTableWidget(parent = mdiParent,iconName='datatable',name = 'Header Info')
+                mdiParent.addNewChildOfMainWindow(mainWindow,self.__headerInfo)
+            else: self.__headerInfo = QubInfoTableDialog(parent = mainWidget,iconName='datatable',name = 'Header Info')
+            headerInfoAction = QubOpenDialogAction(parent=mainWidget,name='Header info',iconName='datatable',group='admin',
+                                                   place='contextmenu')
+            headerInfoAction.setDialog(self.__headerInfo)
+            action_list.append(headerInfoAction)
+                       ####### ZOOM LIST #######
+        if QubDataDisplay.ZOOM in action_enum:
+            zoomActionList = QubZoomListAction(place = "toolbar",
+                                               initZoom = 1,zoomValList = self.__zoomValList,keepROI = self.__keepROI,
+                                               show = 1,group = "image")
+            action_list.append(zoomActionList)
+                     ####### ZOOM Action #######
+            zoomFitOrFill = QubZoomAction(keepROI = self.__keepROI,place = "toolbar",group = "image")
+            action_list.append(zoomFitOrFill)
+
+                   ####### LINK ZOOM ACTION #######
+            zoomFitOrFill.setList(zoomActionList)
+            zoomActionList.setActionZoomMode(zoomFitOrFill)
+                   ####### COLORMAP ACTION #######
+        if QubDataDisplay.COLORMAP in action_enum:
+            colorMapAction = QubOpenDialogAction(parent=self,name='colormap',iconName='colormap',
+                                                 label='ColorMap',group="color")
+            action_list.append(colorMapAction)
+
+            if mdiParent:
+                self.__colormapDialog = QubColormapDialog(parent=mdiParent)
+                mdiParent.addNewChildOfMainWindow(mainWindow,self.__colormapDialog)
+            else:
+                self.__colormapDialog = QubColormapDialog(parent=None)
+            colorMapAction.setDialog(self.__colormapDialog)
+            self.__colormapDialog.setColormapNRefreshCallBack(self.__ImageNViewPlug.colormap(),
+                                                              self.refresh)
+            self.__ImageNViewPlug.setColorMapDialog(self.__colormapDialog)
+               ####### CHANGE FOREGROUND COLOR #######
+        if QubDataDisplay.CHANGE_FOREGROUND_COLOR in action_enum:
+            fcoloraction = QubForegroundColorAction(name="color", group="selection")
+            action_list.append(fcoloraction)
+
+                 ####### Horizontal selection #######
+        if QubDataDisplay.HORIZONTAL_SELECTION in action_enum:
+            self.__hLineSelection = QubHLineDataSelectionAction(parent=mainWidget,group="selection")
+            self.__hLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
+            action_list.append(self.__hLineSelection)
+            self.__actionDataActionPlug.append(self.__hLineSelection)
+                 ####### Vertical selection #######
+        if QubDataDisplay.VERTICAL_SELECTION in action_enum:
+            self.__vLineSelection = QubVLineDataSelectionAction(parent=mainWidget,group="selection")
+            self.__vLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
+            action_list.append(self.__vLineSelection)
+            self.__actionDataActionPlug.append(self.__vLineSelection)
+                    ####### Line selection #######
+        if QubDataDisplay.LINE_SELECTION in action_enum:
+            self.__lineSelection = QubLineDataSelectionAction(parent=mainWidget,group="selection")
+            self.__lineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
+            action_list.append(self.__lineSelection)
+            self.__actionDataActionPlug.append(self.__lineSelection)
+                  ####### Position and Value #######
+        if QubDataDisplay.POSITION_AND_VALUE in action_enum:
+            self.__dataPositionValueAction = QubDataPositionValueAction(name="position",
+                                                                        group="image",place="statusbar")
+
+            self.__ImageNViewPlug.setDataPositionValue(self.__dataPositionValueAction)
+            action_list.append(self.__dataPositionValueAction)
+
+        try:
+            self.__mainView.addAction(action_list)
+        except:
+            import traceback
+            traceback.print_exc()
+
     ##@brief set data from an external source
     #@param data a numpy 2 dimension array
     def setData(self,data) :
