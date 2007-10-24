@@ -106,7 +106,7 @@ class QubDataDisplay(qt.QWidget) :
                                 QubDataDisplay.HEADER_INFO,
                                 QubDataDisplay.POSITION_AND_VALUE])
                         
-        if not noToolbarAction:
+        if not noAction and not noToolbarAction:
             action_enum.extend([QubDataDisplay.PRINT_PREVIEW,
                                 QubDataDisplay.SAVE_IMAGE,
                                 QubDataDisplay.STAT_ACTION,
@@ -226,12 +226,12 @@ class QubDataDisplay(qt.QWidget) :
                                                show = 1,group = "image")
             action_list.append(zoomActionList)
                      ####### ZOOM Action #######
-            zoomFitOrFill = QubZoomAction(keepROI = self.__keepROI,place = "toolbar",group = "image")
-            action_list.append(zoomFitOrFill)
+            self.__zoomFitOrFill = QubZoomAction(keepROI = self.__keepROI,place = "toolbar",group = "image")
+            action_list.append(self.__zoomFitOrFill)
 
                    ####### LINK ZOOM ACTION #######
-            zoomFitOrFill.setList(zoomActionList)
-            zoomActionList.setActionZoomMode(zoomFitOrFill)
+            self.__zoomFitOrFill.setList(zoomActionList)
+            zoomActionList.setActionZoomMode(self.__zoomFitOrFill)
                    ####### COLORMAP ACTION #######
         if QubDataDisplay.COLORMAP in action_enum:
             colorMapAction = QubOpenDialogAction(parent=self,name='colormap',iconName='colormap',
@@ -403,6 +403,11 @@ class QubDataDisplay(qt.QWidget) :
         if self.__dataStat: self.__dataStat.setCaption(name)
         if self.__headerInfo: self.__headerInfo.setCaption(name)
         
+    ##@brief activated fit 2 screen
+    def setFit2Screen(self,aFlag) :
+        if self.__zoomFitOrFill:
+           self.__zoomFitOrFill.setState(aFlag)
+           
     def resizeEvent(self,event):
         try:
             sMode = self.__mainView.view().scrollbarMode()
@@ -515,7 +520,7 @@ class _ShmDataPlug(QubPlug) :
             TryReconnect(cnt,'%s:%s' % (specVersion.name(),self.__specShm.name()))
                             
         return aEndFlag
-
+        
 class _MainViewPlug(QubImage2PixmapPlug) :
     def __init__(self,receiver) :
         QubImage2PixmapPlug.__init__(self)
@@ -535,6 +540,7 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
         self.__receiver = weakref.ref(image2Pixmap)
         self.__colormapDialog = None
         self.__dataDisplay = weakref.ref(dataDisplay)
+        self.__dataPositionValueAction = None
         
     def setImage(self,imagezoomed,fullimage) :
         dataDisplay = self.__dataDisplay()
@@ -548,7 +554,7 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
             fulldata,resizedData = self.data()
             if resizedData is not None :
                 self.__colormapDialog.setData(resizedData)
-                self.__dataPositionValueAction.setData(resizedData)
+                if self.__dataPositionValueAction: self.__dataPositionValueAction.setData(resizedData)
         receiver = self.__receiver()
         if receiver:
             receiver.putImage(imagezoomed,fullimage)

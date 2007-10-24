@@ -506,14 +506,15 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
                 xOriPixmapCpy,yOriPixmapCpy = 0,0
                 scaleWidth,scaleHeight = self.width(),self.height()
                 image = self.__image
-                
-            image = image.scale(scaleWidth,scaleHeight)
-            if self.__pixmap.size != image.size() :
-                self.__pixmap.resize(image.size())
-            self.__pixmapIO.putImage(self.__pixmap,0,0,image)
 
-            
-            painter.drawPixmap(self.x() + xOriPixmapCpy,self.y() + yOriPixmapCpy,self.__pixmap)
+            if not image.isNull() :
+                image = image.scale(scaleWidth,scaleHeight)
+                if self.__pixmap.size != image.size() :
+                    self.__pixmap.resize(image.size())
+                self.__pixmapIO.putImage(self.__pixmap,0,0,image)
+
+
+                painter.drawPixmap(self.x() + xOriPixmapCpy,self.y() + yOriPixmapCpy,self.__pixmap)
 
     def rtti(self) :
         return QubCanvasPixmap.RTTI

@@ -311,7 +311,24 @@ class QubViewToolbar(qt.QDockArea):
             self.__showGroup(groupName, 0)
         else:
             self.__showGroup(groupName, 1)
-        
+    ##@brief hide or show the group in the toolbar
+    #
+    #@param name the name of the group
+    #@param aVisibleFlag :
+    # - if True show the group in the toolbar
+    # - else hide the group
+    #
+    def setGroupVisible(self,name,aFlag) :
+        try:
+            groupObject = self.__groupList[name]
+        except KeyError:
+            import traceback
+            traceback.print_exc()
+        else:
+            previousVisibility = groupObject['visible']
+            if previousVisibility != aFlag:
+                self.__showGroup(name,not previousVisibility)
+                
     def __showGroup(self, gName, inToolbar):
         """
         show group (dockarea) in "toolbar" widget of the Qubview if 
