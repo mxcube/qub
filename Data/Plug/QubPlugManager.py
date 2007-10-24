@@ -13,7 +13,10 @@ class QubPlugManager :
         pollplug.setNextPlugMgr(self)
         self.__timeout = timeout
         self.__calleachtime = calleachtimeflag
-        
+
+    def timeout(self) :
+        return self.__timeout
+    
     def nbPlug(self) :
         return len(self.__plugs)
     

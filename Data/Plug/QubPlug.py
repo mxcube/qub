@@ -113,6 +113,12 @@ class QubPollingPlug(QubPlug) :
         self.changeInterval(timeout)
         self.startPolling()
 
+    def timeout(self) :
+        if self._nextplugmgr:
+            return self._nextplugmgr.timeout()
+        else:
+            return QubPlug.timeout(self)
+        
     def stop(self) :
         self.stopPolling()
     
