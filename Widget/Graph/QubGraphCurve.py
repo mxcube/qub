@@ -1,5 +1,6 @@
 import logging
 import Qwt5 as qwt
+import qt
 
 from Qub.Widget.Graph.QubGraph import QubGraphView
 from Qub.Widget.Graph.QubGraphCurveMarker import QubGraphCurvePointControl
@@ -12,7 +13,23 @@ from Qub.Widget.Graph.QubGraphCurveMarker import QubGraphCurvePointFollowMarked
 #
 #@ingroup GraphDisplay
 #
-class QubGraphCurve(qwt.QwtPlotCurve) :
+class QubGraphCurve(qwt.QwtPlotCurve):
+    Black = qt.Qt.black
+    Red = qt.Qt.red
+    Blue = qt.Qt.blue
+    Green = qt.Qt.green
+
+    NoSymbol = qwt.QwtSymbol.NoSymbol
+    Diamond = qwt.QwtSymbol.Diamond
+    Rect = qwt.QwtSymbol.Rect
+    Triangle = qwt.QwtSymbol.Diamond
+    Cross = qwt.QwtSymbol.Cross
+    Hexagon = qwt.QwtSymbol.Hexagon
+
+    NoCurve = qwt.QwtPlotCurve.NoCurve
+    Lines = qwt.QwtPlotCurve.Lines
+    Dots = qwt.QwtPlotCurve.Dots
+    
     def __init__(self,title = '',**keys) :
         qwt.QwtPlotCurve.__init__(self,title)
         self.__controlPoint = {}
@@ -21,6 +38,16 @@ class QubGraphCurve(qwt.QwtPlotCurve) :
         
         self._X = None
         self._Y = None
+                    
+    def setCurveStyle(self, symbol=NoSymbol, style=Lines, color=Black):
+        brush = qt.QBrush(color)
+        pen = qt.QPen(color)
+        size = qt.QSize(5,5)
+        sym = qwt.QwtSymbol(symbol, brush, pen, size)
+        self.setSymbol(sym)
+        self.setPen(pen)
+        self.setStyle(style)
+                
     ##@brief get or create a control point on that curves
     #
     #@param anId the point id of the curve
@@ -114,3 +141,4 @@ class QubGraphCurve(qwt.QwtPlotCurve) :
                 control.attach(graph)
         if self.__markedFollow :
             self.__markedFollow.attach(graph)
+                

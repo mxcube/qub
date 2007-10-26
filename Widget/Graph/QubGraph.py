@@ -16,6 +16,12 @@ from Qub.Widget.QubMdi import QubMdiCheckIfParentIsMdi
 #
 #This class is herited from qwt.QwtPlot
 class QubGraph(qwt.QwtPlot) :
+
+    LeftLegend = qwt.QwtPlot.LeftLegend
+    RightLegend = qwt.QwtPlot.RightLegend 
+    BottomLegend = qwt.QwtPlot.BottomLegend 
+    TopLegend = qwt.QwtPlot.TopLegend 
+    
     def __init__(self,parent=None,name='') :
         qwt.QwtPlot.__init__(self,qwt.QwtText(name),parent)
         canvas = self.canvas()
@@ -25,6 +31,24 @@ class QubGraph(qwt.QwtPlot) :
         self.__grid.setMajPen(qt.QPen(qt.Qt.black,1,qt.Qt.DotLine))
         self.__grid.attach(self)
         self.__defaultCursor = qt.QCursor(self.canvas().cursor())
+        
+        self.__legendContainer = qwt.QwtLegend(self)
+        self.insertLegend(self.__legendContainer)
+        
+    def legendEnabled(self, state, position=None):
+        if position is not None:
+            self.plotLayout().setLegendPosition(position)
+            layout = self.__legendContainer.contentsWidget().layout()
+            if position == self.BottomLegend or \
+               position == self.TopLegend:
+                layout.setMaxCols(0)
+            else:
+                layout.setMaxCols(1)
+        if state:
+            self.__legendContainer.show()
+        else:
+            self.__legendContainer.hide()
+
     ##@brief set the absciss label
     #
     def setXLabel(self,label) :
@@ -72,6 +96,7 @@ class QubGraph(qwt.QwtPlot) :
             newItem.attach(graph)
         graph.replot()
         return graph
+        
 
 ##@brief same as QubGraph but herited from QubView so ,
 #you can add some action
