@@ -550,11 +550,11 @@ class _ImageNViewPlug(QubRawData2ImagePlug) :
             if dataDisplay.quickScrollAction :
                 dataDisplay.quickScrollAction.setImageNPixmap(imagezoomed,iconPixmap)
             
-        if self.__colormapDialog:
-            fulldata,resizedData = self.data()
-            if resizedData is not None :
-                self.__colormapDialog.setData(resizedData)
-                if self.__dataPositionValueAction: self.__dataPositionValueAction.setData(resizedData)
+        
+        fulldata,resizedData = self.data()
+        if resizedData is not None :
+            if self.__colormapDialog: self.__colormapDialog.setData(resizedData)
+            if self.__dataPositionValueAction: self.__dataPositionValueAction.setData(resizedData)
         receiver = self.__receiver()
         if receiver:
             receiver.putImage(imagezoomed,fullimage)
