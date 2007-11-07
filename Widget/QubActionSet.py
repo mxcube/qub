@@ -568,8 +568,10 @@ class QubLineDataSelectionAction(QubToggleImageAction):
                 ## TMP Workaround to optimize interpol
                 # we will crop the data
                 xTop,xEnd = min(startx,endx),max(startx,endx)
+                if xEnd - xTop < 2: xEnd += 1
                 yTop,yEnd = min(starty,endy),max(starty,endy)
-                cropData = data[yTop - 5:yEnd + 5,xTop - 5:xEnd + 5]
+                if yEnd - yTop < 2: yEnd += 1
+                cropData = data[yTop:yEnd + 1,xTop:xEnd + 1]
 
                 translation = numpy.array([xTop,yTop])
                 lines = lines - translation

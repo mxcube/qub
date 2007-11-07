@@ -79,9 +79,10 @@ static PyObject* down_size(PyObject *self, PyObject *args)
   return (PyObject*)aReturnArray;
 }
 
-template <class IN>
-inline PyObject* _template_interpol(IN* helppointer,long nd_y,long npoints,double dummy,
-				    PyArrayObject **xdata,PyArrayObject *ydata)
+template <class POINT_TYPE,class IN>
+inline PyObject* _template_interpol(POINT_TYPE* helppointer,long nd_y,long npoints,double dummy,
+				    PyArrayObject **xdata,PyArrayObject *ydata,
+				    IN* ydataPointer)
 {
 
   long *points  = (long*)malloc((1 << nd_y) * nd_y * sizeof(int));
@@ -168,7 +169,8 @@ inline PyObject* _template_interpol(IN* helppointer,long nd_y,long npoints,doubl
 		  offset += points[(nd_y * k) + j] * (ydata -> strides[j]);
 		  dhelp = (l % 2) ? factors[j] * dhelp : (1.0 - factors[j]) * dhelp;
 		}
-	      yresult += *((double *) (ydata -> data + offset)) * dhelp;
+	      IN dataValue = *((IN *) (ydata -> data + offset));
+	      yresult += dataValue * dhelp;
 	    }
 	}
       *((double *) (result->data +i*result->strides[0])) =  yresult;
@@ -186,6 +188,33 @@ inline PyObject* _template_interpol(IN* helppointer,long nd_y,long npoints,doubl
 }
 
 extern "C"{static PyObject * _interpol(PyObject *self, PyObject *args);}
+#define INTERPOL(type1) \
+switch(ydata->descr->type_num) \
+  { \
+  case NPY_BYTE:  \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(char*)ydata->data);break; \
+  case NPY_UBYTE: \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(unsigned char*)ydata->data);break; \
+  case NPY_SHORT: \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(short*)ydata->data);break; \
+  case NPY_USHORT: \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(unsigned short*)ydata->data);break; \
+  case NPY_INT: \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(int*)ydata->data);break; \
+  case NPY_UINT: \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(unsigned int*)ydata->data);break; \
+  case NPY_LONG: \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(long*)ydata->data);break; \
+  case NPY_ULONG: \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(unsigned long*)ydata->data);break; \
+  case NPY_FLOAT: \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(float*)ydata->data);break; \
+  case NPY_DOUBLE:  \
+    result = _template_interpol((type1)xinter->data,nd_y,npoints,dummy,xdata,ydata,(double*)ydata->data);break; \
+  default: \
+    result = NULL; \
+    break; \
+  } 
 
 static PyObject *
 _interpol(PyObject *self, PyObject *args)
@@ -208,7 +237,7 @@ _interpol(PyObject *self, PyObject *args)
       return NULL;
     }
   ydata = (PyArrayObject *)
-    PyArray_CopyFromObject(yinput, PyArray_DOUBLE,0,0);
+    PyArray_ContiguousFromObject(yinput, NPY_NOTYPE,0,0);
   if(!ydata)
     {
       PyErr_SetString(DataFuncsError,"Copy from Object error!\n");    
@@ -312,25 +341,25 @@ _interpol(PyObject *self, PyObject *args)
   switch(xinter->descr->type_num)
     {
     case NPY_BYTE: 
-      result = _template_interpol((char*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(char*);break;
     case NPY_UBYTE:
-      result = _template_interpol((unsigned char*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(unsigned char*);break;
     case NPY_SHORT:
-      result = _template_interpol((short*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(short*);break;
     case NPY_USHORT:
-      result = _template_interpol((unsigned short*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(unsigned short*);break;
     case NPY_INT:
-      result = _template_interpol((int*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(int*);break;
     case NPY_UINT:
-      result = _template_interpol((unsigned int*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(unsigned int*);break;
     case NPY_LONG:
-      result = _template_interpol((long*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(long*);break;
     case NPY_ULONG:
-      result = _template_interpol((unsigned long*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(unsigned long*);break;
     case NPY_FLOAT:
-      result = _template_interpol((float*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(float*);break;
     case NPY_DOUBLE: 
-      result = _template_interpol((double*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      INTERPOL(double*);break;
       break;
     default:
       result = NULL;
