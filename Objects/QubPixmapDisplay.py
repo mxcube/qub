@@ -22,8 +22,6 @@ class QubPixmapDisplay(QubCanvasViewBase) :
         
         self.__plug = None
               
-        self.__contextMenu = None
-                
         self.__lastImage = None
         
     ##@brief link this object with the pixmap object provider

@@ -34,6 +34,9 @@ class QubGraph(qwt.QwtPlot) :
         
         self.__legendContainer = qwt.QwtLegend(self)
         self.insertLegend(self.__legendContainer)
+        layout = self.__legendContainer.contentsWidget().layout()
+        layout.setMaxCols(0)
+        self.plotLayout().setLegendPosition(qwt.QwtPlot.BottomLegend)
         
     def legendEnabled(self, state, position=None):
         if position is not None:

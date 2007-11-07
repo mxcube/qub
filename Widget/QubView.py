@@ -204,6 +204,9 @@ class QubView(qt.QWidget):
             for action in self.__actionPending4ContextMenu:
                 if self.__toolbar is None :
                     self.__defaultContextMenu = qt.QPopupMenu(self)
+                    view = self.view()
+                    if hasattr(view,"setContextMenu") :
+                        view.setContextMenu(self.__defaultContextMenu)
                 else:
                     self.__defaultContextMenu = self.__toolbar.contextMenu()
                 action.addMenuWidget(self.__defaultContextMenu)

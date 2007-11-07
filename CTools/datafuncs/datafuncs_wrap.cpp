@@ -1,6 +1,6 @@
 #include <Python.h>
 #include <stdlib.h>
-#include <Numeric/arrayobject.h>
+#include <numpy/arrayobject.h>
 #include "down.h"
 
 #define DOWN_SIZE(type) \
@@ -47,24 +47,24 @@ static PyObject* down_size(PyObject *self, PyObject *args)
   int dimension[] = {aReturnHeight,aReturnWidth};
   switch (src->descr->type_num) 
     {
-    case PyArray_UINT:
+    case NPY_UINT:
       DOWN_SIZE(unsigned);break;
-    case PyArray_USHORT:
+    case NPY_USHORT:
       DOWN_SIZE(unsigned short);break;
-    case PyArray_LONG: 
+    case NPY_LONG: 
       DOWN_SIZE(long);break;
-    case PyArray_INT: 
+    case NPY_INT: 
       DOWN_SIZE(int);break;
-    case PyArray_SHORT: 
+    case NPY_SHORT: 
       DOWN_SIZE(short);break;
-    case PyArray_UBYTE: 
+    case NPY_UBYTE: 
       DOWN_SIZE(unsigned char);break;
-    case PyArray_CHAR:
-    case PyArray_SBYTE: 
+    case NPY_CHAR:
+    case NPY_BYTE: 
       DOWN_SIZE(char);break;
-    case PyArray_FLOAT: 
+    case NPY_FLOAT: 
       DOWN_SIZE(float);break;
-    case PyArray_DOUBLE: 
+    case NPY_DOUBLE: 
       DOWN_SIZE(double);break;
     default:
       {
@@ -79,6 +79,112 @@ static PyObject* down_size(PyObject *self, PyObject *args)
   return (PyObject*)aReturnArray;
 }
 
+template <class IN>
+inline PyObject* _template_interpol(IN* helppointer,long nd_y,long npoints,double dummy,
+				    PyArrayObject **xdata,PyArrayObject *ydata)
+{
+
+  long *points  = (long*)malloc((1 << nd_y) * nd_y * sizeof(int));
+  long *indices = (long*)malloc(nd_y * sizeof(int));
+  for(int i=0;i<nd_y;i++) indices[i] = -1;
+
+  double *factors = (double*)malloc(nd_y * sizeof(double));
+  int dimensions [] = {npoints};
+    
+  PyArrayObject *result = (PyArrayObject *) 
+    PyArray_FromDims(1,dimensions,PyArray_DOUBLE);
+  long badpoint;
+  long index1;
+  for(int i=0;i<npoints;++i)
+    {
+      badpoint = 0;
+      for(int j=0; j< nd_y; ++j,++helppointer)
+	{
+	  index1 = -1;
+	  if (!badpoint)
+	    {
+	      double value = (double)*helppointer;
+	      int k = xdata[j]->dimensions[0] - 1;
+	      double *nvalue = (double *) (xdata[j]->data + k * xdata[j]->strides[0]);
+	      if (value >= *nvalue)
+		{
+		  badpoint = 1;
+		}
+	      else
+		{
+		  nvalue = (double *) (xdata[j]->data);
+		  if (value < *nvalue)
+		    badpoint = 1;
+		}
+
+	      if(!badpoint)
+		{
+		  int k = xdata[j]->dimensions[0];
+		  int jl = -1;
+		  int ju = k-1;
+		  if(!badpoint)
+		    {
+		      while((ju-jl) > 1)
+			{
+			  k = (ju+jl)/2;
+			  nvalue = (double *) (xdata[j]->data + k * xdata[j]->strides[0]);
+			  if (value >= *nvalue) jl=k;
+			  else ju=k;                    
+			}
+		      index1=jl;
+		    }
+		  if (index1 < 0)
+		    badpoint = 1;
+		  else
+		    {
+		      double *x1 = (double *) (xdata[j]->data + index1 * xdata[j]->strides[0]);
+		      double *x2 = (double *) (xdata[j]->data + (index1+1) * xdata[j]->strides[0]);
+		      factors[j] = (value - *x1) / (*x2 - *x1);
+		      indices[j] = index1;
+		    }
+		}
+	    }
+	}
+      double yresult;
+      if (badpoint == 1)
+	yresult = dummy;
+      else
+	{
+	  for(int k=0;k<((1 << nd_y) * nd_y);++k)
+	    {
+	      int j = k % nd_y;
+	      long l = nd_y > 1 ? k /(2 * (nd_y - j)) : k;
+	      points[k] = (l % 2) ? indices[j] + 1 : indices[j];
+	    } 
+	  /* the points to interpolate */
+	  yresult = 0.0;
+	  for(int k = 0;k < (1 << nd_y);++k)
+	    {
+	      double dhelp =1.0;
+	      long offset = 0;
+	      for(int j=0;j<nd_y;++j)
+		{
+		  long l = nd_y > 1 ? ((nd_y * k) + j) /(2 * (nd_y - j) ) : ((nd_y * k) + j);
+		  offset += points[(nd_y * k) + j] * (ydata -> strides[j]);
+		  dhelp = (l % 2) ? factors[j] * dhelp : (1.0 - factors[j]) * dhelp;
+		}
+	      yresult += *((double *) (ydata -> data + offset)) * dhelp;
+	    }
+	}
+      *((double *) (result->data +i*result->strides[0])) =  yresult;
+    }
+  free(points);
+  free(indices);
+  free(factors);
+  for(int i=0;i<nd_y;++i)
+    Py_DECREF(xdata[i]);
+
+  free(xdata);
+  Py_DECREF(ydata);
+
+  return PyArray_Return(result);
+}
+
 extern "C"{static PyObject * _interpol(PyObject *self, PyObject *args);}
 
 static PyObject *
@@ -90,17 +196,11 @@ _interpol(PyObject *self, PyObject *args)
   PyObject *xinter0;       /* The array containing the x values */
 
   /* local variables */
-  PyArrayObject    *ydata, *result, **xdata, *xinter;
-  long    i, j, k, l, jl, ju, offset, badpoint; 
-  double  value, *nvalue, *x1, *x2, *factors;
-  double  dhelp, yresult;
+  PyArrayObject    *ydata,**xdata, *xinter;
   double  dummy = -1.0;
-  long    nd_y, nd_x, index1, npoints, *points, *indices;
+  long    nd_y, nd_x, npoints;
   /*int         dimensions[1];*/
-  int     dimensions[1];
   int     dim_xinter[1];
-  double *helppointer;
-    
   /* statements */        
   if(!PyArg_ParseTuple(args, "OOO|d", &xinput, &yinput,&xinter0,&dummy))
     {
@@ -133,16 +233,15 @@ _interpol(PyObject *self, PyObject *args)
       PyErr_SetString(DataFuncsError,"xdata sequence of wrong length\n");
       return NULL;    
     }
-  for(i=0;i<nd_y;++i)
+  for(int i=0;i<nd_y;++i)
     {
       xdata[i] = (PyArrayObject *)
 	PyArray_CopyFromObject((PyObject *)
 			       (PySequence_Fast_GET_ITEM(xinput,i)), PyArray_DOUBLE,0,0);
       if (xdata[i] == NULL){
 	PyErr_SetString(DataFuncsError,"x Copy from Object error!\n");
-	for (j=0;j<i;j++){
+	for(int j=0;j<i;j++)
 	  Py_DECREF(xdata[j]);
-	}
 	free(xdata);
 	Py_DECREF(ydata);  
 	return NULL;
@@ -150,8 +249,8 @@ _interpol(PyObject *self, PyObject *args)
     }
     
   /* check x dimensions are appropriate */
-  j=0;
-  for (i=0;i<nd_y;i++){
+  int j=0;
+  for(int i=0;i<nd_y;++i){
     nd_x = xdata[i]->nd;
     if (nd_x != 1) {
       PyErr_SetString(DataFuncsError,"I need a vector!\n");
@@ -160,7 +259,7 @@ _interpol(PyObject *self, PyObject *args)
     }
     if (xdata[i]->dimensions[0] != ydata->dimensions[i]){
       char buffer[128];
-      sprintf(buffer,"xdata[%ld] does not have appropriate dimension\n",i);
+      sprintf(buffer,"xdata[%d] does not have appropriate dimension\n",i);
       PyErr_SetString(DataFuncsError,buffer);
       ++j;
       break;
@@ -168,14 +267,14 @@ _interpol(PyObject *self, PyObject *args)
   }
   if(j)
     {
-      for (i=0;i<nd_y;i++)
+      for(int i=0;i<nd_y;++i)
 	Py_DECREF(xdata[i]);
       free(xdata);
       Py_DECREF(ydata);
       return NULL;
     }    
 
-  xinter = (PyArrayObject *) PyArray_ContiguousFromObject(xinter0, PyArray_DOUBLE,0,0);
+  xinter = (PyArrayObject *) PyArray_ContiguousFromObject(xinter0, NPY_NOTYPE,0,0);
     
   if (xinter->nd == 1)
     {
@@ -209,110 +308,39 @@ _interpol(PyObject *self, PyObject *args)
     }
 
   npoints = xinter->dimensions[0];
-  helppointer = (double *) xinter->data;
-
-  points  = (long*)malloc((1 << nd_y) * nd_y * sizeof(int));
-  indices = (long*)malloc(nd_y * sizeof(int));
-  for (i=0;i<nd_y;i++)
-    indices[i] = -1;
-
-  factors = (double*)malloc(nd_y * sizeof(double));
-  dimensions [0] = npoints;
-    
-  result = (PyArrayObject *) 
-    PyArray_FromDims(1,dimensions,PyArray_DOUBLE);
-
-  for(i=0;i<npoints;++i)
+  PyObject *result = NULL;
+  switch(xinter->descr->type_num)
     {
-      badpoint = 0;
-      for (j=0; j< nd_y; ++j,++helppointer)
-	{
-	  index1 = -1;
-	  if (!badpoint)
-	    {
-	      value = *helppointer;
-	      k=xdata[j]->dimensions[0] - 1;
-	      nvalue = (double *) (xdata[j]->data + k * xdata[j]->strides[0]);
-	      if (value >= *nvalue)
-		{
-		  badpoint = 1;
-		}
-	      else
-		{
-		  nvalue = (double *) (xdata[j]->data);
-		  if (value < *nvalue)
-		    badpoint = 1;
-		}
-
-	      if(!badpoint)
-		{
-		  k = xdata[j]->dimensions[0];
-		  jl = -1;
-		  ju = k-1;
-		  if(!badpoint)
-		    {
-		      while((ju-jl) > 1)
-			{
-			  k = (ju+jl)/2;
-			  nvalue = (double *) (xdata[j]->data + k * xdata[j]->strides[0]);
-			  if (value >= *nvalue) jl=k;
-			  else ju=k;                    
-			}
-		      index1=jl;
-		    }
-		  if (index1 < 0)
-		    badpoint = 1;
-		  else
-		    {
-		      x1 = (double *) (xdata[j]->data + index1 * xdata[j]->strides[0]);
-		      x2 = (double *) (xdata[j]->data + (index1+1) * xdata[j]->strides[0]);
-		      factors[j] = (value - *x1) / (*x2 - *x1);
-		      indices[j] = index1;
-		    }
-		}
-	    }
-	}
-      if (badpoint == 1)
-	{
-	  yresult = dummy;
-	}
-      else
-	{
-	  for (k=0;k<((1 << nd_y) * nd_y);++k)
-	    {
-	      j = k % nd_y;
-	      l = nd_y > 1 ? k /(2 * (nd_y - j)) : k;
-	      points[k] = (l % 2) ? indices[j] + 1 : indices[j];
-	    } 
-	  /* the points to interpolate */
-	  yresult = 0.0;
-	  for (k=0;k<(1 << nd_y);++k)
-	    {
-	      dhelp =1.0;
-	      offset = 0;
-	      for (j=0;j<nd_y;++j)
-		{
-		  l = nd_y > 1 ? ((nd_y * k) + j) /(2 * (nd_y - j) ) : ((nd_y * k) + j);
-		  offset += points[(nd_y * k) + j] * (ydata -> strides[j]);
-		  dhelp = (l % 2) ? factors[j] * dhelp : (1.0 - factors[j]) * dhelp;
-		}
-	      yresult += *((double *) (ydata -> data + offset)) * dhelp;
-	    }
-	}
-      *((double *) (result->data +i*result->strides[0])) =  yresult;
+    case NPY_BYTE: 
+      result = _template_interpol((char*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+    case NPY_UBYTE:
+      result = _template_interpol((unsigned char*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+    case NPY_SHORT:
+      result = _template_interpol((short*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+    case NPY_USHORT:
+      result = _template_interpol((unsigned short*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+    case NPY_INT:
+      result = _template_interpol((int*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+    case NPY_UINT:
+      result = _template_interpol((unsigned int*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+    case NPY_LONG:
+      result = _template_interpol((long*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+    case NPY_ULONG:
+      result = _template_interpol((unsigned long*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+    case NPY_FLOAT:
+      result = _template_interpol((float*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+    case NPY_DOUBLE: 
+      result = _template_interpol((double*)xinter->data,nd_y,npoints,dummy,xdata,ydata);break;
+      break;
+    default:
+      result = NULL;
+      break;
     }
-  free(points);
-  free(indices);
-  free(factors);
-  for (i=0;i<nd_y;++i)
-    Py_DECREF(xdata[i]);
-
-  free(xdata);
-  Py_DECREF(ydata);
   Py_DECREF(xinter);
-
-  return PyArray_Return(result);
+  return result;
 }
+
+
 
 
 static PyMethodDef RESIZE[] = {

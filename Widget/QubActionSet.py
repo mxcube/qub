@@ -565,8 +565,17 @@ class QubLineDataSelectionAction(QubToggleImageAction):
                     lines = lines * rotation
                     lines = lines + translation
                 except ValueError: return
+                ## TMP Workaround to optimize interpol
+                # we will crop the data
+                xTop,xEnd = min(startx,endx),max(startx,endx)
+                yTop,yEnd = min(starty,endy),max(starty,endy)
+                cropData = data[yTop - 5:yEnd + 5,xTop - 5:xEnd + 5]
 
-                inter_result = datafuncs.interpol([range(data.shape[1]),range(data.shape[0])],data.T,lines,0)
+                translation = numpy.array([xTop,yTop])
+                lines = lines - translation
+                inter_result = datafuncs.interpol([range(cropData.shape[1]),range(cropData.shape[0])],cropData.T,lines,0)
+                ## END Workaround
+                ##inter_result = datafuncs.interpol([range(data.shape[1]),range(data.shape[0])],data.T,lines,0)
                 inter_result.shape = inter_result.shape[0] / len(abscis),len(abscis)
 
                 average = numpy.zeros(len(inter_result[0]))
@@ -2291,11 +2300,14 @@ class QubSelectPointAction(QubToggleImageAction) :
     #@param iconName the icon file name without extantion locate in Qub.Icon.IconSet
     #@param actionInfo the Info displayed in the View when the action is Actif
     #@param mosaicMode if True the point location is reference by the mosaic Images
-    def __init__(self,iconName='movetopos',actionInfo=None,mosaicMode = False,**keys) :
+    #@param residualMode if True there is a residual point on the last click
+    def __init__(self,iconName='movetopos',actionInfo=None,mosaicMode = False,
+                 residualMode = False,**keys) :
         QubToggleImageAction.__init__(self,iconName=iconName,**keys)
         self.__actionInfo = actionInfo
         self.drawingMgrPt = None
         self.__mosaicMode = mosaicMode
+        self.__residualMode = residualMode
         
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self,qubImage)
@@ -2306,6 +2318,14 @@ class QubSelectPointAction(QubToggleImageAction) :
         self.drawingMgrPt.setEndDrawCallBack(self.pointSelected)
         self.drawingMgrPt.setDrawingEvent(QubMoveNPressed1Point)
         self.drawingMgrPt.setDubModeCallBack(self._unactiveAction)
+        if self.__residualMode:
+            self.__residualPoint,_ = QubAddDrawing(qubImage,
+                                                   self.__mosaicMode and QubMosaicPointDrawingMgr or QubPointDrawingMgr,
+                                                   QubCanvasTarget)
+            qt.QObject.connect(qubImage,qt.PYSIGNAL("ForegroundColorChanged"),
+                               self.__residualPoint.setColor)
+        else:
+            self.__residualPoint = None
         if self.__actionInfo: self.drawingMgrPt.setActionInfo(self.__actionInfo)
         self.connect(qubImage,qt.PYSIGNAL("ForegroundColorChanged"),
                      self.drawingMgrPt.setColor)
@@ -2339,10 +2359,15 @@ class QubSelectPointAction(QubToggleImageAction) :
         else:
             self.drawingMgrPt.hide()
             self.drawingMgrPt.stopDrawing()
-     
+            if self.__residualPoint:
+                self.__residualPoint.hide()
+                
     def pointSelected(self, drawingMgr):
         self.emit(qt.PYSIGNAL("PointSelected"), (drawingMgr,))
-
+        if self.__residualPoint:
+            point = drawingMgr.point()
+            self.__residualPoint.setPoint(*point)
+            self.__residualPoint.show()
 ####################################################################
 ##########                                                ##########
 ##########                QubOpenDialogAction             ##########
