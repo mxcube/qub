@@ -29,7 +29,7 @@ class QubADSC(QubDataIOPlugin) :
                     fd.seek(0)
                     try:
                         header = fd.read(headerSize)
-                        exp = re.compile('([A-Z0-9_]+)=.*?([A-Za-z0-9_]+);')
+                        exp = re.compile('([A-Z0-9_]+)=.*?([A-Za-z0-9_\.\s\:]+);')
                         self.__info = dict(exp.findall(header))
                     except:
                         self.__raiseError(fd)

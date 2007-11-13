@@ -361,8 +361,9 @@ class QubDataDisplay(qt.QWidget) :
         for action in self.__actionDataActionPlug :
             if hasattr(action,'setScaleClass') :
                 action.setScaleClass(scaleClass)
-
-    
+        if self.__dataPositionValueAction:
+            self.__dataPositionValueAction.setScaleClass(scaleClass)
+                
     ##@brief get current data
     #@return a numpy 2 dimension array
     def getData(self) :

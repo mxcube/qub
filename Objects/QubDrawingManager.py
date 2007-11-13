@@ -1,7 +1,6 @@
 import math
 import weakref
 import qt
-import new
 from Qub.Objects.QubDrawingEvent import QubPressedNDrag1Point,QubPressedNDrag2Point,QubNPointClick
 from Qub.Objects.QubDrawingEvent import QubModifyAbsoluteAction
 from Qub.Objects.QubDrawingEvent import QubModifyRelativeAction
@@ -72,24 +71,29 @@ class QubDrawingMgr :
         if not objects_to_call:
             raise AttributeError, attr
 
-        def call_objects(self, *args):
-            objects_to_call = self._drawingObjects
-            for link,canvas,matrix,objectlist in self._foreignObjects:
-                objects_to_call += objectlist
-            objects_to_call = [x for x in objects_to_call if hasattr(x, attr)]
-          
-            returnValues = []
-            for obj in objects_to_call:
-                m = getattr(obj, attr)
+        class calleach:
+            def __init__(self, method, drawingObject,foreignObjects):
+                self.method = method
+                self.__drawingObjects = drawingObject
+                self.__foreignObjects = foreignObjects
+                
+            def __call__(self, *args, **kwargs):
+                objects_to_call = []
+                objects_to_call.extend(self.__drawingObjects)
+                for link,canvas,matrix,objectlist in self.__foreignObjects:
+                    objects_to_call += objectlist
+                objects_to_call = [x for x in objects_to_call if hasattr(x, self.method)]
+                returnValues = []
+                for obj in objects_to_call:
+                    m = getattr(obj, self.method)
+                    try:
+                        returnValues.append(m(*args,**kwargs))
+                    except Exception, err:
+                        # error description is in 'err'
+                        pass
+                return returnValues
             
-                try:
-                    returnValues.append(m(*args))
-                except Exception, err:
-                    # error description is in 'err'
-                    pass
-            return returnValues
-
-        m=new.instancemethod(call_objects, self, self.__class__)
+        m = calleach(attr,self._drawingObjects,self._foreignObjects)
         self.__dict__[attr]=m
         return m               
             

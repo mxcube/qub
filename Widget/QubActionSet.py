@@ -1701,7 +1701,7 @@ class QubDataPositionValueAction(QubPositionAction):
     #
     def setScaleClass(self,scaleClass) :
         if scaleClass is not None:
-            labels = self.__scaleClass.getLabels()
+            labels = scaleClass.getLabels()
             if labels:
                 if len(labels) > 3 :
                     logging.getLogger().warning('QubDataPositionValueAction don\'t manage more than 3 values')
@@ -1715,6 +1715,7 @@ class QubDataPositionValueAction(QubPositionAction):
                 labelWidget.setText(labelName)
                 
         self.__scaleClass = scaleClass
+        
     def addStatusWidget(self,parent) :
         QubPositionAction.addStatusWidget(self,parent)
         self._zLabel = qt.QLabel("\tZ:",self._widget)
