@@ -1,4 +1,5 @@
-
+import qt
+import struct
 from Qub.Objects.QubDrawingManager import QubAddDrawing,Qub2PointSurfaceDrawingMgr
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasPixmap
 
@@ -29,6 +30,56 @@ class QubMosaicImage :
         self.__isShown = False
         if self.mosaicView is not None:
             self.mosaicView.refresh()
+
+    def __getstate__(self):
+        try:
+            odict = self.__dict__.copy()
+            odict['mosaicView'] = None
+            odict['_QubMosaicImage__drawingManager'] = None
+            odict['_QubMosaicImage__lastImageSize'] = None
+            odict['_QubMosaicImage__isShown'] = False
+            odict['imageString'] = self.__image.bits().asstring(self.__image.numBytes())
+            odict['imageWidth'] = self.__image.width()
+            odict['imageHeight'] = self.__image.height()
+            odict['imageDepth'] = self.__image.depth()
+            del odict['_QubMosaicImage__image']
+
+            colorTable = self.__image.colorTable()
+            if colorTable:
+               odict['imageColortableNbColor'] = self.__image.numColors()
+               odict['imageColortable'] = colorTable.asstring(self.__image.numColors() * 4)
+        except AttributeError:
+            import traceback
+            traceback.print_exc()
+            pass
+        return odict
+
+    def __setstate__(self,dict):
+        try:
+            imageString = dict['imageString']
+            del dict['imageString']
+            imageWidth = dict['imageWidth']
+            del dict['imageWidth']
+            imageHeight = dict['imageHeight']
+            del dict['imageHeight']
+            imageDepth = dict['imageDepth']
+            del dict['imageDepth']
+            im = qt.QImage(imageString,imageWidth,imageHeight,imageDepth,None,0,qt.QImage.IgnoreEndian)
+            im.imageString = imageString
+            try:
+                numColor = dict['imageColortableNbColor']
+                del dict['imageColortableNbColor']
+                colorTable = dict['imageColortable']
+                del dict['imageColortable']
+                unpackstr = '%dL' % numColor
+                im.setNumColors(numColor)
+                for i,color in enumerate(struct.unpack(unpackstr,colorTable)) :
+                    im.setColor(i,color)
+            except KeyError: pass
+            self.__image = im
+        finally:
+            self.__dict__.update(dict)
+            
     ##@brief set a QImage
     #
     #@param image a QImage
