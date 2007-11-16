@@ -392,3 +392,153 @@ public:
   ~LutError();
  const char* msg() const;
 };
+
+class Stat
+{
+%TypeHeaderCode
+#include <pixmaptools_stat.h>
+%End
+%TypeCode
+#define PY_ARRAY_UNIQUE_SYMBOL _PixmapNumpyArray
+#define NO_IMPORT_ARRAY
+#include "numpy/arrayobject.h"
+template<class IN> 
+inline void _histo_full(IN* data,int nbElem,NPY_TYPES type,PyObject* &Y,PyObject* &X)
+{
+  std::vector<IN> vectorX;
+  std::vector<int> vectorY;
+  Py_BEGIN_ALLOW_THREADS;
+  Stat::histo_full<IN>(data,nbElem,vectorY,vectorX);
+  Py_END_ALLOW_THREADS;
+  npy_intp ydims[] = {vectorY.size()};
+  Y = PyArray_SimpleNew(1,ydims,NPY_INT);
+  typename std::vector<int>::iterator i = vectorY.begin();
+  for(int * Ydata = (int*)((PyArrayObject*)Y)->data;
+      i != vectorY.end();++i,++Ydata)
+    *Ydata = *i;
+
+  npy_intp xdims[] = {vectorX.size()};
+  X = PyArray_SimpleNew(1,xdims,type);
+  typename std::vector<IN>::iterator j = vectorX.begin();
+  for(IN *Xdata = (IN*)((PyArrayObject*)X)->data;
+      j != vectorX.end();++j,++Xdata)
+       *Xdata = *j;
+}
+
+template<class IN>
+inline void _histo(IN* data,int nbElem,NPY_TYPES type,PyObject* &Y,PyObject* &X,
+		   int bins,const IN aMinVal,const IN aMaxVal)
+{
+  std::vector<IN> vectorX;
+  std::vector<int> vectorY;
+  Py_BEGIN_ALLOW_THREADS;
+  Stat::histo<IN>(data,nbElem,vectorY,vectorX,bins,aMinVal,aMaxVal);
+  Py_END_ALLOW_THREADS;
+  npy_intp ydims[] = {vectorY.size()};
+  Y = PyArray_SimpleNew(1,ydims,NPY_INT);
+  typename std::vector<int>::iterator i = vectorY.begin();
+  for(int * Ydata = (int*)((PyArrayObject*)Y)->data;
+      i != vectorY.end();++i,++Ydata)
+    *Ydata = *i;
+
+  npy_intp xdims[] = {vectorX.size()};
+  X = PyArray_SimpleNew(1,xdims,type);
+  typename std::vector<IN>::iterator j = vectorX.begin();
+  for(IN *Xdata = (IN*)((PyArrayObject*)X)->data;
+      j != vectorX.end();++j,++Xdata)
+    *Xdata = *j;
+}
+
+#define HISTO_FUNCTION \
+  PyArrayObject *src; \
+  if(!(src = (PyArrayObject*)PyArray_ContiguousFromObject(a0,NPY_NOTYPE,0,0))) \
+    return NULL; \
+    \
+    int nbElem = src->dimensions[0]; \
+    for(int i = 1;i < src->nd;++i) \
+       nbElem *= src->dimensions[1]; \
+    PyObject *Y,*X;\
+    switch(src->descr->type_num) \
+    { \
+	case NPY_BYTE: \
+		{ \
+		HISTO(char); \
+		break; \
+		} \
+	case NPY_UBYTE: \
+		{ \
+		HISTO(unsigned char); \
+		break; \
+		} \
+         case NPY_SHORT: \
+		{ \
+		HISTO(short); \
+		break; \
+		} \
+	 case NPY_USHORT: \
+		{ \
+		HISTO(unsigned short); \
+		break; \
+		} \
+         case NPY_INT: \
+		{ \
+		HISTO(int); \
+		break; \
+		} \
+	 case NPY_UINT: \
+		{ \
+		HISTO(unsigned int); \
+		break; \
+		} \
+	 case NPY_LONG: \
+		{ \
+		HISTO(long); \
+		break; \
+		} \
+	 case NPY_ULONG: \
+		{ \
+		HISTO(unsigned long); \
+		break; \
+		} \
+	 case NPY_FLOAT: \
+		{ \
+		HISTO(float); \
+		break; \
+		} \
+	 case NPY_DOUBLE: \
+		{ \
+		HISTO(double); \
+		break; \
+		} \
+	 default: \
+	      return NULL; \
+     }\
+ sipRes = Py_BuildValue("(O,O)",Y,X); \
+ Py_DECREF(src);\
+ Py_DECREF(X);\
+ Py_DECREF(Y);
+%End
+
+public:
+static SIP_PYTUPLE histo_full(SIP_PYOBJECT);
+%MethodCode
+#ifdef HISTO
+#undef HISTO
+#endif
+#define HISTO(TYPE) _histo_full((TYPE*)src->data,nbElem,(NPY_TYPES)src->descr->type_num,Y,X);
+HISTO_FUNCTION
+%End
+
+static SIP_PYOBJECT histo(SIP_PYOBJECT,int,double = 0,double = 0);
+%MethodCode
+#ifdef HISTO
+#undef HISTO
+#endif
+#define HISTO(TYPE)  \
+ TYPE maxVal,minVal;\
+ minVal = (TYPE)a2; \
+ maxVal = (TYPE)a3; \
+ _histo((TYPE*)src->data,nbElem,(NPY_TYPES)src->descr->type_num,Y,X,a1,minVal,maxVal);
+HISTO_FUNCTION
+%End
+};

@@ -32,7 +32,7 @@ whole_line = ''
 for line in bfile :
     if 'sources' in line :
         begin,end = line.split('=')
-        line = '%s = pixmaptools_io.cpp pixmaptools_lut.cpp %s' % (begin,end)
+        line = '%s = pixmaptools_io.cpp pixmaptools_lut.cpp pixmaptools_stat.cpp %s' % (begin,end)
     whole_line += line
 bfile.close()
 bfile = file(build_file,'w')
