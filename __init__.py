@@ -42,6 +42,9 @@ _USE_THREAD = True
 #@see Qub::CTools
 #
 
+#@section howto_imageDisplay Howto display an image
+#The simplest way to display a data image with Qub is to use Qub::Widget::QubDataDisplay.
+#
 ##@brief disable thread in the Qub library
 #
 #This methode must be called before import of QubThreads

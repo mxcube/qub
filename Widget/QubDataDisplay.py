@@ -39,7 +39,12 @@ from Qub.Print.QubPrintPreview import getPrintPreviewDialog
 from Qub.Widget.QubMdi import QubMdiCheckIfParentIsMdi
 
 import EdfFile
-##@brief This class display all kind of 2D data
+##@brief This class display all kind of 2D data image
+#
+#This class can display:
+# - edf file -> call Qub::Widget::QubDataDisplay::setDataSource with the full path
+# - spec shm -> call Qub::Widget::QubDataDisplay::setDataSource with "specversion:array_name"
+# - 2D array -> call Qub::Widget::QubDataDisplay::setData with your array
 #
 class QubDataDisplay(qt.QWidget) :
     ##@brief standard enum action
