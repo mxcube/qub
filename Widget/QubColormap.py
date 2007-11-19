@@ -8,7 +8,10 @@ from Qub.Widget.Graph.QubGraphCurve import  QubGraphCurve
 
 from Qub.Tools.QubWeakref import createWeakrefMethod
 from Qub.CTools.pixmaptools import LUT
-
+try:
+    from Qub.CTools.pixmaptools import Stat
+except ImportError:
+    Stat = None
 ################################################################################
 ####################                QubAction               ####################
 ################################################################################
@@ -444,13 +447,20 @@ class QubColormapDialog(qt.QWidget):
         self.__histoTimer.stop()
         if self.__data is not None:
             minVal,maxVal = self.__colormap.minMax()
-
-            YDataHisto,XDataHisto = numpy.histogram(self.__data,bins = 32,range=[self.__data.min(),self.__data.max()])
+            
+            if Stat:
+                YDataHisto,XDataHisto = Stat.histo(self.__data,32)
+            else:
+                YDataHisto,XDataHisto = numpy.histogram(self.__data,bins = 32)
+                
             self.__histoDataCurve.setData(XDataHisto,YDataHisto)
 
-            YHisto,XHisto = numpy.histogram(self.__data,bins = 32,range=[minVal,maxVal])
-            YHisto = YHisto[:-1]
-            XHisto = XHisto[:-1]
+            if Stat:
+                YHisto,XHisto = Stat.histo(self.__data,32,minVal,maxVal)
+            else:
+                YHisto,XHisto = numpy.histogram(self.__data,bins = 32,range=[minVal,maxVal])
+                YHisto = YHisto[:-1]
+                XHisto = XHisto[:-1]
             lastValue = YHisto[-1]
             maxVal = YDataHisto.max()
             if lastValue > maxVal : YHisto[-1] = maxVal
@@ -460,7 +470,7 @@ class QubColormapDialog(qt.QWidget):
             
     def show(self) :
         qt.QWidget.show(self)
-        self.__histoTimer.start(1000)
+        self.__histoTimer.start(200)
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################

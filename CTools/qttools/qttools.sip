@@ -98,3 +98,23 @@ protected:
     WId topLevelParentWinId() const;
 
 };
+
+class QubImage :  QImage
+{
+%TypeHeaderCode
+#include <qubimage.h>
+%End
+ public:
+  QubImage();
+  QubImage(const QImage &);
+  QubImage(const QubImage &);
+
+  void highlightImage(int ,int ,int ,int );
+  void unhighlightImage(int ,int ,int ,int );
+  void erase(int,int,int,int);
+  void setGray(int,int,int,int);
+
+  QubImage copy () const;
+  QubImage copy ( int, int , int, int , int = 0 ) const;
+  QubImage copy ( const QRect & r ) const;
+};

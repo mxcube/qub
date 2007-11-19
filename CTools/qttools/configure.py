@@ -24,7 +24,7 @@ os.system(cmd)
 if os.system(" ".join(['moc','-o','moc_qtxembed.cpp','qtxembed.h'])) :
     print 'Moc failed on file qtxembed.h'
 
-compile_file = ['qttools_qttools.cpp','moc_qtxembed.cpp','qtxembed.cpp']
+compile_file = ['qttools_qttools.cpp','moc_qtxembed.cpp','qtxembed.cpp','qubimage.cpp']
 
 #little HACK for adding source
 bfile = file(build_file)

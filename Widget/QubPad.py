@@ -1,7 +1,12 @@
 import sys
+import numpy
 import qt
 from opencv import cv
 from Qub.CTools.opencv import qtTools
+try:
+    from Qub.CTools.qttools import QubImage
+except ImportError:
+    QubImage = None
 
 from Qub.Icons import QubIcons
 from Qub.Widget.QubWidgetFromUI import QubWidgetFromUI
@@ -1424,13 +1429,8 @@ class _pad_button(qt.QPushButton) :
         return (ox,oy,ex,ey)
 
     def __crop(self,image,ox,oy,ex,ey) :
-        returnImage = qt.QImage(ex - ox,ey - oy,32)
-        returnImage.setAlphaBuffer(True)
-        for ys,yd in zip(xrange(oy,ey),xrange(0,ey - oy)) :
-            for xs,xd in zip(xrange(ox,ex),xrange(0,ex - ox)) :
-                rgb = image.pixel(xs,ys)
-                returnImage.setPixel(xd,yd,rgb)
-        return returnImage
+        return image.copy(ox,oy,ex - ox,ey - oy)
+
     def __movePixel(self,image,source,dest) :
         osx,osy,esx,esy = source
         odx,ody,edx,edy = dest
@@ -1438,10 +1438,16 @@ class _pad_button(qt.QPushButton) :
             for xs,xd in zip(xrange(osx,esx),xrange(odx,edx)) :
                 rgb = image.pixel(xs,ys)
                 image.setPixel(xd,yd,rgb)
+
     def __erase(self,image,ox,oy,ex,ey) :
-        for y in xrange(oy,ey) :
-            for x in xrange(ox,ex) :
-                image.setPixel(x,y,qt.qRgba(0,0,0,0))
+        if QubImage:
+            image = QubImage(image)
+            image.erase(ox,oy,ex,ey)
+        else:
+            for y in xrange(oy,ey) :
+                for x in xrange(ox,ex) :
+                    image.setPixel(x,y,qt.qRgba(0,0,0,0))
+                
     def __multiplyStep(self,aFlag) :
         if(self.__multiplymode != aFlag) :
             self.__multiplymode = aFlag
@@ -1723,17 +1729,20 @@ class _vPad(qt.QPushButton) :
             
                     ####### IMAGE FUNCTION #######
 def _setGray(image,ox,oy,ex,ey) :
-    for y in xrange(oy,ey) :
-        for x in xrange(ox,ex) :
-            rgb = image.pixel(x,y)
-            alpha = qt.qAlpha(rgb)
-            if(alpha) :
-                gray = qt.qGreen(rgb)
-                red = qt.qRed(rgb)
-                if(red > gray) :
-                    gray = red
-                image.setPixel(x,y,qt.qRgba(gray,gray,gray,alpha))
-
+    if QubImage:
+        image = QubImage(image)
+        image.setGray(ox,oy,ex,ey)
+    else:
+        for y in xrange(oy,ey) :
+            for x in xrange(ox,ex) :
+                rgb = image.pixel(x,y)
+                alpha = qt.qAlpha(rgb)
+                if(alpha) :
+                    gray = qt.qGreen(rgb)
+                    red = qt.qRed(rgb)
+                    if(red > gray) :
+                        gray = red
+                    image.setPixel(x,y,qt.qRgba(gray,gray,gray,alpha))
 def _setRed(image,ox,oy,ex,ey) :
     for y in xrange(oy,ey) :
         for x in xrange(ox,ex) :
@@ -1750,24 +1759,31 @@ def _setYellow(image,ox,oy,ex,ey) :
             if(alpha) :
                 green = qt.qGreen(rgb)
                 image.setPixel(x,y,qt.qRgba(green,green,qt.qBlue(rgb),alpha))
-
+                
 def _highlightImage(image,ox,oy,ex,ey) :
-    for y in xrange(oy,ey) :
-        for x in xrange(ox,ex) :
-            rgb = image.pixel(x,y)
-            alpha = qt.qAlpha(rgb)
-            if alpha :
-                red,green,blue = qt.qRed(rgb) * 1.25,qt.qGreen(rgb) * 1.25,qt.qBlue(rgb) * 1.25
-                image.setPixel(x,y,qt.qRgba(red,green,blue,alpha))
-
+    if QubImage:
+        image = QubImage(image)
+        image.highlightImage(ox,oy,ex,ey)
+    else:
+        for y in xrange(oy,ey) :
+            for x in xrange(ox,ex) :
+                rgb = image.pixel(x,y)
+                alpha = qt.qAlpha(rgb)
+                if alpha :
+                    red,green,blue = qt.qRed(rgb) * 1.25,qt.qGreen(rgb) * 1.25,qt.qBlue(rgb) * 1.25
+                    image.setPixel(x,y,qt.qRgba(red,green,blue,alpha))
 def _unhighlightImage(image,ox,oy,ex,ey) :
-    for y in xrange(oy,ey) :
-        for x in xrange(ox,ex) :
-            rgb = image.pixel(x,y)
-            alpha = qt.qAlpha(rgb)
-            if(alpha) :
-                red,green,blue = qt.qRed(rgb) * 0.8,qt.qGreen(rgb) * 0.8,qt.qBlue(rgb) * 0.8
-                image.setPixel(x,y,qt.qRgba(red,green,blue,alpha))
+    if QubImage:
+        image = QubImage(image)
+        image.unhighlightImage(ox,oy,ex,ey)
+    else:
+        for y in xrange(oy,ey) :
+            for x in xrange(ox,ex) :
+                rgb = image.pixel(x,y)
+                alpha = qt.qAlpha(rgb)
+                if(alpha) :
+                    red,green,blue = qt.qRed(rgb) * 0.8,qt.qGreen(rgb) * 0.8,qt.qBlue(rgb) * 0.8
+                    image.setPixel(x,y,qt.qRgba(red,green,blue,alpha))
 
                       ####### MAIN TEST #######
       

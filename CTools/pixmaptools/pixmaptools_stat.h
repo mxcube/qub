@@ -53,15 +53,15 @@ public:
     if(lower == upper && lower == 0)
 	_find_min_max(data,nbElem,lower,upper);
 
-    IN step = (upper - lower) / binsNumber;
+    double step = double(upper - lower) / binsNumber;
     double firstValue = lower;
-    for(int i = binsNumber;i;--i)
+    for(int i = binsNumber + 1;i;--i)
       {
 	X.push_back(IN(firstValue));
 	firstValue += step;
       }
     double invStep = 1. / step;
-    Y = std::vector<int>(binsNumber,0);
+    Y = std::vector<int>(binsNumber + 1,0);
     const IN *aEndData = data + nbElem;
     IN maxVal = upper,minVal = lower;
     for(;data != aEndData;++data)
