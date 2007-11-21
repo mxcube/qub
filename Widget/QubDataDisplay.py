@@ -42,12 +42,11 @@ import EdfFile
 ##@brief This class display all kind of 2D data image
 #
 #This class can display:
-# - edf file -> call Qub::Widget::QubDataDisplay::setDataSource with the full path
-# - spec shm -> call Qub::Widget::QubDataDisplay::setDataSource with "specversion:array_name"
-# - 2D array -> call Qub::Widget::QubDataDisplay::setData with your array
+# - edf file -> call Qub.Widget.QubDataDisplay.setDataSource with the full path
+# - spec shm -> call Qub.Widget.QubDataDisplay.setDataSource with "specversion:array_name"
+# - 2D array -> call Qub.Widget.QubDataDisplay.setData with your array
 #
 class QubDataDisplay(qt.QWidget) :
-    ##@brief standard enum action
     (QUICK_SCROLL,SUB_DATA_VIEW,PRINT_PREVIEW,SAVE_IMAGE,
      STAT_ACTION,HEADER_INFO,ZOOM,COLORMAP,CHANGE_FOREGROUND_COLOR,
      HORIZONTAL_SELECTION, VERTICAL_SELECTION,LINE_SELECTION,
@@ -57,7 +56,7 @@ class QubDataDisplay(qt.QWidget) :
     #
     #@param data :
     # - in case of spec shm data="specversion:arrayname"
-    # - in case of file the file path
+    # - in case of file the file path (only Edf)
     #@param zoomValList a zoom list default [0.1,0.25,0.5,0.75,1,1.5,2]
     #@param noAction if True no action will be created
     #@param noToolbarAction if True no toolbar action will be created
@@ -130,16 +129,16 @@ class QubDataDisplay(qt.QWidget) :
             self.setData4Action(dataArray)
 
     ##@brief get the drawing view for QubDrawingManager Object
-    #@return a QubPixmapDisplay
+    #@return a QubPixmapDisplay (Qub.Objects.QubPixmapDisplay.QubPixmapDisplay)
     def getDrawing(self) :
         return self.__mainView.view()
     ##@brief get the view to add some action
-    #@return a QubPixmapDisplayView
+    #@return a QubPixmapDisplayView (Qub.Objects.QubPixmapDisplayView.QubPixmapDisplayView)
     def getView(self) :
         return self.__mainView
     ##@brief get the colormap controler
     #
-    #This is a low level object (Qub::Objects::QubRawData2Image::QubRawData2ImagePlug::Colormap)
+    #This is a low level object (Qub.Objects.QubRawData2Image.QubRawData2ImagePlug.Colormap)
     def getColormapPlug(self) :
         return self.__ImageNViewPlug.colormap()
     ##@brief add an action witch need data
@@ -147,7 +146,7 @@ class QubDataDisplay(qt.QWidget) :
     #@param action a QubAction
     #@param dataActionplug a class with :
     # - a methode setData (mandatory) called when source data change
-    # - a methode setScaleClass (optional) to set the scale class (Qub::Data::Scale::QubDataScale::QubDataScale)
+    # - a methode setScaleClass (optional) to set the scale class (Qub.Data.Scale.QubDataScale.QubDataScale)
     #
     def addDataAction(self,action,dataActionplug) :
         self.__mainView.addAction([action])
@@ -298,7 +297,7 @@ class QubDataDisplay(qt.QWidget) :
     #
     #@param data :
     # - in case of spec shm data="specversion:arrayname"
-    # - in case of file the file path
+    # - in case of file the file path (Edf only)
     def setDataSource(self,data) :
         dataArray = None
         captionName = 'Data Display'
@@ -361,7 +360,7 @@ class QubDataDisplay(qt.QWidget) :
 
     ##@brief set scale class for data
     #
-    #@param scaleClass usualy a Qub::Data::Scale::QubDataScale::QubDataScale
+    #@param scaleClass usualy a Qub.Data.Scale.QubDataScale.QubDataScale
     def setScaleClass(self,scaleClass) :
         for action in self.__actionDataActionPlug :
             if hasattr(action,'setScaleClass') :

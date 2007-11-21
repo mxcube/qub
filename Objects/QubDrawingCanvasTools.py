@@ -9,6 +9,13 @@ from Qub.Objects.QubDrawingConstraint import QubAngleConstraint
 
 from Qub.CTools import pixmaptools
 
+try:
+    from opencv import cv
+    from Qub.CTools.opencv import qtTools
+except ImportError:
+    cv = None
+ 
+
 ##@defgroup DrawingCanvasTools Low level objects drawing
 #@brief this is the group of all vector objects which can be put in a simple QCanvas.
 #
@@ -459,6 +466,7 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
         self.__pixmap = qt.QPixmap()
         self.__scrollView = None
         self.__mosaicImage = None
+        self.__alphaChannel = None
         
     def setImage(self,image) :
         self.__image = image
@@ -466,6 +474,15 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
         canvas = self.canvas()
         if canvas: canvas.update()
 
+    def setAlphaChannel(self,val) :
+        if 0. <= val < 1. :
+            self.__alphaChannel = val
+            self.update()
+            canvas = self.canvas()
+            if canvas: canvas.update()
+        else:
+            self.__alphaChannel = None
+            
     def hide(self) :
         qtcanvas.QCanvasRectangle.hide(self)
         canvas = self.canvas()
@@ -509,6 +526,29 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
 
             if not image.isNull() :
                 image = image.scale(scaleWidth,scaleHeight)
+                if self.__alphaChannel is not None:
+                    canvas = self.canvas()
+                    if canvas:
+                        backgroundImage = canvas.lastImage()
+                        if backgroundImage:
+                            xzoom,yzoom = backgroundImage.width() / float(canvas.width()),backgroundImage.height() / float(canvas.height())
+                            backgroundImage = backgroundImage.copy(self.x() * xzoom,self.y() * yzoom,image.width() * xzoom,image.height() * yzoom)
+                            backI = qtTools.getImageOpencvFromQImage(backgroundImage)
+                            if xzoom != 1. or yzoom != 1.:
+                                tmpBack = cv.cvCreateImage(cv.cvSize(image.width(),image.height()),backI.depth,backI.nChannels)
+                                cv.cvResize(backI,tmpBack,cv.CV_INTER_LINEAR)
+                                backI = tmpBack
+                            if backI.nChannels == 1:
+                                tmpBack = cv.cvCreateImage(cv.cvSize(backI.width,backI.height),backI.depth,3)
+                                cv.cvCvtColor(backI,tmpBack,cv.CV_GRAY2RGB)
+                                backI = tmpBack
+                            im = qtTools.getImageOpencvFromQImage(image)
+                            destimage = cv.cvCreateImage(cv.cvSize(im.width,im.height),im.depth,im.nChannels)
+                            cv.cvAddWeighted(backI,1. - self.__alphaChannel,
+                                             im,self.__alphaChannel,0.,
+                                             destimage)
+                            image = qtTools.getQImageFromImageOpencv(destimage)
+                                             
                 if self.__pixmap.size != image.size() :
                     self.__pixmap.resize(image.size())
                 self.__pixmapIO.putImage(self.__pixmap,0,0,image)

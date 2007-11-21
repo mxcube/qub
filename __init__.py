@@ -3,6 +3,11 @@ _USE_THREAD = True
 #Qub is a low level library, in it you can find different tools separate
 #in sub section
 #
+#@section examples Examples
+#In this section you'll find some simple example of how to use Qub library
+#@see Qub::Examples
+#@see howto
+#
 #@section widget Widget
 #In this sub directory, you will find some simple widgets and some specific dedicate to
 #Image data handling
@@ -42,9 +47,6 @@ _USE_THREAD = True
 #@see Qub::CTools
 #
 
-#@section howto_imageDisplay Howto display an image
-#The simplest way to display a data image with Qub is to use Qub::Widget::QubDataDisplay.
-#
 ##@brief disable thread in the Qub library
 #
 #This methode must be called before import of QubThreads

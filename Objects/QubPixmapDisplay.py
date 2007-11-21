@@ -117,7 +117,7 @@ class QubPixmapDisplay(QubCanvasViewBase) :
                 if (cvs_w, cvs_h) != (pix_w, pix_h):
                     self._cvs.resize(pix_w, pix_h)
                     self._startIdle()
-                self._cvs.setBackgroundPixmap(pixmap)
+                self._cvs.setBackgroundPixmap(pixmap,image)
             else:
                 zoom = zoomClass.zoom()
                 (view_w, view_h) = (self.viewport().width(), self.viewport().height())
@@ -134,7 +134,7 @@ class QubPixmapDisplay(QubCanvasViewBase) :
                     if (cvs_w, cvs_h) != (pix_w, pix_h):
                         self._cvs.resize(pix_w, pix_h)
                         self._startIdle()
-                    self._cvs.setBackgroundPixmap(pixmap)
+                    self._cvs.setBackgroundPixmap(pixmap,image)
                 else:
                     zoom_w = float(view_w) / im_w
                     zoom_h = float(view_h) / im_h

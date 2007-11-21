@@ -145,7 +145,8 @@ class _canvas(qtcanvas.QCanvas) :
         qtcanvas.QCanvas.__init__(self,*args)
         self.__updateIdle = qt.QTimer(self)
         qt.QObject.connect(self.__updateIdle,qt.SIGNAL('timeout()'),self.__update)
-
+        self.__lastImage = None
+        
     def update(self) :
         if not self.__updateIdle.isActive():
             self.__updateIdle.start(0)
@@ -153,3 +154,10 @@ class _canvas(qtcanvas.QCanvas) :
     def __update(self) :
         self.__updateIdle.stop()
         qtcanvas.QCanvas.update(self)
+
+    def setBackgroundPixmap(self,pixmap,image = None) :
+        qtcanvas.QCanvas.setBackgroundPixmap(self,pixmap)
+        self.__lastImage = image
+
+    def lastImage(self) :
+        return self.__lastImage
