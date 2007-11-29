@@ -2,13 +2,6 @@
 #include <iostream>
 #include <math.h>
 
-#ifdef __SSE2__
-// #include <mmintrin.h>
-#include <pixmaptools_lut_sse.h>
-#endif
-
-
-
 struct LUT::XServer_Info {
   int byte_order;
   int pixel_size;
@@ -332,91 +325,6 @@ template<class IN> void _find_minpos_max(const IN *aData,int aNbValue,IN &dataMi
       else if(*aData > 0. && (*aData < dataMin || dataMin == 0)) dataMin = *aData;
     }
 }
-#ifdef __SSE2__
-/// @brief opti min/max unsigned short
-template<> void _find_min_max(unsigned short const *aData,int aNbValue,
-			      unsigned short &dataMin,unsigned short &dataMax)
-{
-  __m128i aMinVector,aMaxVector;
-  if(((long)aData) & 0xf) // if True not 16 alligned mmx min/max
-    {
-      aMinVector = _mm_set1_epi64(*(__m64*)aData),aMaxVector = _mm_set1_epi64(*(__m64*)aData);
-      aData += 4,aNbValue -= 4;
-    }
-  else
-    aMinVector = _mm_set1_epi16(*aData),aMaxVector = _mm_set1_epi16(*aData);
-
-  __m128i *data = (__m128i*)aData;
-  for(;aNbValue >= 8;++data,aNbValue -= 8)
-    {
-      aMinVector = _mm_min_epi16(aMinVector,*data);
-      aMaxVector = _mm_max_epi16(aMaxVector,*data);
-    }
-
-  if(aNbValue >= 4)		// mmx ending
-    {
-      __m64 *aLocalMinf = (__m64*)&aMinVector;
-      __m64 *aLocalMins = aLocalMinf + 1;
-      __m64 *aLocalMaxf = (__m64*)&aMaxVector;
-      __m64 *aLocalMaxs = aLocalMaxf + 1;
-      __m64 aLocalMin = _mm_min_pi16(*aLocalMinf,*aLocalMins);
-      __m64 aLocalMax = _mm_max_pi16(*aLocalMaxf,*aLocalMaxs);
-      aLocalMin = _mm_min_pi16(aLocalMin,*(__m64*)data);
-      aLocalMax = _mm_max_pi16(aLocalMax,*(__m64*)data);
-      short *aValPt = (short*)&aLocalMin;
-      unsigned short aVal = int(*aValPt) + 0x7fff;
-      dataMin = aVal,dataMax = aVal;
-      ++aValPt;
-      for(int i = 3;i;--i,++aValPt)
-	{
-	  aVal = (int)*aValPt + 0x7fff;
-	  if(aVal > dataMax) dataMax = aVal;
-	  else if(aVal < dataMin) dataMin = aVal;
-	}
-      aValPt = (short*)&aLocalMax;
-      for(int i = 4;i;--i,++aValPt)
-	{
-	  aVal = (int)*aValPt + 0x7fff;
-	  if(aVal > dataMax) dataMax = aVal;
-	  else if(aVal < dataMin) dataMin = aVal;
-	}
-    }
-  else				// classic C++
-    {
-      short *aValPt = (short*)&aMinVector;
-      unsigned aVal = int(*aValPt) + 0xffff;
-      dataMin = aVal,dataMax = aVal;
-      ++aValPt;
-      for(int i = 7;i;--i,++aValPt)
-	{
-	  aVal = int(*aValPt) + 0xffff;
-	  if(aVal > dataMax) dataMax = aVal;
-	  else if(aVal < dataMin) dataMin = aVal;
-	}
-      aValPt = (short*)&aMaxVector;
-      for(int i = 8;i;--i,++aValPt)
-	{
-	  aVal = int(*aValPt) + 0xffff;
-	  if(aVal > dataMax) dataMax = aVal;
-	  else if(aVal < dataMin) dataMin = aVal;
-	}
-      aData = (unsigned short * const)data;
-      for(;aNbValue;--aNbValue,++aData)
-	{
-	  if(*aData > dataMax) dataMax = *aData;
-	  else if(*aData < dataMin) dataMin = *aData;
-	}
-    }
-  _mm_empty();
-}
-/// @brief opti for float
-template<> void _find_min_max(const float *aData,int aNbValue,
-			      float &dataMin,float &dataMax)
-{
-  min_max_float(aData,aNbValue,&dataMin,&dataMax);
-}
-
-#endif
 template<class IN> void LUT::map(const IN *data,unsigned int *anImagePt,int column,int line,Palette &aPalette,
 				 LUT::mapping_meth aMeth,
 				 IN dataMin,IN dataMax)
@@ -592,98 +500,6 @@ template<> void _linear_data_map(unsigned char const *data,unsigned int *anImage
 	*anImagePt = *palette;
     }
 }
-#ifdef __SSE2__
-//@brief opti for float with sse2
-template<> void _linear_data_map(const float *aData,unsigned int *anImagePt,int column,int line,
-				   unsigned int *palette,double A,double B,
-				   float dataMin,float dataMax) throw()
-{
-  int aNbPixel = column * line;
-  if(((long)aData) & 0xf) // if True not 16 alligned standard lookup
-    for(int i = 2;i;--i,--aNbPixel,++aData,++anImagePt)	// Std Lookup
-      {
-	float val=*aData;
-	if (val >= dataMax) 
-	  *anImagePt = *(palette + 0xffff);
-	else if  (val > dataMin)
-	  *anImagePt = *(palette + long(A * val + B));
-	else  
-	  *anImagePt = *palette; 
-      }
-  __m128 AFactor,BFactor;
-  AFactor = _mm_set1_ps(A),BFactor = _mm_set1_ps(B);
-  __m128i aMaxVal = _mm_set1_epi32(0xffff),aMinVal = _mm_set1_epi32(0x0000);
-  __m128i aMaskPaletteMax = _mm_set1_epi32(0xffff0000);
-  __m128 *data = (__m128*)aData;
-  void *aBufferPt;
-  posix_memalign(&aBufferPt,16,sizeof(int) << 3); // 2 __m128i buffer for sse flush avoid 
-  struct IndexStruct
-  {
-    IndexStruct *next;
-    unsigned int *data;
-  };
-  IndexStruct aTab[] = {IndexStruct(),IndexStruct()};
-  aTab[0].next = &aTab[1],aTab[1].next = &aTab[0];
-  aTab[0].data = (unsigned int*)aBufferPt,aTab[1].data = ((unsigned int*)aBufferPt) + 4;
-  IndexStruct *aStructIndexPt = aTab;
-  //FIRST 4 pixel
-  __m128i *index = (__m128i*)aStructIndexPt->data;
-  __m128 aResult = _mm_mul_ps(AFactor,*data);
-  aResult = _mm_add_ps(BFactor,aResult);
-  *index = _mm_cvtps_epi32(aResult);
-  __m128i maskgt = _mm_cmpgt_epi32(*index,aMaxVal);
-  __m128i masklt = _mm_cmplt_epi32(*index,aMinVal);
-  maskgt = _mm_and_si128(maskgt,aMaskPaletteMax);
-  *index = _mm_andnot_si128(maskgt,*index);
-  *index = _mm_andnot_si128(masklt,*index);
-  ++data,aNbPixel -=4,aStructIndexPt = aStructIndexPt->next;
-
-  for(; aNbPixel >= 4;aNbPixel -= 4,++data,++index,aStructIndexPt = aStructIndexPt->next)
-    {
-      index = (__m128i*)aStructIndexPt->data;
-      aResult = _mm_mul_ps(AFactor,*data);
-
-      unsigned *aPaletteIndexPt = aStructIndexPt->next->data;
-      *anImagePt = *(palette + *aPaletteIndexPt);++anImagePt,++aPaletteIndexPt;
-      *anImagePt = *(palette + *aPaletteIndexPt);++anImagePt,++aPaletteIndexPt;
-
-      aResult = _mm_add_ps(BFactor,aResult);
-      *index = _mm_cvtps_epi32(aResult);
-      maskgt = _mm_cmpgt_epi32(*index,aMaxVal);
-      masklt = _mm_cmplt_epi32(*index,aMinVal);
-      maskgt = _mm_and_si128(maskgt,aMaskPaletteMax);
-      *index = _mm_andnot_si128(maskgt,*index);
-      *index = _mm_andnot_si128(masklt,*index);
-
-      *anImagePt = *(palette + *aPaletteIndexPt);++anImagePt,++aPaletteIndexPt;
-      *anImagePt = *(palette + *aPaletteIndexPt);++anImagePt;
-
-    }
-  _mm_mfence();			// FLUSH
-  //LAST 4 pixels
-  unsigned *aPaletteIndexPt = aStructIndexPt->next->data;
-  *anImagePt = *(palette + *aPaletteIndexPt);++anImagePt,++aPaletteIndexPt;
-  *anImagePt = *(palette + *aPaletteIndexPt);++anImagePt,++aPaletteIndexPt;
-  *anImagePt = *(palette + *aPaletteIndexPt);++anImagePt,++aPaletteIndexPt;
-  *anImagePt = *(palette + *aPaletteIndexPt);++anImagePt;
-
-  free(aBufferPt);
-  //END Std lookup
-  aData = (float*)data;
-  for(;aNbPixel;--aNbPixel,++aData,++anImagePt)
-    {
-      float val=*aData;
-      if (val >= dataMax) 
- 	*anImagePt = *(palette + 0xffff);
-      else if  (val > dataMin)
-	*anImagePt = *(palette + long(A * val + B));
-      else  
-	*anImagePt = *palette;
-    }
-}
-#endif
-// LOG MAPPING FCT
-
 template<class IN> void _log_data_map(const IN *data,unsigned int *anImagePt,int column,int line,
 				      unsigned int *aPalette,double A,double B,
 				      IN dataMin,IN dataMax) throw()
