@@ -533,9 +533,9 @@ template<class IN> static void _log_data_map_shift(const IN *data,unsigned int *
       if (val >= dataMax)
 	*anImagePt = *(palette + 0xffff) ;
       else if  (val > dataMin)
-	*anImagePt = *(palette + long(A * log10(val + B)));
+	*anImagePt = *(palette + long(A * log10(val) + B));
       else
-	*anImagePt = *palette ;
+	*anImagePt = *palette;
     }
 }
 
