@@ -5,10 +5,12 @@
 
 #define DOWN_SIZE(type) \
 {\
- down((type*)data,width,height,ox,oy,crop_width,crop_height,xscale,yscale,aDest);\
- aReturnArray = (PyArrayObject*)PyArray_FromDims(2,dimension,src->descr->type_num); \
- normalize(aDest,(type*)aReturnArray->data,aReturnHeight,aDestWidth,aReturnWidth,\
+  aReturnArray = (PyArrayObject*)PyArray_FromDims(2,dimension,src->descr->type_num); \
+  Py_BEGIN_ALLOW_THREADS;						\
+  down((type*)data,width,height,ox,oy,crop_width,crop_height,xscale,yscale,aDest); \
+  normalize(aDest,(type*)aReturnArray->data,aReturnHeight,aDestWidth,aReturnWidth, \
 	   xscale * yscale);\
+  Py_END_ALLOW_THREADS;	    \
 }
 
 static PyObject *DataFuncsError;

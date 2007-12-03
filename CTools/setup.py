@@ -4,7 +4,7 @@ from distutils.core import setup,Extension
 import numpy
 
 if platform.system() == 'Linux' :
-    extra_compile_args = ['-pthread','-msse2','-mfpmath=sse']
+    extra_compile_args = ['-pthread','-march=pentium4']
     extra_link_args = ['-pthread']
 elif platform.system() == 'SunOS' :
     extra_compile_args = ['-pthreads']
