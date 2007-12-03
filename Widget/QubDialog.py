@@ -44,6 +44,11 @@ from Qub.Widget.Graph.QubGraphCurve import QubGraphCurve
 
 from Qub.Widget.QubWidgetFromUI import QubWidgetFromUI
 
+try:
+    from Qub.CTools.pixmaptools import Stat
+except ImportError:
+    Stat = None
+
 ####################################################################
 ##########                                                ##########
 ##########             QubMeasureListDialog               ##########
@@ -749,7 +754,10 @@ class QubDataStatWidget(Histogram) :
             bins,ok = stringVal.toInt()
 
             if ok:
-                YHisto,XHisto = numpy.histogram(data,bins = bins,range=[minHisto,maxHisto])
+                if Stat:
+                    YHisto,XHisto = Stat.histo(data,bins,minHisto,maxHisto)
+                else:
+                    YHisto,XHisto = numpy.histogram(data,bins = bins,range=[minHisto,maxHisto])
                 self.__curve.setData(XHisto,YHisto)
                 self.__graph.replot()
 
