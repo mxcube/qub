@@ -267,7 +267,7 @@ class QubPrintPreviewAction(QubAction):
             if view is not None:
                 if hasattr(view, "getPPP"):
                     if self.__withVector and hasattr(view,'canvas') and isinstance(view.canvas(),qtcanvas.QCanvas) :
-                        self._preview.addCanvasVectorNPixmap(view.canvas(),view.getPPP())
+                        self._preview.addCanvasVectorNPixmap(view.canvas(),view.matrix(),view.getPPP())
                     else:
                         self._preview.addPixmap(view.getPPP())
                     self._preview.show()

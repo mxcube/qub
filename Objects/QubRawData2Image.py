@@ -400,7 +400,7 @@ class _DataZoomProcess(QubThreadProcess) :
                                 width,height = image.width(),image.height()
                                 width *= xzoom
                                 height *= yzoom
-                                if fullImage is None: fullImage = image
+                                if fullImage is None and not zoom.isRoiZoom(): fullImage = image
                                 # limit (we enter in this case usually we a fit to screen is ask and
                                 #when you switch to a bigger image
                                 if((xzoom > 5 or yzoom > 5) and
@@ -418,12 +418,8 @@ class _DataZoomProcess(QubThreadProcess) :
                 if fullImage is None and plugs :
                     plug = plugs[0]
                     colormap = plug.colormap()
-                    if colormap.autoscale() :
-                        fullImage,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(s.data ,colormap.palette(),
-                                                                                       colormap.lutType())
-                    else:
-                        fullImage,(minVal,maxVal) = pixmaptools.LUT.map(s.data,colormap.palette(),
-                                                                         colormap.lutType(),*colormap.minMax())
+                    fullImage,(minVal,maxVal) = pixmaptools.LUT.map(s.data,colormap.palette(),
+                                                                    colormap.lutType(),*colormap.minMax())
                 aLock.lock()
                 struct.end = True
                 tmplist = []
