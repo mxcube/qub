@@ -430,8 +430,10 @@ class QubLineDataSelectionAction(QubToggleImageAction):
         self.__curveMeasure = QubFollowGraphCurveAction(curve=self._curve,name="measure",group="tools")
                          ####### ZOOM #######
         self.__zoom = QubGraphZoomAction(graph=self._graph,name="zoom",group="tools")
-
-        self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom])
+                      ####### LOG SCALE #######
+        self.__logSwitch = QubGraphYAxisLogSwitchAction(graph = self._graph,name='log swicth',group="tools")
+                
+        self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom,self.__logSwitch])
 
         self._graph.setAxisTitle(self._graph.yLeft,'Data value')
         self._graph.enableAxis(self._graph.xTop)
@@ -628,8 +630,10 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
         self.__curveMeasure = QubFollowGraphCurveAction(curve=self._curve,name="measure",group="tools")
                          ####### ZOOM #######
         self.__zoom = QubGraphZoomAction(graph=self._graph,name="zoom",group="tools")
-        
-        self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom])
+                              ####### LOG SCALE #######
+        self.__logSwitch = QubGraphYAxisLogSwitchAction(graph = self._graph,name='log swicth',group="tools")
+
+        self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom,self.__logSwitch])
         self._graph.setAxisTitle(self._graph.yLeft,'Data value')
         self._graph.setAxisTitle(self._graph.xBottom,'X value')
         
@@ -906,8 +910,10 @@ class QubArcDataSelection(QubToggleImageAction):
         self.__curveMeasure = QubFollowGraphCurveAction(curve=self._curve,name="measure",group="tools")
                          ####### ZOOM #######
         self.__zoom = QubGraphZoomAction(graph=self._graph,name="zoom",group="tools")
-        
-        self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom])
+                              ####### LOG SCALE #######
+        self.__logSwitch = QubGraphYAxisLogSwitchAction(graph = self._graph,name='log swicth',group="tools")
+
+        self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom,self.__logSwitch])
         self._graph.setAxisTitle(self._graph.yLeft,'Data value')
         self._graph.setAxisTitle(self._graph.xBottom,'X value')
 
@@ -2618,7 +2624,32 @@ class QubGraphZoomAction(QubAction):
             graph.setAxisAutoScale(graph.yRight)
             graph.replot()
             self.__plotZoomer.setZoomBase()
-                
+##@brief action to put Y in log
+#
+class QubGraphYAxisLogSwitchAction(QubAction):
+    def __init__(self,graph=None,**keys) :
+        QubAction.__init__(self,**keys)
+        self.__graph = weakref.ref(graph)
+
+    def addToolWidget(self,parent) :
+        if self._widget is None:
+            self._widget = qt.QToolButton(parent,"y log scale")
+            self._widget.setAutoRaise(True)
+            self._widget.setIconSet(qt.QIconSet(loadIcon('scale.png')))
+            qt.QObject.connect(self._widget,qt.SIGNAL('toggled(bool)'),self.setState)
+            self._widget.setToggleButton(True)
+            qt.QToolTip.add(self._widget,'y log scale')
+        return self._widget
+
+    def setState(self,aFlag) :
+        if aFlag:
+            scaleEngine = qwt.QwtLog10ScaleEngine()
+        else:
+            scaleEngine = qwt.QwtLinearScaleEngine()
+        graph = self.__graph()
+        if graph:
+            graph.setAxisScaleEngine(graph.yLeft,scaleEngine)
+            graph.replot()
 ################################################################################
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
