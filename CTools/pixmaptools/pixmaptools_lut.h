@@ -38,7 +38,7 @@ public:
   {
     friend class LUT;
   public:
-    enum palette_type {GREYSCALE,TEMP,RED,GREEN,BLUE,REVERSEGREY,MANY,USER};
+    enum palette_type {GREYSCALE,TEMP,RED,GREEN,BLUE,REVERSEGREY,MANY,FIT2D,USER};
     enum mode {RGBX,BGRX};
     enum endian {LSB,MSB};
 
