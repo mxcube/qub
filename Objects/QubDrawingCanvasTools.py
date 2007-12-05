@@ -330,6 +330,59 @@ class QubCanvasTarget(QubCanvasEllipse) :
         QubCanvasEllipse.setPen(self,pen)
         self.__hLine.setPen(pen)
         self.__vLine.setPen(pen)
+##@brief this is a simple point with a text
+#@ingroup DrawingCanvasToolsPoint
+class QubCanvasPointNText(qtcanvas.QCanvasRectangle) :
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasRectangle.__init__(self,canvas)
+        if isinstance(canvas,QubCanvasPointNText) :
+            self.__text = QubCanvasText(canvas._QubCanvasPointNText__text)
+            self.setSize(canvas.width(),canvas.height())
+        else:
+            self.__text = QubCanvasText(canvas)
+            self.setSize(5,5)
+    ##@brief set the text value
+    #
+    def setText(self,text) :
+        self.__text.setText(text)
+        self.move(self.x(),self.y())
+    ##@brief change the text pen
+    #
+    def setTextPen(self,pen) :
+        self.__text.setPen(pen)
+
+    def move(self,x,y) :
+        rect = self.rect()
+        rect.moveCenter(qt.QPoint(x,y))
+        qtcanvas.QCanvasRectangle.move(self,rect.x(),rect.y())
+        rect = self.__text.boundingRect()
+        Xtext,Ytext = x - 2 - rect.width(),y - 2 - rect.height()
+        self.__text.move(Xtext,Ytext)
+        collisionObj = [obj for obj in self.__text.collisions(True) if obj != self]
+        if collisionObj:
+            self.__text.move(x + self.width() + 2,y - 2 - rect.height())
+    def show(self) :
+        qtcanvas.QCanvasRectangle.show(self)
+        self.__text.show()
+
+    def hide(self) :
+        qtcanvas.QCanvasRectangle.hide(self)
+        self.__text.hide()
+
+    def drawShape(self, p):
+        rect = self.rect()
+        p.drawLine(rect.left(),rect.top(),rect.right(),rect.bottom())
+        p.drawLine(rect.left(),rect.bottom(),rect.right(),rect.top())
+
+    def boundingRect(self) :
+        rect = qtcanvas.QCanvasRectangle.boundingRect(self)
+        rect.unite(self.__text.boundingRect())
+        return rect
+
+    def setCanvas(self,canvas) :
+        qtcanvas.QCanvasRectangle.setCanvas(self,canvas)
+        self.__text.setCanvas(canvas)
+        
 ##@brief simple text with rotation
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasText(qtcanvas.QCanvasText) :
