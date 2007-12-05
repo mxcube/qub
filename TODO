@@ -1,6 +1,8 @@
 1/ DOC
     Cook book + link to API Doc.
     
+        * Add entry point for Qub + Brick (???) in the Blis Documentation Web
+          pages
         * how to display an image (file, spec shared array)
         * how to display a graph
         * how to remove a default action from a viewer
@@ -12,4 +14,13 @@
         * how to defined a polled data source
         * What are the other widgets in Qub
         * what are the known file format
+        * how to set autofocus (Brick)
+        * how to use Alpha channel
         
+2/ BRICK
+    CameraMotorToolsBricks:
+        - autofocus: confirmation dialog before moving motors
+        
+3/ QUB
+
+    - Point List drawing on Pixmap
