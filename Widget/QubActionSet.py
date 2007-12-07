@@ -708,20 +708,21 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
 
         
     def __rawKeyPressed(self,keyevent) :
-        data = self._data and self._data() is not None or None
-        if data is not None:
-            key = keyevent.key()
-            if key == qt.Qt.Key_Up :
-                self._lineId -= 1
-                if self._lineId <= 0: self._lineId = 0
-            elif key == qt.Qt.Key_Down :
-                self._lineId += 1
-                nbLine,_ = data.shape
-                if self._lineId > nbLine: self._lineId = nbLine
-            self._line.setPoint(self._columnId,self._lineId)
-            canvas = self._line.canvas()[0]
-            canvas.update()
-            self._refreshIdle()
+        if self._data is not None:
+            data = self._data()
+            if data is not None:
+                key = keyevent.key()
+                if key == qt.Qt.Key_Up :
+                    self._lineId -= 1
+                    if self._lineId <= 0: self._lineId = 0
+                elif key == qt.Qt.Key_Down :
+                    self._lineId += 1
+                    nbLine,_ = data.shape
+                    if self._lineId > nbLine: self._lineId = nbLine
+                self._line.setPoint(self._columnId,self._lineId)
+                canvas = self._line.canvas()[0]
+                canvas.update()
+                self._refreshIdle()
             
     def _refreshIdle(self) :
         if not self._idle.isActive() :
