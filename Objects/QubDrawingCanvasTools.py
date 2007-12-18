@@ -346,11 +346,28 @@ class QubCanvasPointNText(qtcanvas.QCanvasRectangle) :
     def setText(self,text) :
         self.__text.setText(text)
         self.move(self.x(),self.y())
-    ##@brief change the text pen
+    ##@brief change the pen point and text
+    #
+    def setPen(self,pen) :
+        qtcanvas.QCanvasRectangle.setPen(self,pen)
+        self.__text.setPen(pen)
+    ##@brief set text color
+    #
+    def setTextColor(self,color) :
+        self.setTextPen(qt.QPen(color))
+    ##@brief set Text pen
     #
     def setTextPen(self,pen) :
         self.__text.setPen(pen)
-
+    ##@brief set point color
+    #
+    def setPointColor(self,color) :
+        self.setPointPen(qt.QPen(color))
+    ##@brief set pen point
+    #
+    def setPointPen(self,pen) :
+        qtcanvas.QCanvasRectangle.setPen(self,pen)
+        
     def move(self,x,y) :
         rect = self.rect()
         rect.moveCenter(qt.QPoint(x,y))
