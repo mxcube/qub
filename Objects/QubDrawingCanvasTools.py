@@ -354,7 +354,7 @@ class QubCanvasPointNText(qtcanvas.QCanvasRectangle) :
     ##@brief set text color
     #
     def setTextColor(self,color) :
-        self.__text.setColor(color))
+        self.__text.setColor(color)
     ##@brief set point color
     #
     def setPointColor(self,color) :
