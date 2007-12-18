@@ -345,7 +345,8 @@ class QubCanvasPointNText(qtcanvas.QCanvasRectangle) :
     #
     def setText(self,text) :
         self.__text.setText(text)
-        self.move(self.x(),self.y())
+        point = self.rect().center()
+        self.move(point.x(),point.y())
     ##@brief change the pen point and text
     #
     def setPen(self,pen) :
@@ -375,6 +376,11 @@ class QubCanvasPointNText(qtcanvas.QCanvasRectangle) :
         if collisionObj:
             self.__text.move(x + self.width() + 2,y - 2 - rect.height())
             
+    def setSize(self,width,height) :
+        if not width % 2 : width += 1
+        if not height % 2: height += 1
+        qtcanvas.QCanvasRectangle.setSize(self,width,height)
+        
     def show(self) :
         qtcanvas.QCanvasRectangle.show(self)
         self.__text.show()
