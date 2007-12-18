@@ -374,6 +374,10 @@ class QubCanvasPointNText(qtcanvas.QCanvasRectangle) :
         collisionObj = [obj for obj in self.__text.collisions(True) if obj != self]
         if collisionObj:
             self.__text.move(x + self.width() + 2,y - 2 - rect.height())
+        self.update()
+        canvas = self.canvas()
+        if canvas: canvas.update()
+            
     def show(self) :
         qtcanvas.QCanvasRectangle.show(self)
         self.__text.show()

@@ -224,7 +224,8 @@ class QubColormapDialog(qt.QWidget):
         """
         self.__sigmaScaleMode = [('\xb1 std dev / 2',0,0.5),
                                  ('\xb1 std dev',1,1.),
-                                 ('\xb1 std dev * 2',2,2.)]
+                                 ('\xb1 std dev * 2',2,2.),
+                                 ('\xb1 std dev * 3',3,3.)]
         
         self.__sigmaScale = qt.QToolButton(self,"sigma")
         qt.QObject.connect(self.__sigmaScale, qt.SIGNAL("clicked()"),
@@ -237,7 +238,7 @@ class QubColormapDialog(qt.QWidget):
         self.__sigmaScale.setPopupDelay(0)
         for itemText,itemVal,_ in self.__sigmaScaleMode :
             popupMenu.insertItem(itemText,itemVal)
-        self.__sigmaModeSelected(1)
+        self.__sigmaModeSelected(3)
         hlayout5.addWidget(self.__sigmaScale)
         """
         colormap window can not be resized
