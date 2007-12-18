@@ -143,6 +143,11 @@ class QubEventMgr:
                     if(drawingEvent and drawingEvent.mousePressed(event.x(),event.y())) :
                         self._rmDrawingEventRef(drawingEventRef)
 
+                for drawingMgr in self.__drawingMgr:
+                    modifyClass = drawingMgr().getModifyClass(event.x(),event.y())
+                    if modifyClass:
+                        drawingMgr().wasClicked()
+                            
             if evtMgr is None:          # event propagate
                 for link in self.__eventLinkMgrs :
                     link.mousePressed(event,self)

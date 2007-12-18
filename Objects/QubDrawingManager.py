@@ -42,6 +42,7 @@ class QubDrawingMgr :
         self._dubModeCbk = None
         self._keyPressedCbk = None
         self._keyReleasedCbk = None
+        self._clickedCbk = None
         self._actionInfo = ''
         
     def __del__(self) :
@@ -285,7 +286,13 @@ class QubDrawingMgr :
     def setKeyReleasedCallBack(self,cbk) :
         self._keyReleasedCbk = QubWeakref.createWeakrefMethod(cbk)
 
-    
+    ##@brief set the clicked callback
+    #
+    #@param cbk is the addresse of a function or a methode with this signature
+    #<b>cbk(self,drawingManager)</b>
+    def setClickedCallBack(self,cbk) :
+        self._clickedCbk = QubWeakref.createWeakrefMethod(cbk)
+        
     ##@brief change the drawing procedure beavior
     ##@see Qub::Objects::QubDrawingEvent::QubDrawingEvent
     def setDrawingEvent(self,event) :
@@ -334,7 +341,10 @@ class QubDrawingMgr :
     def rawKeyReleased(self,keyevent) :
         if self._keyReleasedCbk:
             self._keyReleasedCbk(keyevent)
-    
+    ##@brief object was clicked
+    def wasClicked(self) :
+        if self._clickedCbk:
+            self._clickedCbk(self)
     ##@name Has to or may be redefine in subclass
     #@{
     #
