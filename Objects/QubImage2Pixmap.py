@@ -114,14 +114,14 @@ class QubImage2Pixmap(qt.QObject) :
                 
         ##@brief this methode is the idle callback
         def __idleCopy(self) :
-            self.__copy()
+            self.copy()
             aLock = QubLock(self.__mutex)
             if not len(self.__plugsNimagesPending) :
                 aLock.unLock()
                 self.stop()
         
         ##@brief copy image on a pixmap
-        def __copy(self) :
+        def copy(self) :
             aLock = QubLock(self.__mutex)
             self.__plugsNimagesPending = self.decim(self.__plugsNimagesPending)
             if len(self.__plugsNimagesPending) :
@@ -196,7 +196,7 @@ class QubImage2Pixmap(qt.QObject) :
     #it's could be remove when QT4 will be used
     def customEvent(self,event) :
         if event.event_name == "_startTimer" and not self.__idle.isActive():
-            self.__idle.start(0)
+            self.__idle.copy()
 
 ##@brief this class is the link between QubImage2Pixmap and
 #other object which can display Pixmap

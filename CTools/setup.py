@@ -29,7 +29,13 @@ sps_module = Extension(name = "sps",
 			      extra_link_args = extra_link_args,
                               include_dirs = ['sps',numpy.get_include()])
 
+mar345_module = Extension(name = "mar345",
+                          sources = glob.glob('mar345/mar345*c'),
+                          extra_compile_args = extra_compile_args,
+                          extra_link_args = extra_link_args,
+                          include_dirs = ['mar345',numpy.get_include()])
+
 setup(name = "QubCTools",version = "1.0",
       description = "Some tools written in C for speed",
-      ext_modules = [polygone_module,dataresize_module,sps_module])
+      ext_modules = [polygone_module,dataresize_module,sps_module,mar345_module])
 

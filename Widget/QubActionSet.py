@@ -2625,6 +2625,7 @@ class QubGraphZoomAction(QubAction):
             graph.setAxisAutoScale(graph.yRight)
             graph.replot()
             self.__plotZoomer.setZoomBase()
+from Qub.CTools import qwttools
 ##@brief action to put Y in log
 #
 class QubGraphYAxisLogSwitchAction(QubAction):
@@ -2644,7 +2645,8 @@ class QubGraphYAxisLogSwitchAction(QubAction):
 
     def setState(self,aFlag) :
         if aFlag:
-            scaleEngine = qwt.QwtLog10ScaleEngine()
+            #scaleEngine = qwt.QwtLog10ScaleEngine()
+            scaleEngine = qwttools.QubTrunkNegLog10ScaleEngine()
         else:
             scaleEngine = qwt.QwtLinearScaleEngine()
         graph = self.__graph()

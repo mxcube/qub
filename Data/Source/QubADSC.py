@@ -79,7 +79,7 @@ class QubADSC(QubDataIOPlugin) :
             return self.__info
 
         def getDataSource(self) :
-            basename = os.path.split(self.__fd.name)[1]
+            basename = os.path.basename(self.__fd.name)
             parent = QubDataImage(read_plugin = QubDataFileStreamIO(filepath = self.__fd.name,
                                                                   index = 0,plugInClass = QubADSC),
                                   name = 'File : %s ' % basename,key = self.__fd.name)

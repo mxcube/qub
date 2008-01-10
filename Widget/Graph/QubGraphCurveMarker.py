@@ -264,7 +264,11 @@ class QubGraphCurvePointFollowMarked(qwt.QwtPlotMarker) :
             if self.__textLabelCBK:
                 textLabel = self.__textLabelCBK(curve.x(self.__pointIndex),curve.y(self.__pointIndex))
             else:
-                textLabel = '<b><font COLOR=red>(%d,%d)</font></b>' % (curve.x(self.__pointIndex),curve.y(self.__pointIndex))
+                xVal,yVal = curve.x(self.__pointIndex),curve.y(self.__pointIndex)
+                if isinstance(yVal,float) :
+                    textLabel = '<b><font COLOR=red>(%d,%g)</font></b>' % (xVal,yVal)
+                else:
+                    textLabel = '<b><font COLOR=red>(%d,%d)</font></b>' % (xVal,yVal)
             self.__textMarker.setLabel(qwt.QwtText(textLabel))
 
     def setVisible(self,aFlag) :
@@ -285,7 +289,11 @@ class QubGraphCurvePointFollowMarked(qwt.QwtPlotMarker) :
             if self.__textLabelCBK:
                 textLabel = self.__textLabelCBK(curve.x(self.__pointIndex),curve.y(self.__pointIndex))
             else:
-                textLabel = '<b><font COLOR=red>(%d,%d)</font></b>' % (curve.x(self.__pointIndex),curve.y(self.__pointIndex))
+                xVal,yVal = curve.x(self.__pointIndex),curve.y(self.__pointIndex)
+                if isinstance(yVal,float) :
+                    textLabel = '<b><font COLOR=red>(%d,%g)</font></b>' % (xVal,yVal)
+                else:
+                    textLabel = '<b><font COLOR=red>(%d,%d)</font></b>' % (xVal,yVal)
             self.__textMarker.setLabel(qwt.QwtText(textLabel))
 
             if point.x() > plot.canvas().width() / 2:
