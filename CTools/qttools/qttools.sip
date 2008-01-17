@@ -118,3 +118,15 @@ class QubImage :  QImage
   QubImage copy ( int, int , int, int , int = 0 ) const;
   QubImage copy ( const QRect & r ) const;
 };
+
+class BgrImageMmap
+{
+%TypeHeaderCode
+#include "qttools_mmap.h"
+%End
+public:
+  BgrImageMmap(const char *aFilePath);
+  ~BgrImageMmap();
+  int getImageCount();
+  QImage getNewImage();
+};

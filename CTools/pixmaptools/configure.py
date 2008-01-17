@@ -60,6 +60,8 @@ makefile = pyqtconfig.QtModuleMakefile(
 # specific prefixes or extensions (e.g. the "lib" prefix on UNIX, or the
 # ".dll" extension on Windows).
 # None (for me)
+makefile.CFLAGS.append('-march=pentium4')
+makefile.CXXFLAGS.append('-march=pentium4')
 
 # Generate the Makefile itself.
 makefile.generate()

@@ -24,7 +24,8 @@ os.system(cmd)
 if os.system(" ".join(['moc','-o','moc_qtxembed.cpp','qtxembed.h'])) :
     print 'Moc failed on file qtxembed.h'
 
-compile_file = ['qttools_qttools.cpp','moc_qtxembed.cpp','qtxembed.cpp','qubimage.cpp']
+compile_file = ['qttools_qttools.cpp','moc_qtxembed.cpp',
+                'qtxembed.cpp','qubimage.cpp','qttools_mmap.cpp']
 
 #little HACK for adding source
 bfile = file(build_file)
@@ -55,6 +56,8 @@ makefile = pyqtconfig.QtModuleMakefile(
     build_file=build_file,
     installs=installs
   )
+makefile.CFLAGS.append('-march=pentium4')
+makefile.CXXFLAGS.append('-march=pentium4')
 
 # Add the library we are wrapping.  The name doesn't include any platform
 # specific prefixes or extensions (e.g. the "lib" prefix on UNIX, or the

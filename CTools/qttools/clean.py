@@ -7,6 +7,7 @@ dont_rm_files = ['qttools.sip',
                  'qttools_qttools.cpp','qttools_qttools.h',
                  'qtxembed.cpp','qtxembed.h',
                  'qubimage.h','qubimage.cpp',
+                 'qttools_mmap.cpp','qttools_mmap.h',
                  'qttoolsconfig.py.in','configure.py',
                  'clean.py']
 
