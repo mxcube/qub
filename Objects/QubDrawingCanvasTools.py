@@ -1508,5 +1508,37 @@ class QubCanvasHomotheticRectangle(qtcanvas.QCanvasRectangle) :
             qtcanvas.QCanvasRectangle.setSize(self,p.x(),p.y())
         qtcanvas.QCanvasRectangle.drawShape(self,painter)
             
+class QubCanvasStripH(qtcanvas.QCanvasRectangle) :
+    def __init__(self,canvas) :
+        qtcanvas.QCanvasRectangle.__init__(self,canvas)
+        
+     
+    def drawShape(self,painter) :
+        height = self.size().height()
+        halfHeight = height >> 1
+        canvasWidth = self.canvas().width()
+        y = self.y()
+        painter.drawLine(0,y + halfHeight,canvasWidth,y + halfHeight)
+        painter.drawLine(0,y - halfHeight,canvasWidth,y - halfHeight)
 
+    def boundingRect(self) :
+        rect = qt.QRect(0,0,self.canvas().width(),self.size().height())
+        rect.moveCenter(qt.QPoint(self.canvas().width() >> 1,self.y()))
+        return rect
+    
+class QubCanvasStripV(QubCanvasStripH) :
+    def __init__(self,canvas) :
+        QubCanvasStripH.__init__(self,canvas)
 
+    def drawShape(self,painter) :
+        width = self.size().width()
+        halfWidth = width >> 1
+        canvasHeight = self.canvas().height()
+        x = self.x()
+        painter.drawLine(x + halfWidth,0,x + halfWidth,canvasHeight)
+        painter.drawLine(x - halfWidth,0,x - halfWidth,canvasHeight)
+       
+    def boundingRect(self) :
+        rect = qt.QRect(0,0,self.size().width(),self.canvas().height())
+        rect.moveCenter(qt.QPoint(self.x(),self.canvas().height() >> 1))
+        return rect

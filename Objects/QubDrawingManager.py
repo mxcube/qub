@@ -454,7 +454,11 @@ class QubPointDrawingMgr(QubDrawingMgr) :
         QubDrawingMgr.__init__(self,aCanvas,aMatrix)
         self._x,self._y = 0,0
         self._drawingEvent = QubPressedNDrag1Point
-                
+        self.__width,self.__height = -1,-1
+        self.__authorizedWidthResize = False
+        self.__authorizedHeightResize = False
+        self.__homotheticFlag = False
+        
     ##@brief set the absolute position (x,y)
     #@param x horizontal position
     #@param y vertical position
@@ -464,7 +468,37 @@ class QubPointDrawingMgr(QubDrawingMgr) :
     ##@return the horizontal and vertical position in tuple
     def point(self) :
         return (self._x,self._y)
+    ##@brief set the size of drawing objects
+    #
+    #@param width the width of objects
+    #@param height the height of objects
+    def setSize(self,width,height) :
+        self.__width,self.__height = width,height
+        self.update()
+    ##@brief return the objects size
+    #
+    #@return width and height as a tuple
+    def size(self) :
+        return self.__width,self.__height
 
+    ##@brief set if objects are homothetic
+    def setHomothetic(self,flag) :
+        self.__homotheticFlag = flag
+        self.update()
+
+    ##@brief change the height resize capability
+    #
+    def setAuthorizedHeightResize(self,flag) :
+        self.__homotheticFlag = self.__homotheticFlag or flag
+        self.__authorizedHeightResize = flag
+        if flag : self.setCanBeModify(True)
+
+    ##@brief change the width resize capability
+    #
+    def setAuthorizedWidthResize(self,flag) :
+        self.__homotheticFlag = self.__homotheticFlag or flag
+        self.__authorizedWidthResize = flag
+        if flag : self.setCanBeModify(True)
         
     ##@name Internal loop event call
     #@{
@@ -482,24 +516,86 @@ class QubPointDrawingMgr(QubDrawingMgr) :
         
         self._drawForeignObject()
 
+    def xLeft(self,x,y) :
+        rect = self.boundingRect()
+        rect.setX(x)
+        if self._matrix is not None:
+            rect = self._matrix.invert()[0].mapRect(rect)
+        self.setSize(rect.width(),rect.height())
+        self.update()
+
+    def xRight(self,x,y) :
+        rect = self.boundingRect()
+        rect.setRight(x)
+        if self._matrix is not None:
+            rect = self._matrix.invert()[0].mapRect(rect)
+        self.setSize(rect.width(),rect.height())
+        self.update()
+        
+    def yTop(self,x,y) :
+        rect = self.boundingRect()
+        rect.setY(y)
+        if self._matrix is not None:
+            rect = self._matrix.invert()[0].mapRect(rect)
+        self.setSize(rect.width(),rect.height())
+        self.update()
+
+    def yBottom(self,x,y) :
+        rect = self.boundingRect()
+        rect.setBottom(y)
+        if self._matrix is not None:
+            rect = self._matrix.invert()[0].mapRect(rect)
+        self.setSize(rect.width(),rect.height())
+        self.update()
+        
     def update(self) :
         if self._matrix is not None :
             x,y = self._matrix.map(self._x,self._y)
         else :
             x,y = self._x,self._y
+
+        if(self.__homotheticFlag and self._matrix and
+           self.__width > -1 and self.__height > -1):
+            width,height = self._matrix.invert()[0].map(self.__width,self.__height)
+        else:
+            width,height = self.__width,self.__height
+
             
         for drawingObject in self._drawingObjects :
             drawingObject.move(x,y)
+            if width > -1 and height > -1 and hasattr(drawingObject,'setSize') :
+                drawingObject.setSize(width,height)
+                
         if self._canvas: self._canvas.update()
         
-        self._drawForeignObject()
+        self._drawForeignObject(width,height)
         
     def _getModifyClass(self,x,y) :
+        modifyClass = None
         rect = self.boundingRect()
-        if rect.contains(x,y) : 
-            return QubModifyAbsoluteAction(self,self.move)
 
-    def _drawForeignObject(self) :
+        if self.__authorizedWidthResize :
+            if rect.contains(x,y) :
+                xFirst,xLast = rect.x(),rect.x() + rect.width()
+                if (xFirst - 2) <= x <= (xFirst + 2):
+                    modifyClass = QubModifyAbsoluteAction(self,self.xLeft,qt.QCursor(qt.Qt.SizeHorCursor))
+                elif (xLast - 2) <= x <= (xLast + 2):
+                    modifyClass = QubModifyAbsoluteAction(self,self.xRight,qt.QCursor(qt.Qt.SizeHorCursor))
+
+        if not modifyClass and self.__authorizedHeightResize:
+            if rect.contains(x,y) :
+                yFirst,yLast = rect.y(),rect.y() + rect.height()
+                if (yFirst - 2) <= y <= (yFirst + 2):
+                    modifyClass = QubModifyAbsoluteAction(self,self.yTop,qt.QCursor(qt.Qt.SizeVerCursor))
+                elif (yLast - 2) <= y <= (yLast + 2):
+                    modifyClass = QubModifyAbsoluteAction(self,self.yBottom,qt.QCursor(qt.Qt.SizeVerCursor))
+
+        if not modifyClass:
+            if rect.contains(x,y) : 
+                modifyClass = QubModifyAbsoluteAction(self,self.move)
+        return modifyClass
+
+    def _drawForeignObject(self,width = -1,height = -1) :
         try:
             for link,canvas,matrix,objectlist in self._foreignObjects :
                 x,y = self._x,self._y
@@ -507,6 +603,8 @@ class QubPointDrawingMgr(QubDrawingMgr) :
                     x,y = matrix.map(x,y)
                 for drawingObject in objectlist :
                     drawingObject.move(x,y)
+                    if width > -1 and height > -1 and hasattr(drawingObject,'setSize'):
+                        drawingObject.setSize(width,height)
                 if canvas: canvas.update()
         except:
             import traceback

@@ -45,7 +45,7 @@ class QubColormapDialog(qt.QWidget):
                               ("Green",LUT.Palette.GREEN),
                               ("Blue",LUT.Palette.BLUE),
                               ("Many",LUT.Palette.MANY),
-                              ("Fit2D",LUT.Palette.FIT2D)]
+                              ("Geographical",LUT.Palette.FIT2D)]
 
         self.__lutType = [('Linear',LUT.LINEAR),('Logarithm',LUT.LOG),('Shift Logarithm',LUT.SHIFT_LOG)]
                          
