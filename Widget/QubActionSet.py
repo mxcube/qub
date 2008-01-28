@@ -52,6 +52,11 @@ from Qub.Print.QubPrintPreview import getPrintPreviewDialog
 from Qub.CTools import datafuncs
 from Qub.CTools import pixmaptools
 
+try:
+    from Qub.CTools import qwttools
+except ImportError:
+    qwttools = None
+
 ###############################################################################
 ###############################################################################
 ####################                                       ####################
@@ -2625,7 +2630,6 @@ class QubGraphZoomAction(QubAction):
             graph.setAxisAutoScale(graph.yRight)
             graph.replot()
             self.__plotZoomer.setZoomBase()
-from Qub.CTools import qwttools
 ##@brief action to put Y in log
 #
 class QubGraphYAxisLogSwitchAction(QubAction):
@@ -2645,8 +2649,7 @@ class QubGraphYAxisLogSwitchAction(QubAction):
 
     def setState(self,aFlag) :
         if aFlag:
-            #scaleEngine = qwt.QwtLog10ScaleEngine()
-            scaleEngine = qwttools.QubTrunkNegLog10ScaleEngine()
+            scaleEngine = qwttools and qwttools.QubTrunkNegLog10ScaleEngine() or qwt.QwtLog10ScaleEngine()
         else:
             scaleEngine = qwt.QwtLinearScaleEngine()
         graph = self.__graph()
