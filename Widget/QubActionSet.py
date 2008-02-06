@@ -1744,17 +1744,20 @@ class QubDataPositionValueAction(QubPositionAction):
         return self._widget
 
     def mouseFollow(self,x,y) :
+        qubImage = self._qubImage and self._qubImage() or None
+        if not qubImage: return
+        matrix = qubImage.matrix()
+        xScale,yScale = matrix.m11(),matrix.m22()
+
         if self.__scaleClass is not None:
             try:
-                for value,valueWidget in zip(self.__scaleClass.transform(x,y),[self._xValue,self._yValue,self.__valueLabel]) :
+                xFullRes,yFullRes = matrix().invert()[0].map(x,y)
+                for value,valueWidget in zip(self.__scaleClass.transform(xFullRes,yFullRes),
+                                             [self._xValue,self._yValue,self.__valueLabel]) :
                     valueWidget.setText(value)
             except TypeError: return
         else:
             QubPositionAction.mouseFollow(self,x,y)
-            qubImage = self._qubImage and self._qubImage() or None
-            if not qubImage: return
-            matrix = qubImage.matrix()
-            xScale,yScale = matrix.m11(),matrix.m22()
             if xScale < 1.0 or yScale < 1.0 : color = qt.Qt.red
             else: color = qt.Qt.black
 

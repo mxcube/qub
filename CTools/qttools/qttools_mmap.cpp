@@ -17,7 +17,7 @@ BgrImageMmap::BgrImageMmap(const char *aFilePath)
     {
       _mappedSize = lseek(_fd,0,SEEK_END);
       lseek(_fd,0,SEEK_SET);
-      _mmapMemoryPt = mmap(NULL,1360*1024*3+sizeof(Header),
+      _mmapMemoryPt = mmap(NULL,_mappedSize,
 			   PROT_WRITE|PROT_READ,MAP_SHARED,_fd,0);
       _headerPt = (Header*)_mmapMemoryPt;
   
@@ -30,7 +30,7 @@ BgrImageMmap::~BgrImageMmap()
 {
   if(_fd > -1)
     {
-      munmap(_mmapMemoryPt,1360*1024*3+sizeof(Header));
+      munmap(_mmapMemoryPt,_mappedSize);
       close(_fd);
     }
 }
@@ -44,15 +44,15 @@ int BgrImageMmap::getImageCount()
       if(!_headerPt->image_available && !_headerPt->copy_request)
 	{
 	  _headerPt->copy_request = 1;
-	  msync(_mmapMemoryPt,sizeof(Header),MS_ASYNC);
 	}
+      _headerPt->image_available = 0;
+      msync(_mmapMemoryPt,sizeof(Header),MS_ASYNC);
     }
   return imageCount;
 }
 
 QImage BgrImageMmap::getNewImage()
 {
-  _headerPt->image_available = 0;
   uchar *endImagePt = ((uchar*)_mmapMemoryPt + sizeof(Header)) + 
     (_headerPt->width * _headerPt->height * 3);
   uchar *endFilePt = ((uchar*)_mmapMemoryPt + sizeof(Header)) + _mappedSize;
@@ -63,10 +63,14 @@ QImage BgrImageMmap::getNewImage()
   uchar * imagePt = ((uchar*)_mmapMemoryPt + sizeof(Header));
   while(imagePt < endImagePt)
     {
-      *aDestPt = *imagePt;++imagePt,++aDestPt; // Blue
-      *aDestPt = *imagePt;++imagePt,++aDestPt; // Green
-      *aDestPt = *imagePt;++imagePt,++aDestPt; // Red
-      ++aDestPt;
+//       *aDestPt = *imagePt;++imagePt,++aDestPt; // Blue
+//       *aDestPt = *imagePt;++imagePt,++aDestPt; // Green
+//       *aDestPt = *imagePt;++imagePt,++aDestPt; // Red
+//       ++aDestPt;
+      aDestPt[2] = *imagePt;++imagePt;
+      aDestPt[1] = *imagePt;++imagePt;
+      aDestPt[0] = *imagePt;++imagePt;
+      aDestPt += 4;
     }
   _headerPt->copy_request = 1;
   msync(_mmapMemoryPt,sizeof(Header),MS_ASYNC);
