@@ -42,7 +42,7 @@ static PyObject* down_size(PyObject *self, PyObject *args)
 
   int aDestWidth = int(ceil(crop_width * xscale));
   int aDestHeight = int(ceil(crop_height * yscale));
-  double *aDest = (double*)calloc(sizeof(double),aDestWidth * (aDestHeight + 1));
+  double *aDest = (double*)calloc(sizeof(double),(aDestWidth + 1) * (aDestHeight + 1));
   PyArrayObject *aReturnArray = NULL;
   int aReturnWidth = int(crop_width * xscale);
   int aReturnHeight = int(crop_height * yscale);
