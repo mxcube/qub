@@ -1048,10 +1048,36 @@ class QubQuickView(qt.QLabel) :
                 x -= center.x()
                 y -= center.y()
                 self.move(x,y)
+##@brief widget to display several info table
+#
+class QubInfoTableWidget(qt.QTabWidget) :
+    def __init__(self,parent = None,name = '',iconName = None) :
+        qt.QTabWidget.__init__(self,parent,name)
+        self.__counterInfo = QubInfoBaseTableWidget(self)
+        self.addTab(self.__counterInfo,'counter')
+        self.__motorInfo = QubInfoBaseTableWidget(self)
+        self.addTab(self.__motorInfo,'motors')
+        self.__miscInfo = QubInfoBaseTableWidget(self)
+        self.addTab(self.__miscInfo,'misc.')
+        
+    def setInfo(self,info):
+        try:
+            counter_mne = info.pop('counter_mne').split()
+            counter_pos = info.pop('counter_pos').split()
+            self.__counterInfo.setInfo(dict(zip(counter_mne,counter_pos)))
+            motor_mne = info.pop('motor_mne').split()
+            motor_pos = info.pop('motor_pos').split()
+            self.__motorInfo.setInfo(dict(zip(motor_mne,motor_pos)))
+        except KeyError:
+            pass
+        except AttributeError:
+            pass
+        self.__miscInfo.setInfo(info)
+        
 ##@brief widget to display dictionnary info in a table
 #
 #display info in table in two column (key,value)
-class QubInfoTableWidget(qttable.QTable):
+class QubInfoBaseTableWidget(qttable.QTable):
     def __init__(self,parent = None,name = '',iconName = None) :
         qttable.QTable.__init__(self,0,2,parent,name)
         self.__info = None

@@ -2471,6 +2471,60 @@ class QubOpenDialogAction(QubAction):
                 self._dialog.refresh()
 
 ###############################################################################
+#                            QubListAction                                    #
+###############################################################################
+class QubListAction(QubAction) :
+    def __init__(self, items=["selection 1"], **keys) :
+        QubAction.__init__(self, **keys)
+
+        self.__itemList = items
+        
+    def addToolWidget(self,parent) :
+        if self._widget is None:
+            """
+            menu to select item
+            """
+            self._listPopupMenu,self.__default = self._createPopMenu(parent)
+            
+            """
+            tool button to use selected zoom value
+            """
+            self._widget = qt.QToolButton(parent)
+            self._widget.setAutoRaise(True)
+            self._widget.setPopup(self._listPopupMenu)
+            self._widget.setPopupDelay(0)
+            self._widget.setText(qt.QString('%s'%self.__itemList[self.__default]))
+                                             
+            return self._widget
+        
+    def addMenuWidget(self, menu):
+        self._menu = menu
+        
+        if self._item is None:
+            qstr = qt.QString("%s"%self._default)
+            self._item = menu.insertItem(qstr, self._listPopupMenu)
+            menu.connectItem(self._item, self._listPopupMenu.exec_loop)
+
+    def _createPopMenu(self,parent) :
+        popMenu = qt.QPopupMenu(parent)
+        idDefaultZoom = 0
+        for i,item in enumerate(self.__itemList) :
+            popMenu.insertItem('%s' % item, i)
+        self.connect(popMenu, qt.SIGNAL("activated(int )"),
+                     self.itemSelectedCbk)
+        return (popMenu,idDefaultZoom)
+    
+    def setItemIndex(self, idx):
+        if self._widget is not None and self.__itemList is not None:
+            self._widget.setText("%s"%self.__itemList[idx])
+                
+    def itemSelectedCbk(self, idx):
+        if self._widget is not None:
+            self.__default  = idx
+            self._widget.setText("%s"%self.__itemList[idx])
+            self.emit(qt.PYSIGNAL("ItemSelected"), (idx, self.__itemList[idx]))
+
+###############################################################################
 #                         QubSaveImageAction                                  #
 ###############################################################################
 class QubSaveImageAction(QubAction) :

@@ -1210,7 +1210,7 @@ def testPreview():
     a = qt.QApplication(sys.argv)
  
     p = qt.QPrinter()
-    p.setPrintToFile(1)
+##    p.setPrintToFile(1)
     p.setOutputFileName(os.path.splitext(filename)[0]+".ps")
     p.setColorMode(qt.QPrinter.Color)
 

@@ -611,7 +611,9 @@ class QubCanvasPixmap(qtcanvas.QCanvasRectangle) :
                         backgroundImage = canvas.lastImage()
                         if backgroundImage:
                             xzoom,yzoom = backgroundImage.width() / float(canvas.width()),backgroundImage.height() / float(canvas.height())
-                            backgroundImage = backgroundImage.copy(self.x() * xzoom,self.y() * yzoom,image.width() * xzoom,image.height() * yzoom)
+                            backgroundImage = backgroundImage.copy((self.x() + xOriPixmapCpy) * xzoom,
+                                                                   (self.y() + yOriPixmapCpy) * yzoom,
+                                                                   image.width() * xzoom,image.height() * yzoom)
                             backI = qtTools.getImageOpencvFromQImage(backgroundImage)
                             if xzoom != 1. or yzoom != 1.:
                                 tmpBack = cv.cvCreateImage(cv.cvSize(image.width(),image.height()),backI.depth,backI.nChannels)

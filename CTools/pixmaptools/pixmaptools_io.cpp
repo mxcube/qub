@@ -35,7 +35,14 @@ struct IO::Data {
 #endif
 };
 
-
+extern "C"
+{
+  static int _XError_hanlder(Display *display,XErrorEvent *err)
+  {
+    aRloginFlag = True;
+    std::cerr << "" << ID << ": Unactive MIT-SHM" << std::endl;
+  }
+}
 
 IO::IO()
 {
@@ -58,7 +65,7 @@ IO::IO()
     // Sort out bit format. Create a temporary XImage for this.
     d->shminfo = new XShmSegmentInfo;
     d->ximage = XShmCreateImage(qt_xdisplay(), (Visual *) QPaintDevice::x11AppVisual(),
-	    QPaintDevice::x11AppDepth(), ZPixmap, 0L, d->shminfo, 10, 10);
+				QPaintDevice::x11AppDepth(), ZPixmap, 0L, d->shminfo, 10, 10);
     d->bpp = d->ximage->bits_per_pixel;
     int bpp = d->bpp;
     if (d->ximage->byte_order == LSBFirst)
@@ -119,7 +126,7 @@ IO::~IO()
 QPixmap IO::convertToPixmap(const QImage &img)
 {
     int size = img.width() * img.height();
-    if (m_bShm && (img.depth() > 1) && (d->bpp > 8) && (size > d->threshold)) {
+    if (m_bShm && aRloginFlag && (img.depth() > 1) && (d->bpp > 8) && (size > d->threshold)) {
 	QPixmap dst(img.width(), img.height());
 	putImage(&dst, 0, 0, &img);
 	return dst;
@@ -135,7 +142,7 @@ QImage IO::convertToImage(const QPixmap &pm)
 {
     QImage image;
     int size = pm.width() * pm.height();
-    if (m_bShm && (d->bpp >= 8) && (size > d->threshold))
+    if (m_bShm && aRloginFlag && (d->bpp >= 8) && (size > d->threshold))
 	image = getImage(&pm, 0, 0, pm.width(), pm.height());
     else
 	image = pm.convertToImage();
@@ -154,7 +161,7 @@ void IO::putImage(QPixmap *dst, int dx, int dy, const QImage *src)
 {
 #ifdef HAVE_MITSHM
   int size = src->width() * src->height();
-  if (m_bShm && (src->depth() > 1) && (d->bpp > 8) && (size > d->threshold))
+  if (m_bShm && aRloginFlag && (src->depth() > 1) && (d->bpp > 8) && (size > d->threshold))
     {
       initXImage(src->width(), src->height());
       convertToXImage(*src);
@@ -185,7 +192,7 @@ QImage IO::getImage(const QPixmap *src, int sx, int sy, int sw, int sh)
   QImage image;
 #ifdef HAVE_MITSHM
   int size = src->width() * src->height();
-  if ((m_bShm) && (d->bpp >= 8) && (size > d->threshold)) 
+  if ((m_bShm && aRloginFlag) && (d->bpp >= 8) && (size > d->threshold)) 
     {
       initXImage(sw, sh);
       XShmGetImage(qt_xdisplay(), src->handle(), d->ximage, sx, sy, AllPlanes);

@@ -1124,8 +1124,8 @@ class _drawIdle(qt.QTimer) :
         self.__y = pos.y()
 
     def __idleDraw(self) :
-        self.__button.realDraw(self.__x,self.__y)
         self.stop()
+        self.__button.realDraw(self.__x,self.__y)
         
 class _pad_button(qt.QPushButton) :
     def __init__(self,hLabel,vLabel,rLabel,hUndo,hRedo,vUndo,vRedo,rUndo,rRedo,
