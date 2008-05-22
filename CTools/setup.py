@@ -2,9 +2,16 @@ import glob
 import platform
 from distutils.core import setup,Extension
 import numpy
+import os
 
 if platform.system() == 'Linux' :
-    extra_compile_args = ['-pthread','-march=pentium4']
+    try:
+        if os.environ['OSTYPE'] == 'suse72':
+            extra_compile_args = ['-pthread']
+        else:
+            extra_compile_args = ['-pthread','-march=pentium4']
+    except KeyError:
+        extra_compile_args = ['-pthread','-march=pentium4']
     extra_link_args = ['-pthread']
 elif platform.system() == 'SunOS' :
     extra_compile_args = ['-pthreads']
