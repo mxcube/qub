@@ -276,6 +276,8 @@ class QubCanvasBeam(QubCanvasEllipse):
     def hide(self) :
         QubCanvasEllipse.hide(self)
         self.__centerE.hide()
+        canvas = self.canvas()
+        if canvas: canvas.update()
 
     def setPen(self,pen) :
         QubCanvasEllipse.setPen(self,pen)
@@ -317,6 +319,8 @@ class QubCanvasTarget(QubCanvasEllipse) :
         QubCanvasEllipse.hide(self)
         self.__hLine.hide()
         self.__vLine.hide()
+        canvas = self.canvas()
+        if canvas: canvas.update()
 
     def drawShape(self,p) :
         QubCanvasEllipse.drawShape(self,p)
@@ -458,6 +462,11 @@ class QubCanvasVLine(qtcanvas.QCanvasLine) :
         height = self.canvas().height()
         self.setPoints(x,0,x,height)
 
+    def hide(self) :
+        qtcanvas.QCanvasLine.hide(self)
+        canvas = self.canvas()
+        if canvas: canvas.update()
+
 class QubCanvasSlitbox(qtcanvas.QCanvasRectangle) :
     def __init__(self,canvas) :
         qtcanvas.QCanvasRectangle.__init__(self,canvas)
@@ -505,6 +514,8 @@ class QubCanvasSlitbox(qtcanvas.QCanvasRectangle) :
         qtcanvas.QCanvasRectangle.hide(self)
         self.__hline.hide()
         self.__vline.hide()
+        canvas = self.canvas()
+        if canvas: canvas.update()
 
     def setPen(self,pen) :
         self.__hline.setPen(pen)
@@ -524,6 +535,11 @@ class QubCanvasHLine(qtcanvas.QCanvasLine) :
     def move(self,x,y) :
         width = self.canvas().width()
         self.setPoints(0,y,width,y)
+
+    def hide(self) :
+        qtcanvas.QCanvasLine.hide(self)
+        canvas = self.canvas()
+        if canvas: canvas.update()
 
 ##@brief this is a pixmap display object
 #@ingroup DrawingCanvasToolsRectangle
@@ -742,6 +758,8 @@ class QubCanvasScale(qtcanvas.QCanvasRectangle) :
         self.__vLine.hide()
         self.__hText.hide()
         self.__hLine.hide()
+        canvas = self.canvas()
+        if canvas: canvas.update()
     
     def update(self) :
         if self.__globalShow :
@@ -966,6 +984,8 @@ class QubCanvasRuler(qtcanvas.QCanvasRectangle) :
             for w in l :
                 w.hide()
         self.__line.hide()
+        canvas = self.canvas()
+        if canvas: canvas.update()
     
     def setPen(self,pen) :
         color = pen.color()
@@ -1159,6 +1179,8 @@ class QubCanvasAngle(qtcanvas.QCanvasLine) :
         if self.__secLine is not None :
             self.__secLine.hide()
         self.__showFlag = False
+        canvas = self.canvas()
+        if canvas: canvas.update()
 
     def setPen(self,pen) :
         qtcanvas.QCanvasLine.setPen(self,pen)
@@ -1527,6 +1549,11 @@ class QubCanvasStripH(qtcanvas.QCanvasRectangle) :
         rect = qt.QRect(0,0,self.canvas().width(),self.size().height())
         rect.moveCenter(qt.QPoint(self.canvas().width() >> 1,self.y()))
         return rect
+
+    def hide(self) :
+        qtcanvas.QCanvasRectangle.hide(self)
+        canvas = self.canvas()
+        if canvas: canvas.update()
     
 class QubCanvasStripV(QubCanvasStripH) :
     def __init__(self,canvas) :

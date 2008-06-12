@@ -734,7 +734,7 @@ class QubDataStatWidget(Histogram) :
                                     (integralVal,'__integralLE'),(average,'__averageLE'),
                                     (nbPixel,'__nbPixelLE'),(stdDeviation,'__stdDevLE')] :
                 childWidget = self.child(childName)
-                if int(value) == value:
+                if isinstance(value,int):
                     childWidget.setText('%d' % value)
                 else:
                     childWidget.setText('%.2f' % value)

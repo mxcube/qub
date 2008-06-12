@@ -338,7 +338,6 @@ class QubDataDisplay(qt.QWidget) :
             except ValueError:          # MAY BE a FILE
                 captionName = 'File : %s' % os.path.split(data)[1]
                 self.__file = EdfFile.EdfFile(data)
-                print "Number of Record",self.__file.GetNumImages()
                 dataArray = self.__file.GetData(0)
 
                 if self.__updateAction :
