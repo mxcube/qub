@@ -113,6 +113,8 @@ class QubDrawingMgr :
                 aDrawingObject.setScrollView(eventMgr.scrollView())
             if hasattr(aDrawingObject,'setMatrix') :
                 aDrawingObject.setMatrix(self._matrix)
+            if hasattr(aDrawingObject,'setDrawingManager') :
+                aDrawingObject.setDrawingManager(self)
                 
             for link,canvas,matrix,objectlist in self._foreignObjects :
                 newObject = aDrawingObject.__class__(None)
@@ -458,6 +460,7 @@ class QubPointDrawingMgr(QubDrawingMgr) :
         self.__authorizedWidthResize = False
         self.__authorizedHeightResize = False
         self.__homotheticFlag = False
+        self.__customModifierMethod = None
         
     ##@brief set the absolute position (x,y)
     #@param x horizontal position
@@ -491,14 +494,17 @@ class QubPointDrawingMgr(QubDrawingMgr) :
     def setAuthorizedHeightResize(self,flag) :
         self.__homotheticFlag = self.__homotheticFlag or flag
         self.__authorizedHeightResize = flag
-        if flag : self.setCanBeModify(True)
 
     ##@brief change the width resize capability
     #
     def setAuthorizedWidthResize(self,flag) :
         self.__homotheticFlag = self.__homotheticFlag or flag
         self.__authorizedWidthResize = flag
-        if flag : self.setCanBeModify(True)
+    ##@brief set modifier method
+    #
+    #signature <b> ModifyClass method(drawingManager,x,y) </b>
+    def setCustomModifierMethod(self,method) :
+        self.__customModifierMethod = method
         
     ##@name Internal loop event call
     #@{
@@ -516,6 +522,20 @@ class QubPointDrawingMgr(QubDrawingMgr) :
         
         self._drawForeignObject()
 
+    def moveX(self,x,y) :
+        if self._matrix:
+            _,y = self._matrix.map(x,self._y)
+        else:
+            y = self._y
+        self.move(x,y)
+
+    def moveY(self,x,y) :
+        if self._matrix:
+            x,_ = self._matrix.map(self._x,y)
+        else:
+            x = self._x
+        self.move(x,y)
+        
     def xLeft(self,x,y) :
         rect = self.boundingRect()
         rect.setX(x)
@@ -571,28 +591,31 @@ class QubPointDrawingMgr(QubDrawingMgr) :
         self._drawForeignObject(width,height)
         
     def _getModifyClass(self,x,y) :
-        modifyClass = None
-        rect = self.boundingRect()
+        if self.__customModifierMethod :
+            modifyClass = self.__customModifierMethod(self,x,y)
+        else:
+            modifyClass = None
+            rect = self.boundingRect()
 
-        if self.__authorizedWidthResize :
-            if rect.contains(x,y) :
-                xFirst,xLast = rect.x(),rect.x() + rect.width()
-                if (xFirst - 2) <= x <= (xFirst + 2):
-                    modifyClass = QubModifyAbsoluteAction(self,self.xLeft,qt.QCursor(qt.Qt.SizeHorCursor))
-                elif (xLast - 2) <= x <= (xLast + 2):
-                    modifyClass = QubModifyAbsoluteAction(self,self.xRight,qt.QCursor(qt.Qt.SizeHorCursor))
+            if self.__authorizedWidthResize :
+                if rect.contains(x,y) :
+                    xFirst,xLast = rect.x(),rect.x() + rect.width()
+                    if (xFirst - 2) <= x <= (xFirst + 2):
+                        modifyClass = QubModifyAbsoluteAction(self,self.xLeft,qt.QCursor(qt.Qt.SizeHorCursor))
+                    elif (xLast - 2) <= x <= (xLast + 2):
+                        modifyClass = QubModifyAbsoluteAction(self,self.xRight,qt.QCursor(qt.Qt.SizeHorCursor))
 
-        if not modifyClass and self.__authorizedHeightResize:
-            if rect.contains(x,y) :
-                yFirst,yLast = rect.y(),rect.y() + rect.height()
-                if (yFirst - 2) <= y <= (yFirst + 2):
-                    modifyClass = QubModifyAbsoluteAction(self,self.yTop,qt.QCursor(qt.Qt.SizeVerCursor))
-                elif (yLast - 2) <= y <= (yLast + 2):
-                    modifyClass = QubModifyAbsoluteAction(self,self.yBottom,qt.QCursor(qt.Qt.SizeVerCursor))
+            if not modifyClass and self.__authorizedHeightResize:
+                if rect.contains(x,y) :
+                    yFirst,yLast = rect.y(),rect.y() + rect.height()
+                    if (yFirst - 2) <= y <= (yFirst + 2):
+                        modifyClass = QubModifyAbsoluteAction(self,self.yTop,qt.QCursor(qt.Qt.SizeVerCursor))
+                    elif (yLast - 2) <= y <= (yLast + 2):
+                        modifyClass = QubModifyAbsoluteAction(self,self.yBottom,qt.QCursor(qt.Qt.SizeVerCursor))
 
-        if not modifyClass:
-            if rect.contains(x,y) : 
-                modifyClass = QubModifyAbsoluteAction(self,self.move)
+            if not modifyClass:
+                if rect.contains(x,y) : 
+                    modifyClass = QubModifyAbsoluteAction(self,self.move)
         return modifyClass
 
     def _drawForeignObject(self,width = -1,height = -1) :
