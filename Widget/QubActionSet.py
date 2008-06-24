@@ -35,6 +35,10 @@ from Qub.Objects.QubDrawingCanvasTools import QubCanvasHLine
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasVLine
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasRuler
 from Qub.Objects.QubDrawingCanvasTools import QubCanvasTarget
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasStripeH
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasStripeV
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasRectangle
+from Qub.Objects.QubDrawingCanvasTools import QubCanvasRotationPoint
 
 from Qub.Objects.QubDrawingEvent import QubDrawingEvent
 from Qub.Objects.QubDrawingEvent import QubFollowMouseOnClick
@@ -311,7 +315,7 @@ class QubSeparatorAction(QubAction):
     """
     """
     def __init__(self,name="sep",**keys):
-        QubAction.__init__(self,name=name**keys)
+        QubAction.__init__(self,name=name, **keys)
 
     def addToolWidget(self, parent):
         """
@@ -1128,9 +1132,9 @@ class QubDiscSelection(QubToggleImageAction):
 
         self.__disc = qtcanvas.QCanvasEllipse( self.__rectCoord.width(),
                                          self.__rectCoord.height(),
-                                         self._qubImage.canvas()
+                                         qubImage.canvas()
                                          )
-        self.setColor(self._qubImage.foregroundColor())
+        self.setColor(qubImage.foregroundColor())
 
     def setColor(self, color):
         """   
@@ -1147,11 +1151,11 @@ class QubDiscSelection(QubToggleImageAction):
         self.__state = bool
         if self.__disc is not None:
             if self.__state:
-                self.signalConnect(self._qubImage)
-                self.setColor(self._qubImage.foregroundColor())
+                self.signalConnect(self._qubImage())
+                self.setColor(self._qubImage().foregroundColor())
                 self.__disc.show()
             else:
-                self.signalDisconnect(self._qubImage)
+                self.signalDisconnect(self._qubImage())
                 self.__disc.hide()
             
             self.__disc.update()
@@ -1162,7 +1166,7 @@ class QubDiscSelection(QubToggleImageAction):
         width and height to 1
         """
         print "mousePress %d,%d" % (event.x(), event.y())
-        (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), event.y())
+        (x, y) = self._qubImage().matrix().invert()[0].map(event.x(), event.y())
         self.__x0 = x
         self.__y0 = y
         self.__rectCoord.setRect(x, y, 1, 1)
@@ -1174,7 +1178,7 @@ class QubDiscSelection(QubToggleImageAction):
         Updates now the width and height to follow the mouse position
         """
         if event.state() == qt.Qt.LeftButton:
-            (x, y) = self._qubImage.matrix().invert()[0].map(event.x(), 
+            (x, y) = self._qubImage().matrix().invert()[0].map(event.x(), 
                                                            event.y())
             
             dx = x - self.__x0
@@ -1203,8 +1207,8 @@ class QubDiscSelection(QubToggleImageAction):
         Draw Disc either if qubImage pixmap has been updated or
         rectangle coordinates have been changed by the user
         """
-        rect = self._qubImage.matrix().map(self.__rectCoord)
-        (x,y) = self._qubImage.matrix().map(self.__x0, self.__y0)
+        rect = self._qubImage().matrix().map(self.__rectCoord)
+        (x,y) = self._qubImage().matrix().map(self.__x0, self.__y0)
 
         self.__disc.setSize(rect.width(), rect.height())
         self.__disc.move(x, y)
@@ -2079,12 +2083,13 @@ class QubInfoAction(QubImageAction) :
 ##########                                                ##########
 ####################################################################
 class QubBeamAction(QubToggleImageAction):
-    def __init__(self,name="beam",**keys):
+    def __init__(self, drawing="Point", name="beam",**keys):
         QubToggleImageAction.__init__(self,name=name, **keys)
 
         self.__state = False
         self.__onMove = False
         self.__drawingMgr = None
+        self.__drawingType = drawing
         
     def viewConnect(self, qubImage):
         """
@@ -2092,15 +2097,8 @@ class QubBeamAction(QubToggleImageAction):
         """
         QubToggleImageAction.viewConnect(self, qubImage)
 
-        self.__drawingMgr = QubPointDrawingMgr(qubImage.canvas(),
-                                                qubImage.matrix())
-        beam = QubCanvasBeam(qubImage.canvas())
-        self.__drawingMgr.addDrawingObject(beam)
-        qubImage.addDrawingMgr(self.__drawingMgr)
-
-        self.__drawingMgr.setColor(qubImage.foregroundColor())
+        self.setDrawingType(self.__drawingType)
         
-        self.__drawingMgr.setEndDrawCallBack(self.sendBeamMove)
 
     def setColor(self, color):
         """   
@@ -2124,14 +2122,152 @@ class QubBeamAction(QubToggleImageAction):
             else:
                 self.signalDisconnect(qubImage)
                 self.__drawingMgr.hide()
-
-    def setBeamPosition(self, y, z):
-        if y is None or z is None:
+                
+    def setCanBeModify(self, aflag):
+        if self.__drawingMgr is not None:
+            self.__drawingMgr.setCanBeModify(aflag)
+            
+    def setBeamPosition(self, y, z, w, h):
+        if y is None or z is None or w is None or h is None:
             y,z = 0,0
-        if self.__drawingMgr: self.__drawingMgr.setPoint(y, z)
+            w,h = 3,3
+        if self.__drawingMgr is not None and self.__drawingType is not None:
+            if self.__drawingType == "Point":
+                self.__drawingMgr.setPoint(y, z)
+            if self.__drawingType == "Rectangle":
+                self.__drawingMgr.setRect(int(y-w/2.0), int(z-h/2.0), w, h)
+            if self.__drawingType=="StripeH" or self.__drawingType=="StripeV":
+                self.__drawingMgr.setPoint(y, z)
+                self.__drawingMgr.setSize(w, h)
+    
+    def setDrawingType(self, drawingType):
+        if drawingType in ["Point", "Rectangle", "StripeH", "StripeV"]:
+            self.__drawingType = drawingType
+        
+            qubImage = self._qubImage and self._qubImage() or None
+            if qubImage is None : return
+            
+            cvs = qubImage.canvas()
+            matrix = qubImage.matrix()
+            
+            if drawingType == "Point":
+                self.__drawingMgr = QubPointDrawingMgr(cvs, matrix)
+                drawingObject = QubCanvasBeam(qubImage.canvas())
+                
+            if drawingType == "Rectangle":
+                self.__drawingMgr = Qub2PointSurfaceDrawingMgr(cvs, matrix)
+                drawingObject = QubCanvasRectangle(qubImage.canvas())
+               
+            if drawingType == "StripeH":
+                self.__drawingMgr = QubPointDrawingMgr(cvs, matrix)
+                self.__drawingMgr.setAuthorizedHeightResize(True)
+                drawingObject = QubCanvasStripeH(qubImage.canvas())
+                
+            if drawingType == "StripeV":
+                self.__drawingMgr = QubPointDrawingMgr(cvs, matrix)
+                self.__drawingMgr.setAuthorizedWidthResize(True)
+                drawingObject = QubCanvasStripeV(qubImage.canvas())
+
+            self.__drawingMgr.addDrawingObject(drawingObject)
+            qubImage.addDrawingMgr(self.__drawingMgr)
+            
+            if drawingType != "Point":
+                self.__drawingMgr.setBrush(qt.QBrush(qt.Qt.Dense7Pattern))
+                pen = qt.QPen(qt.Qt.DashDotLine)
+                pen.setWidth(2)
+                self.__drawingMgr.setPen(pen)
+                
+            self.__drawingMgr.setColor(qubImage.foregroundColor())
+            self.__drawingMgr.setEndDrawCallBack(self.sendBeamMove)
         
     def sendBeamMove(self, drawingMgr):
-        self.emit(qt.PYSIGNAL("BeamSelected"), drawingMgr.point())
+        data = {}
+        if self.__drawingType == "Point":
+            data["x"] = drawingMgr.point()[0]
+            data["y"] = drawingMgr.point()[1]
+        if self.__drawingType == "Rectangle":
+            data["w"] = drawingMgr.rect().width() 
+            data["h"] = drawingMgr.rect().height() 
+            data["x"] = drawingMgr.rect().x() + int(data["w"] / 2.0)
+            data["y"] = drawingMgr.rect().y() + int(data["h"] / 2.0)
+        if self.__drawingType == "StripeH":
+            data["h"] = drawingMgr.size()[1]
+            data["y"] = drawingMgr.point()[1]
+        if self.__drawingType == "StripeV":
+            data["w"] = drawingMgr.size()[0]
+            data["x"] = drawingMgr.point()[0]
+            
+        
+        self.emit(qt.PYSIGNAL("BeamSelected"), (data,))
+                
+####################################################################
+##########                                                ##########
+##########               QubRotCenterAction               ##########
+##########                                                ##########
+####################################################################
+class QubRotCenterAction(QubToggleImageAction):
+    def __init__(self, name="rotpoint",**keys):
+        QubToggleImageAction.__init__(self,name=name, **keys)
+
+        self.__state = False
+        self.__onMove = False
+        self.__drawingMgr = None
+        
+    def viewConnect(self, qubImage):
+        """
+        Once the qubImage is connected, create QCanvas Item
+        """
+        QubToggleImageAction.viewConnect(self, qubImage)        
+
+        self.__drawingMgr = QubPointDrawingMgr(qubImage.canvas(),
+                                                qubImage.matrix())
+        center = QubCanvasRotationPoint(qubImage.canvas())
+        self.__drawingMgr.addDrawingObject(center)
+        qubImage.addDrawingMgr(self.__drawingMgr)
+
+        self.__drawingMgr.setColor(qubImage.foregroundColor())
+        
+        self.__drawingMgr.setEndDrawCallBack(self.sendRotCenterMove)
+
+    def setColor(self, color):
+        """   
+        Slot connected to "ForegroundColorChanged" "qubImage" signal
+        """
+        self.__drawingMgr.setColor(color)
+      
+    def _setState(self, aFlag):
+        """
+        Draw or Hide the 2 ellipse canvas items
+        """
+        self.__state = aFlag
+        qubImage = self._qubImage and self._qubImage() or None
+        if qubImage is None : return
+        
+        if self.__drawingMgr is not None:
+            if self.__state:
+                self.__drawingMgr.setColor(qubImage.foregroundColor())
+                self.__drawingMgr.show()
+                self.signalConnect(qubImage)
+            else:
+                self.signalDisconnect(qubImage)
+                self.__drawingMgr.hide()
+                
+    def setCanBeModify(self, aflag):
+        if self.__drawingMgr is not None:
+            self.__drawingMgr.setCanBeModify(aflag)
+            
+    def setRotCenterPosition(self, x, y):
+        if x is None or y is None:
+            x, y = 50, 50
+            
+        if self.__drawingMgr is not None:
+            self.__drawingMgr.setPoint(x, y)
+            
+    def sendRotCenterMove(self, drawingMgr):
+        data = {}
+        data["x"] = drawingMgr.point()[0]
+        data["y"] = drawingMgr.point()[1]
+        self.emit(qt.PYSIGNAL("RotCenterSelected"), (data,))
         
 #####################################################################
 ##########                  QubScaleAction                 ##########
@@ -2687,6 +2823,11 @@ class QubGraphZoomAction(QubAction):
             graph.setAxisAutoScale(graph.yRight)
             graph.replot()
             self.__plotZoomer.setZoomBase()
+<<<<<<< .mine
+            
+#from Qub.CTools import qwttools
+=======
+>>>>>>> .r444
 ##@brief action to put Y in log
 #
 class QubGraphYAxisLogSwitchAction(QubAction):
@@ -2717,28 +2858,28 @@ class QubGraphYAxisLogSwitchAction(QubAction):
 ####################    TEST -- QubViewActionTest -- TEST   ####################
 ################################################################################
 class QubMain(qt.QMainWindow):
-    def __init__(self, parent=None, file=None):
+    def __init__(self, parent=None, mfile=None):
         qt.QMainWindow.__init__(self, parent)
         
-        self.colormapSps = [spslut.GREYSCALE, spslut.REVERSEGREY, spslut.TEMP,
-                            spslut.RED, spslut.GREEN, spslut.BLUE, spslut.MANY]
+#        self.colormapSps = [spslut.GREYSCALE, spslut.REVERSEGREY, spslut.TEMP,
+#                            spslut.RED, spslut.GREEN, spslut.BLUE, spslut.MANY]
         #pixmap = qt.QPixmap(file)
-        self.readEdfFile(file)
-        self.colormap = 0
-        self.colorMin = self.dataMin
-        self.colorMax = self.dataMax
-        self.autoscale = 0
+        #self.readEdfFile(mfile)
+#        self.colormap = 0
+#        self.colorMin = self.dataMin
+#        self.colorMax = self.dataMax
+#        self.autoscale = 0
         
         actions = []
         
         # A1
-        action = QubColormapAction(show=1, group="color")
-        actions.append(action)
-        
-        action.setParam(self.colormap, self.colorMin, self.colorMax,
-                        self.dataMin, self.dataMax, self.autoscale)
-        self.connect(action, qt.PYSIGNAL("ColormapChanged"),
-                        self.colormapChanged)
+#        action = QubColormapAction(show=1, group="color")
+#        actions.append(action)
+#        
+#        action.setParam(self.colormap, self.colorMin, self.colorMax,
+#                        self.dataMin, self.dataMax, self.autoscale)
+#        self.connect(action, qt.PYSIGNAL("ColormapChanged"),
+#                        self.colormapChanged)
         
         action = QubForegroundColorAction(name="Foreground", group="color")
         actions.append(action)
@@ -2748,23 +2889,26 @@ class QubMain(qt.QMainWindow):
 
         action = QubPrintPreviewAction(name="PP", show=1, group="admin")
         actions.append(action)
+
+        action = QubListAction(items=["Camera 1", "Camera 2", "Camera 3"],
+                               name="listsel", show=1, group="admin")
+        self.connect(action, qt.PYSIGNAL("ItemSelected"), self._itemSelected)
+        actions.append(action)
         
-        actions.append(action)
+#        action = QubVLineSelection(show=1, group="selection")
+#        actions.append(action)
 
-        action = QubVLineSelection(show=1, group="selection")
-        actions.append(action)
+#        action = QubLineSelection(show=1, group="selection")
+#        actions.append(action)
 
-        action = QubLineSelection(show=1, group="selection")
-        actions.append(action)
+#        action = QubRectangleSelection(show=1, group="selection")
+#        actions.append(action)
 
-        action = QubRectangleSelection(show=1, group="selection")
-        actions.append(action)
+#        action = QubPointSelection(show=1, group="selection")
+#        actions.append(action)
 
-        action = QubPointSelection(show=1, group="selection")
-        actions.append(action)
-
-        action = QubCircleSelection(show=1, group="selection")
-        actions.append(action)
+#        action = QubCircleSelection(show=1, group="selection")
+#        actions.append(action)
 
         action = QubSeparatorAction(name="sep2", show=1, group="selection")
         actions.append(action)
@@ -2785,19 +2929,24 @@ class QubMain(qt.QMainWindow):
         
         hlayout = qt.QVBoxLayout(container)
     
-        self.qubImage = QubImageView(container, "actions", None, actions)
+        self.qubImage = QubPixmapDisplayView(container, "actions", actions)
+        pixmap = qt.QPixmap(mfile)
+        image = qt.QImage(mfile)
+        self.qubImage.setPixmap(pixmap, image)       
         
         hlayout.addWidget(self.qubImage)
-        self.updatePixmap()
     
         self.setCentralWidget(container)
 
-    def colormapChanged(self, colormap, autoscale, colorMin, colorMax):
-        self.colormap  = colormap
-        self.autoscale = autoscale
-        self.colorMin  = colorMin
-        self.colorMax  = colorMax
-        self.updatePixmap()
+    def _itemSelected(self, idx, name):
+        print idx, name
+        
+#    def colormapChanged(self, colormap, autoscale, colorMin, colorMax):
+#        self.colormap  = colormap
+#        self.autoscale = autoscale
+#        self.colorMin  = colorMin
+#        self.colorMax  = colorMax
+#        self.updatePixmap()
         
     def updatePixmap(self):
         (image_str, size, minmax) = spslut.transform(self.data ,
@@ -2824,7 +2973,7 @@ class QubMain(qt.QMainWindow):
                        
 ##  MAIN   
 if  __name__ == '__main__':
-    from Qub.Widget.QubImageView import QubImageView
+    from Qub.Objects.QubPixmapDisplayView import QubPixmapDisplayView
     import EdfFile
     import spslut
     
@@ -2837,7 +2986,7 @@ if  __name__ == '__main__':
         print "Usage to test : QubActionSet.py file.edf"
         sys.exit()
 
-    window = QubMain(None, file = sys.argv[1])
+    window = QubMain(None, mfile = sys.argv[1])
     
     window.resize(500,300)
     app.setMainWidget(window)
