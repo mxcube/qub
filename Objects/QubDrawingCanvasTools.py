@@ -6,6 +6,7 @@ import qt
 import qtcanvas
 
 from Qub.Objects.QubDrawingConstraint import QubAngleConstraint
+from Qub.Objects.QubDrawingEvent import QubModifyAbsoluteAction
 
 from Qub.CTools import pixmaptools
 
@@ -1532,19 +1533,26 @@ class QubCanvasHomotheticRectangle(qtcanvas.QCanvasRectangle) :
             qtcanvas.QCanvasRectangle.setSize(self,p.x(),p.y())
         qtcanvas.QCanvasRectangle.drawShape(self,painter)
             
-class QubCanvasStripH(qtcanvas.QCanvasRectangle) :
+class QubCanvasStripeH(qtcanvas.QCanvasRectangle) :
     def __init__(self,canvas) :
         qtcanvas.QCanvasRectangle.__init__(self,canvas)
         
-     
     def drawShape(self,painter) :
         height = self.size().height()
         halfHeight = height >> 1
         canvasWidth = self.canvas().width()
         y = self.y()
-        painter.drawLine(0,y + halfHeight,canvasWidth,y + halfHeight)
-        painter.drawLine(0,y - halfHeight,canvasWidth,y - halfHeight)
+        painter.drawLine(0, y + halfHeight, canvasWidth, y + halfHeight)
+        painter.drawLine(0, y - halfHeight, canvasWidth, y - halfHeight)
+        painter.setPen(qt.Qt.NoPen)
+        painter.drawRect(0, y - halfHeight, canvasWidth, height)
 
+    def setPen(self, pen):
+        qtcanvas.QCanvasRectangle.setPen(self, pen)
+        brush = self.brush()
+        brush.setColor(pen.color())
+        self.setBrush(brush)
+        
     def boundingRect(self) :
         rect = qt.QRect(0,0,self.canvas().width(),self.size().height())
         rect.moveCenter(qt.QPoint(self.canvas().width() >> 1,self.y()))
@@ -1555,9 +1563,9 @@ class QubCanvasStripH(qtcanvas.QCanvasRectangle) :
         canvas = self.canvas()
         if canvas: canvas.update()
     
-class QubCanvasStripV(QubCanvasStripH) :
+class QubCanvasStripeV(QubCanvasStripeH) :
     def __init__(self,canvas) :
-        QubCanvasStripH.__init__(self,canvas)
+        QubCanvasStripeH.__init__(self,canvas)
 
     def drawShape(self,painter) :
         width = self.size().width()
@@ -1566,8 +1574,118 @@ class QubCanvasStripV(QubCanvasStripH) :
         x = self.x()
         painter.drawLine(x + halfWidth,0,x + halfWidth,canvasHeight)
         painter.drawLine(x - halfWidth,0,x - halfWidth,canvasHeight)
+        painter.setPen(qt.Qt.NoPen)
+        painter.drawRect(x - halfWidth, 0, width, canvasHeight)
        
     def boundingRect(self) :
         rect = qt.QRect(0,0,self.size().width(),self.canvas().height())
         rect.moveCenter(qt.QPoint(self.x(),self.canvas().height() >> 1))
         return rect
+
+class QubCanvasRotationPoint(qtcanvas.QCanvasRectangle) :  
+    def __init__(self, canvas) :
+        qtcanvas.QCanvasRectangle.__init__(self,canvas)
+                
+    def drawShape(self,painter) :
+        x = self.x()
+        y = self.y()
+        
+        painter.drawArc(x-15, y-15, 30, 30, 800, 4400)
+        painter.drawLine(x+6, y+8, x+11, y+8)
+        painter.drawLine(x+11, y+8, x+11, y+13)
+
+        painter.drawLine(x-10, y, x+10, y)
+        painter.drawLine(x, y-10, x, y+10)
+        
+        #painter.drawArc(x-10, y-40, 20, 20, 2160, 4320)
+        #painter.drawLine(x+6, y-32, x+6, y-37)
+        #painter.drawLine(x+6, y-37, x+11, y-37)
+
+       
+    def boundingRect(self) :
+        x = self.x()
+        y = self.y()
+        rect = qt.QRect(x-15, y-15, 80, 80)
+        return rect
+
+class QubCanvasRotationAxis(qtcanvas.QCanvasRectangle) :
+    def __init__(self, canvas, drawing="HV") :
+        qtcanvas.QCanvasRectangle.__init__(self,canvas)
+        
+        if drawing in ["H", "V", "HV"]:
+            self.__drawingType = drawing
+        else:
+            self.__drawingType = "HV"
+
+        self.__scrollview = None
+        
+    def drawShape(self,painter) :
+        x = self.x()
+        y = self.y()
+        
+        if self.__scrollview is not None:
+            (useSizeX,useSizeY) = (min(self.canvas().width(),self.__scrollView.visibleWidth()),
+                                   min(self.__scrollView.visibleHeight(),self.canvas().height()))
+            (xOri,yOri) = (self.__scrollView.contentsX(),self.__scrollView.contentsY())
+        else:
+            (useSizeX,useSizeY) = self.canvas().width(),self.canvas().height()
+            (xOri,yOri) = 0,0
+        
+        if self.__drawingType.rfind("H") != -1:
+            painter.drawArc(xOri+useSizeX-60, y-10, 20, 20, 720, 4320)
+            painter.drawLine(xOri+useSizeX-49, y+6, xOri+useSizeX-44, y+6)
+            painter.drawLine(xOri+useSizeX-44, y+6, xOri+useSizeX-44, y+11)
+
+            painter.drawLine(xOri, y, xOri+useSizeX, y)
+
+        if self.__drawingType.rfind("V") != -1:
+            painter.drawArc(x-10, yOri+40, 20, 20, 2160, 4320)
+            painter.drawLine(x+6, yOri+48, x+6, yOri+43)
+            painter.drawLine(x+6, yOri+43, x+11, yOri+43)
+
+            painter.drawLine(x, yOri, x, yOri+useSizeX)
+       
+    def boundingRect(self) :
+        if self.__scrollview is not None:
+            (useSizeX,useSizeY) = (min(self.canvas().width(),self.__scrollView.visibleWidth()),
+                                   min(self.__scrollView.visibleHeight(),self.canvas().height()))
+            (xOri,yOri) = (self.__scrollView.contentsX(),self.__scrollView.contentsY())
+        else:
+            (useSizeX,useSizeY) = self.canvas().width(),self.canvas().height()
+            (xOri,yOri) = 0,0
+        rect = qt.QRect(xOri, yOri, xOri+useSizeX, yOri+useSizeX)
+        return rect
+
+    def setScrollView(self,scrollView) :
+        self.__scrollView = scrollView
+
+    def setDrawingManager(self,drawingManager) :
+        drawingManager.setCustomModifierMethod(self.__getModifier)
+
+    def __getModifier(self,drawingManager,xmouse,ymouse):
+        x = self.x()
+        y = self.y()
+        
+        if self.__scrollview is not None:
+            (useSizeX,useSizeY) = (min(self.canvas().width(),self.__scrollView.visibleWidth()),
+                                   min(self.__scrollView.visibleHeight(),self.canvas().height()))
+            (xOri,yOri) = (self.__scrollView.contentsX(),self.__scrollView.contentsY())
+        else:
+            (useSizeX,useSizeY) = self.canvas().width(),self.canvas().height()
+            (xOri,yOri) = 0,0
+            
+        vRectUp = qt.QRect(x-10, yOri, 20, y-10-yOri)
+        vRectDown = qt.QRect(x-10, y+10, 20, useSizeY-10-y)
+        if vRectUp.contains(xmouse, ymouse) or vRectDown.contains(xmouse, ymouse):
+            return QubModifyAbsoluteAction(drawingManager,drawingManager.moveX,qt.QCursor(qt.Qt.SizeHorCursor))
+
+        hRectLeft = qt.QRect(xOri, y-10-yOri, x-10-xOri, 20)
+        hRectRight = qt.QRect(x+10, y-10, useSizeX-10-x, 20)
+        if hRectLeft.contains(xmouse, ymouse) or hRectRight.contains(xmouse, ymouse):
+            return QubModifyAbsoluteAction(drawingManager,drawingManager.moveY,qt.QCursor(qt.Qt.SizeVerCursor))
+
+        rectCenter = qt.QRect(x-10, y-10, 20, 20)
+        if rectCenter.contains(xmouse, ymouse):
+            return QubModifyAbsoluteAction(drawingManager,drawingManager.move,qt.QCursor(qt.Qt.SizeAllCursor))
+
+        return None
