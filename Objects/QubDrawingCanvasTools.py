@@ -759,8 +759,6 @@ class QubCanvasScale(qtcanvas.QCanvasRectangle) :
         self.__vLine.hide()
         self.__hText.hide()
         self.__hLine.hide()
-        canvas = self.canvas()
-        if canvas: canvas.update()
     
     def update(self) :
         if self.__globalShow :
