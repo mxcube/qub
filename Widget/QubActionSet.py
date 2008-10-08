@@ -2127,10 +2127,7 @@ class QubBeamAction(QubToggleImageAction):
         if self.__drawingMgr is not None:
             self.__drawingMgr.setCanBeModify(aflag)
             
-    def setBeamPosition(self, y, z, w, h):
-        if y is None or z is None or w is None or h is None:
-            y,z = 0,0
-            w,h = 3,3
+    def setBeamPosition(self, y = 0, z = 0, w = 3, h = 3):
         if self.__drawingMgr is not None and self.__drawingType is not None:
             if self.__drawingType == "Point":
                 self.__drawingMgr.setPoint(y, z)
@@ -2492,7 +2489,7 @@ class QubSelectPointAction(QubToggleImageAction) :
             self._widget.setIconSet(qt.QIconSet(loadIcon("%s.png" % self._iconName)))
             self._widget.setToggleButton(True)
             self._widget.connect(self._widget, qt.SIGNAL("toggled(bool)"),
-                                 self._setState)
+                                 self.setState)
             qt.QToolTip.add(self._widget, "%s"%self._name)
 
         return self._widget
@@ -2522,6 +2519,12 @@ class QubSelectPointAction(QubToggleImageAction) :
             point = drawingMgr.point()
             self.__residualPoint.setPoint(*point)
             self.__residualPoint.show()
+    def paletteBackgroundColor(self) :
+        return self._widget.paletteBackgroundColor()
+
+    def setPaletteBackgroundColor(self,color) :
+        self._widget.setPaletteBackgroundColor(color)
+        
 ####################################################################
 ##########                                                ##########
 ##########                QubOpenDialogAction             ##########
@@ -2823,11 +2826,7 @@ class QubGraphZoomAction(QubAction):
             graph.setAxisAutoScale(graph.yRight)
             graph.replot()
             self.__plotZoomer.setZoomBase()
-<<<<<<< .mine
-            
-#from Qub.CTools import qwttools
-=======
->>>>>>> .r444
+
 ##@brief action to put Y in log
 #
 class QubGraphYAxisLogSwitchAction(QubAction):

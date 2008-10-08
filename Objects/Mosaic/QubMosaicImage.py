@@ -140,9 +140,9 @@ class QubMosaicImage :
     def layer(self) :
         return self.__layer
 
-    @_mosaicViewRefresh
     ##@brief set the display layer of the image
     #
+    @_mosaicViewRefresh
     def setLayer(self,layer) :
         self.__layer = layer
 

@@ -998,6 +998,17 @@ class QubCanvasRuler(qtcanvas.QCanvasRectangle) :
             brush = cursor.brush()
             brush.setColor(color)
             cursor.setBrush(brush)
+
+    def setZ(self,zValue) :
+        for label in self.__label:
+            label.setZ(zValue)
+        for limits in self.__textlimits :
+            for limitWidget in limits:
+                limitWidget.setZ(zValue)
+        self.__line.setZ(zValue)
+        for cursor in self.__cursor :
+            cursor.setZ(zValue)
+        
     def update(self) :
         try:
             if self.__globalShow and self.__limits :
@@ -1097,6 +1108,7 @@ class QubCanvasRuler(qtcanvas.QCanvasRectangle) :
                         labelRect = label.boundingRect()
                         if labelRect.intersects(hlRect) :
                             label.move(hl.x(),y0 - labelOffset - labelRect.height())
+                self.canvas().update()
         except:
             import traceback
             traceback.print_exc()

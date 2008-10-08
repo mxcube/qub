@@ -496,6 +496,7 @@ class QubToggleImageAction(QubImageAction):
             self._menu.setItemChecked(self._item, state)
         
         self._setState(state)
+        self.emit(qt.PYSIGNAL("StateChanged"), (state,))
         
     def _setState(self, state):
         """
