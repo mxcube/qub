@@ -109,7 +109,7 @@ class QubMeasureListDialog(qt.QDialog):
                         ('angle',QubPolygoneDrawingMgr,QubCanvasAngle,self.__endAngleDrawing),
                         ('polygon',QubPolygoneDrawingMgr,QubCanvasCloseLinePolygone,self.__defaultEnd)]
         
-        self.__ToolIdSelected = 0
+        self.__ToolIdSelected = 1
         self.__lastdrawingMgr = None
         self.__mesID = 0
         
@@ -124,7 +124,7 @@ class QubMeasureListDialog(qt.QDialog):
         self.__measureTool.setAutoRaise(True)
         self.__measureTool.setPopup(listPopupMenu)
         self.__measureTool.setPopupDelay(0)
-        self.__toolSelect(0)
+        self.__toolSelect(self.__ToolIdSelected)
         layout2.addWidget(self.__measureTool)
 
         self.__activeButton = qt.QPushButton(self,"__activeButton")
@@ -204,6 +204,14 @@ class QubMeasureListDialog(qt.QDialog):
             self.__lastdrawingMgr = self.__tools[self.__ToolIdSelected][1](self.__canvas,self.__matrix)
             if self.__ToolIdSelected == 0:
                 self.__lastdrawingMgr.setDrawingEvent(QubMoveNPressed1Point)
+            elif self.__ToolIdSelected == 1:
+                self.__followMullot = self.__tools[0][1](self.__canvas,self.__matrix)
+                self.__followMullot.addDrawingObject(self.__tools[0][2](self.__canvas))
+                self.__followMullot.setDrawingEvent(QubMoveNPressed1Point)
+                self.__followMullot.setExclusive(False)
+                self.__followMullot.setColor(self.__defaultColor)
+                self.__eventMgr.addDrawingMgr(self.__followMullot)
+                self.__followMullot.startDrawing()
             self.__lastdrawingMgr.setAutoDisconnectEvent(True)
             drawingobject = self.__tools[self.__ToolIdSelected][2](self.__canvas)
             self.__lastdrawingMgr.addDrawingObject(drawingobject)
@@ -245,7 +253,8 @@ class QubMeasureListDialog(qt.QDialog):
                 anItem.setText(1,"distance -> %sm" % dist)
             else :
                 anItem.setText(1,'distance -> %d pixel' % math.sqrt(width ** 2 + height ** 2))
-            
+        self.__followMullot = None
+        
     def __endSurfaceDrawing(self,drawingMgr) :
         anItem = self.__getItemWithDrawingObject(drawingMgr)
         if self.__lastdrawingMgr == drawingMgr :
