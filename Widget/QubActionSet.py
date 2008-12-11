@@ -2520,11 +2520,16 @@ class QubSelectPointAction(QubToggleImageAction) :
             self.__residualPoint.setPoint(*point)
             self.__residualPoint.show()
     def paletteBackgroundColor(self) :
-        return self._widget.paletteBackgroundColor()
-
+        backgroundColor = None
+        if self._widget:
+            backgroundColor = self._widget.paletteBackgroundColor()
+        return backgroundColor
+    
     def setPaletteBackgroundColor(self,color) :
-        self._widget.setPaletteBackgroundColor(color)
-        
+        if self._widget:
+            palette = qt.QPalette(color,color)
+            self._widget.setPaletteBackgroundColor(color)
+            self._widget.setPalette(palette)
 ####################################################################
 ##########                                                ##########
 ##########                QubOpenDialogAction             ##########

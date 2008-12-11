@@ -17,19 +17,19 @@ def loadIcon(iconName):
     file does not exist
     """
     if not os.path.exists(filename):
-        icondir = "."
-        ICONS_DIR = os.path.join(icondir, 'IconsLibrary')
-        filename  = os.path.join(ICONS_DIR, iconName)
-
-    if not os.path.exists(filename):
         for ext in ['png', 'xpm', 'gif', 'bmp']:
             f = '.'.join([filename, ext])
             if os.path.exists(f):
                 filename = f
                 break
 
+    if not os.path.exists(filename):
+        icondir = "."
+        ICONS_DIR = os.path.join(icondir, 'IconsLibrary')
+        filename  = os.path.join(ICONS_DIR, iconName)
+
     try:
-        icon = qt.QPixmap(filename)
+        icon = qt.QPixmap(filename,None,qt.Qt.DiffuseAlphaDither)
     except:
         return qt.QPixmap(os.path.join(ICONS_DIR, 'esrf_logo.png'))
     else:
