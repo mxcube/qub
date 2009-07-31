@@ -2,7 +2,7 @@
 ###########                  QubSpecVersionPolling                    ###########
 ################################################################################
 
-from Qub.CTools import sps
+import sps
 from Qub.Data.Source.QubSource import QubSpecMotherSource
 from Qub.Data.Source.QubSpecVersion import QubSpecVersion
 from Qub.Data.Plug.QubPlug import QubPollingPlug
