@@ -8,11 +8,11 @@ from Qub.CTools import pixmaptools
 
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
-try:
-    from opencv import cv
-    from Qub.CTools.opencv import qtTools
-except ImportError:
-    cv = None
+#try:
+#    from opencv import cv
+#    from Qub.CTools.opencv import qtTools
+#except ImportError:
+cv = None
     
 ##@brief This class manage the copy between QImage and QPixmap
 #

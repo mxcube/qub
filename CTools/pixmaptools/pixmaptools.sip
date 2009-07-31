@@ -229,8 +229,6 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 #define PY_ARRAY_UNIQUE_SYMBOL _PixmapNumpyArray
 #define NO_IMPORT_ARRAY
 #include "numpy/arrayobject.h"
-#include "sippixmaptoolsLutError.h"
-#include "sipqtQImage.h"
 
 #define MAP_FUNCTION \
   PyArrayObject *src; \

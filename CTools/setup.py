@@ -6,7 +6,7 @@ import os
 
 if platform.system() == 'Linux' :
     try:
-        if os.environ['OSTYPE'] == 'suse72':
+        if platform.architecture()[0] == '64bit' :
             extra_compile_args = ['-pthread']
         else:
             extra_compile_args = ['-pthread','-march=pentium4']

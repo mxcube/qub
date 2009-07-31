@@ -243,10 +243,7 @@ class _i420_struct(QubStdData2Image._data_struct) :
         self.__height = h
         
     def loadFromData(self,data) :
-        srcImage = opencv.qtTools.convertI420Data2YUV(data,self.__width,self.__height)
-        destimage = cv.cvCreateImage(cv.cvSize(self.__width,self.__height),cv.IPL_DEPTH_8U,3)
-        cv.cvCvtColor(srcImage,destimage,cv.CV_YCrCb2BGR)
-        self.image = opencv.qtTools.getQImageFromImageOpencv(destimage)
+        self.image = opencv.qtTools.convertI420Data2YUV(data,self.__width,self.__height)
     
 
 ##@brief a decompress rgb 8 bits

@@ -4,7 +4,7 @@ import sipconfig
 import pyqtconfig
 
 #Opencv Include
-BasePathOpencv = os.path.join('/segfs/bliss/source/opencv',os.environ['ESRF_OSTYPE'])
+BasePathOpencv = os.path.join('/segfs/bliss/depot/pythonbliss_4.0/installdir',os.environ['BLOS'],'opencv')
 OpencvInclude = os.path.join(BasePathOpencv,'include')
 OpencvLib =  os.path.join(BasePathOpencv,'lib')
 OpencvLib = '-L' + OpencvLib

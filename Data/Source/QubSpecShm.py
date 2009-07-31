@@ -1,4 +1,4 @@
-from Qub.CTools import sps
+import sps
 
 from Qub.Data.Source.QubSource import QubSpecMotherSource
         

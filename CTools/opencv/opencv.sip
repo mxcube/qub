@@ -44,6 +44,41 @@ This class provide a transformation between Opencv image and QImage (Only in 8 b
 %End
 };
 
+%MappedType CvMat
+{
+%TypeHeaderCode
+// Include the library interface to the type being mapped.
+#include <opencv/cxcore.h>
+#include "swig_opencv_image.h"
+%End
+
+%ConvertToTypeCode
+    // See if we are just being asked to check the type of the Python
+    // object.
+    if (sipIsErr == NULL)
+      {
+	CvMat *aBuffer;
+	return SWIG_ConvertPtr(sipPy,(void **)&aBuffer,SWIG_CvMatInfo(), 0) != -1;
+      }
+  
+  CvMat *anImage;
+  SWIG_ConvertPtr(sipPy,(void **)&anImage,SWIG_CvMatInfo(), 0);
+  
+  // Return the instance on the heap.
+  *sipCppPtrV = anImage;
+  
+  // Apply the normal transfer.
+  //  return sipGetState(sipTransferObj);
+  return 0;
+%End
+
+%ConvertFromTypeCode
+   PyObject *anPyImage = SWIG_NewPointerObj(sipCpp,SWIG_CvMatInfo(),1);
+  // Return the Python Image.
+  return anPyImage;
+%End
+};
+
 class qtTools
 {
 %TypeHeaderCode
@@ -51,7 +86,7 @@ class qtTools
 %End
 
 public :
-  static QImage getQImageFromImageOpencv(const IplImage*);
-  static IplImage* getImageOpencvFromQImage(const QImage*);
-  static IplImage* convertI420Data2YUV(const char *data,int width,int height);
+  static QImage getQImageFromImageOpencv(const CvMat*);
+  static CvMat* getImageOpencvFromQImage(const QImage*);
+  static QImage convertI420Data2YUV(const char *data,int width,int height);
 };

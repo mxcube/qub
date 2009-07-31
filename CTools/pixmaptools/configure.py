@@ -1,5 +1,7 @@
 import os
 import sipconfig
+import numpy
+
 QT3=True
 if QT3:
     import pyqtconfig
@@ -55,13 +57,12 @@ makefile = pyqtconfig.QtModuleMakefile(
     build_file=build_file,
     installs=installs
   )
+makefile.extra_include_dirs = [numpy.get_include()]
 
 # Add the library we are wrapping.  The name doesn't include any platform
 # specific prefixes or extensions (e.g. the "lib" prefix on UNIX, or the
 # ".dll" extension on Windows).
 # None (for me)
-makefile.CFLAGS.append('-march=pentium4')
-makefile.CXXFLAGS.append('-march=pentium4')
 
 # Generate the Makefile itself.
 makefile.generate()

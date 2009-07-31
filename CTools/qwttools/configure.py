@@ -25,7 +25,7 @@ else:
 
 # Run SIP to generate the code.  Note that we tell SIP where to find the qt
 # module's specification files using the -I flag.
-cmd = " ".join([config.sip_bin,"-g", "-e","-c", '.', "-b", build_file, "-I", config.pyqt_sip_dir, qt_sip_flags,"qwttools.sip"])
+cmd = " ".join([config.sip_bin,"-g", "-e","-c", '.', "-b", build_file, "-I", config.pyqt_sip_dir,'-t','Qwt_5_1_0', qt_sip_flags,"qwttools.sip"])
 print cmd
 os.system(cmd)
 #little HACK for adding source
@@ -57,8 +57,6 @@ makefile = pyqtconfig.QtModuleMakefile(
     build_file=build_file,
     installs=installs
   )
-makefile.CFLAGS.append('-march=pentium4')
-makefile.CXXFLAGS.append('-march=pentium4')
 makefile.CXXFLAGS.append('-I/segfs/bliss/depot/pythonbliss/builddir/suse82/PyQt4/PyQwt-5.0.0/qwt-5.0/src')
 # Add the library we are wrapping.  The name doesn't include any platform
 # specific prefixes or extensions (e.g. the "lib" prefix on UNIX, or the

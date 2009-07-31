@@ -10,8 +10,8 @@ public :
     char _Message[512];
   };
 
-  static QImage getQImageFromImageOpencv(const IplImage*) throw(Exception);
-  static IplImage* getImageOpencvFromQImage(const QImage*);
-  static IplImage* convertI420Data2YUV(const char *data,int width,int height);
+  static QImage getQImageFromImageOpencv(const CvMat*) throw(Exception);
+  static CvMat* getImageOpencvFromQImage(const QImage*);
+  static QImage convertI420Data2YUV(const char *data,int width,int height);
 };
 
