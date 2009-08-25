@@ -216,13 +216,14 @@ class QubStdData2ImagePlug :
 class _cvtColor_struct(QubStdData2Image._data_struct) :
     def __init__(self,w,h,conversionType,srcSize) :
         QubStdData2Image._data_struct.__init__(self)
-        self._srcImage = cv.cvCreateImage(cv.cvSize(w,h),cv.IPL_DEPTH_8U,srcSize)
-        self._destimage = cv.cvCreateImage(cv.cvSize(w,h),cv.IPL_DEPTH_8U,3)
+        _type = {1:cv.CV_8UC1,2:cv.CV_8UC2,3:cv.CV_8UC3}
+        self._srcImage = cv.cvCreateMat(h,w,_type[srcSize])
+        self._destimage = cv.cvCreateMat(h,w,cv.CV_8UC3);
         self._widthStep = w
         self._conversion = conversionType
         
     def loadFromData(self,data) :
-        self._srcImage.imageData_set(data)
+        self._srcImage.imageData = data
         cv.cvCvtColor(self._srcImage,self._destimage,self._conversion)
         self.image = opencv.qtTools.getQImageFromImageOpencv(self._destimage)
 
@@ -260,7 +261,7 @@ class _rgb_8_struct(QubStdData2Image._data_struct) :
         
     def loadFromData(self,data) :
         destimage = cv.cvCreateImage(cv.cvSize(self.__width,self.__height),cv.IPL_DEPTH_8U,3)
-        destimage.imageData_set(data)
+        destimage.imageData = data
         self.image = opencv.qtTools.getQImageFromImageOpencv(destimage)
         if self.__swap:
             self.image = self.image.swapRGB()
@@ -276,7 +277,7 @@ class _mono8_struct(QubStdData2Image._data_struct) :
 
     def loadFromData(self,data) :
         destimage = cv.cvCreateImage(cv.cvSize(self.__width,self.__height),cv.IPL_DEPTH_8U,1)
-        destimage.imageData_set(data)
+        destimage.imageData = data
         self.image = opencv.qtTools.getQImageFromImageOpencv(destimage)
 
 ##@brief a decompress mono 16 bits
