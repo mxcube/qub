@@ -3,9 +3,13 @@
 class QubImage : public QImage
 {
 public:
+  enum rawType {RGB555,RGB565};
+
   QubImage () : QImage() {}
   QubImage(const QImage &anImage) : QImage(anImage) {}
   QubImage(const QubImage &anImage) : QImage(anImage) {}
+  explicit QubImage(rawType aType,int width,int height,const char *rawData);
+
   void highlightImage(int ox,int oy,int ex,int ey);
   void unhighlightImage(int ox,int oy,int ex,int ey);
 

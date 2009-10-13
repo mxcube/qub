@@ -105,9 +105,12 @@ class QubImage :  QImage
 #include <qubimage.h>
 %End
  public:
+  enum rawType {RGB555,RGB565};
+
   QubImage();
   QubImage(const QImage &);
   QubImage(const QubImage &);
+  explicit QubImage(rawType,int ,int ,const char *);
 
   void highlightImage(int ,int ,int ,int );
   void unhighlightImage(int ,int ,int ,int );

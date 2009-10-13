@@ -3,6 +3,7 @@ import traceback
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
 from Qub.CTools import pixmaptools
+from Qub.CTools import qttools
 
 try:
     from opencv import cv
@@ -90,10 +91,16 @@ class QubStdData2Image(QubThreadProcess,qt.QObject) :
                         dataStruct = _rgb_8_struct(width,height)
                     elif videoType.upper().startswith('Y8'):
                         arrayData = arrayData[64:]
-                        dataStruct = _mono8_struct(width,height)
+                        dataStruct = _mono8_struct(self,width,height)
                     elif videoType.upper().startswith('Y16') :
                         arrayData = arrayData[64:]
                         dataStruct = _mono16_struct(self,width,height)
+                    elif videoType.upper().startswith('RGB565') :
+                        arrayData = arrayData[64:]
+                        dataStruct = _rgb565_struct(width,height)
+                    elif videoType.upper().startswith('RGB555') :
+                        arrayData = arrayData[64:]
+                        dataStruct = _rgb555_struct(width,height)
                     else:
                         print 'VideoType: %s not managed' % videoType
                         return
@@ -270,16 +277,21 @@ class _rgb_8_struct(QubStdData2Image._data_struct) :
 ##@brief a decompress mono 8 bits
 #
 class _mono8_struct(QubStdData2Image._data_struct) :
-    def __init__(self,w,h) :
+    def __init__(self,cnt,w,h) :
         QubStdData2Image._data_struct.__init__(self)
         self.__width = w
         self.__height = h
-
+        self.__palette = cnt.palette
+        
     def loadFromData(self,data) :
-        destimage = cv.cvCreateImage(cv.cvSize(self.__width,self.__height),cv.IPL_DEPTH_8U,1)
-        destimage.imageData = data
-        self.image = opencv.qtTools.getQImageFromImageOpencv(destimage)
-
+        array = numpy.fromstring(data,dtype=numpy.uint8)
+        array.shape = self.__height,self.__width
+        try:
+            self.image,(minVal,maxVal) = pixmaptools.LUT.map_on_min_max_val(array,self.__palette,pixmaptools.LUT.LINEAR)
+        except pixmaptools.LutError,err:
+            print err.msg()
+            return
+        
 ##@brief a decompress mono 16 bits
 #
 class _mono16_struct(QubStdData2Image._data_struct) :
@@ -299,3 +311,29 @@ class _mono16_struct(QubStdData2Image._data_struct) :
             print err.msg()
             return
         
+##@brief a decompress RGB565
+#
+class _rgb565_struct(QubStdData2Image._data_struct) :
+    def __init__(self,w,h) :
+        QubStdData2Image._data_struct.__init__(self)
+        self.__width = w
+        self.__height = h
+
+    def loadFromData(self,data) :
+        self.image = qttools.QubImage(qttools.QubImage.RGB565,
+                                      self.__width,self.__height,
+                                      data)
+    
+##@brief a decompress RGB555
+#
+class _rgb555_struct(QubStdData2Image._data_struct) :
+    def __init__(self,w,h) :
+        QubStdData2Image._data_struct.__init__(self)
+        self.__width = w
+        self.__height = h
+
+    def loadFromData(self,data) :
+        self.image = qttools.QubImage(qttools.QubImage.RGB555,
+                                      self.__width,self.__height,
+                                      data)
+    
