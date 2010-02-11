@@ -167,7 +167,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
   if(!(colormapData = (PyArrayObject*)PyArray_ContiguousFromObject(a0,NPY_NOTYPE,0,0)))
     {
       LutError *sipExceptionCopy = new LutError("Couldn't create an array");	
-      sipRaiseClassException(sipClass_LutError,sipExceptionCopy);
+      sipRaiseTypeException(sipType_LutError,sipExceptionCopy);
       return NULL;
     }
    else
@@ -178,7 +178,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 	if(aNbVal != (0x10000 * 4))
 	   {
 	      LutError *sipExceptionCopy = new LutError("Palette must have 65536 entry of RBGX or BGRX");
-      	      sipRaiseClassException(sipClass_LutError,sipExceptionCopy);
+      	      sipRaiseTypeException(sipType_LutError,sipExceptionCopy);
               Py_DECREF(colormapData);
 	      return NULL;
 	   }
@@ -200,7 +200,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 	 default:
 	  {
 	      LutError *sipExceptionCopy = new LutError("Palette type can by char,int,long,short");
-      	      sipRaiseClassException(sipClass_LutError,sipExceptionCopy);
+      	      sipRaiseTypeException(sipType_LutError,sipExceptionCopy);
               Py_DECREF(colormapData);
 	      return NULL;
           }
@@ -212,7 +212,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 	catch(LutError &err)
 	{
 	      LutError *sipExceptionCopy = new LutError(err);
-      	      sipRaiseClassException(sipClass_LutError,sipExceptionCopy);
+      	      sipRaiseTypeException(sipType_LutError,sipExceptionCopy);
               Py_DECREF(colormapData);
 	      return NULL;
 	}
@@ -235,7 +235,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
   if(!(src = (PyArrayObject*)PyArray_ContiguousFromObject(a0,NPY_NOTYPE,2,2))) \
     { \
       LutError *sipExceptionCopy = new LutError("Input Array must be a 2x2 array"); \
-      sipRaiseClassException(sipClass_LutError,sipExceptionCopy); \
+      sipRaiseTypeException(sipType_LutError,sipExceptionCopy); \
       return NULL; \
     } \
     int column,row; \
@@ -307,7 +307,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 	 default: \
 	  { \
 	      LutError *sipExceptionCopy = new LutError("Input Array type not supported"); \
-      	      sipRaiseClassException(sipClass_LutError,sipExceptionCopy); \
+      	      sipRaiseTypeException(sipType_LutError,sipExceptionCopy); \
               Py_DECREF(src); \
 	      return NULL; \
           } \
