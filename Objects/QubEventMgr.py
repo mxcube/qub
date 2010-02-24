@@ -239,7 +239,11 @@ class QubEventMgr:
         if evtMgr is None:          # event propagate
             for link in self.__eventLinkMgrs :
                 link.keyPressed(keyevent,self)
-                
+
+        modifyClass = self.__getCurrentModify(self.__mouseX,self.__mouseY,evtMgr)
+        if modifyClass:
+            modifyClass.rawKeyPressed(keyevent)
+            
     ##@brief a key was released
     #
     #@see _keyPressed
@@ -330,8 +334,8 @@ class QubEventMgr:
                     self.__pendingEvents[i]().setDubMode(False)
                 self.__excludedEvent.remove((eRef,excludedList))
                 break
-    ##@brief check if a drawing manager can be modify at this pixel
-    def __checkObjectModify(self,x,y,anEventMgr) :
+                
+    def __getCurrentModify(self,x,y,anEventMgr) :
         BBoxNmodifyClass = []
         for drawingMgr in self.__drawingMgr :
             modifyClass = drawingMgr().getModifyClass(x,y)
@@ -340,13 +344,18 @@ class QubEventMgr:
                 BBoxNmodifyClass.append((boundingRect,modifyClass))
 
         BBoxNmodifyClass.sort(lambda v1,v2 : v1[0].width() * v1[0].height() - v2[0].width() * v2[0].height())
-        if not BBoxNmodifyClass :
+        return BBoxNmodifyClass and BBoxNmodifyClass[0][1] or None
+    
+    ##@brief check if a drawing manager can be modify at this pixel
+    def __checkObjectModify(self,x,y,anEventMgr) :
+        modifierMgr = self.__getCurrentModify(x,y,anEventMgr)
+        if not modifierMgr :
             if anEventMgr is None : anEventMgr = self
             if self.__curentModifierMgr is not None :
                 anEventMgr.setCursor(qt.QCursor(qt.Qt.ArrowCursor))
                 self.__curentModifierMgr = None
         else:
-            self.__curentModifierMgr = BBoxNmodifyClass[0][1]
+            self.__curentModifierMgr = modifierMgr
             if anEventMgr is None : anEventMgr = self
             self.__curentModifierMgr.setCursor(anEventMgr)
             
@@ -387,6 +396,9 @@ class QubEventMgr:
                 self._update,self._keyPressed,self._keyReleased,self._leaveEvent]
                    ####### Link event class #######
 
+    def mousePosition(self):
+        return (self.__mouseX,self.__mouseY)
+        
 class _linkEventMgr :
     MOUSE_PRESSED,MOUSE_MOVE,MOUSE_RELEASE,UPDATE,KEY_PRESSED,KEY_RELEASED,LEAVE_EVENT = range(7)
 

@@ -716,7 +716,7 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
         self._refreshIdle()
 
         
-    def __rawKeyPressed(self,keyevent) :
+    def __rawKeyPressed(self,mgr, keyevent) :
         if self._data is not None:
             data = self._data()
             if data is not None:
@@ -821,7 +821,7 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
          self._initDrawing()
          self._graph.setAxisTitle(self._graph.xBottom,'Y value')
 
-     def __rawKeyPressed(self,keyevent) :
+     def __rawKeyPressed(self,mgr, keyevent) :
          if self._data:
              data = self._data()
              if data is not None:

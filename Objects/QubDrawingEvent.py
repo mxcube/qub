@@ -156,12 +156,13 @@ class QubPressedNDrag1Point(_DrawingEventNDrawingMgr) :
         return False                    # not END
         
     def mouseReleased(self,x,y) :
-        self.__buttonPressed = False
-        d = self._drawingMgr()
-        if d:
-            d.move(x,y)
-            d.endDraw()
-        return self._oneShot
+        if self.__buttonPressed:
+            self.__buttonPressed = False
+            d = self._drawingMgr()
+            if d:
+                d.move(x,y)
+                d.endDraw()
+            return self._oneShot
     
     def mouseMove(self,x,y) :
         if self.__buttonPressed :
@@ -193,12 +194,13 @@ class QubPressedNDrag2Point(_DrawingEventNDrawingMgr) :
         return False                    # not END
 
     def mouseReleased(self,x,y) :
-        self.__buttonPressed = False
-        d = self._drawingMgr()
-        if d :
-            d.moveSecondPoint(x,y)
-            d.endDraw()
-        return self._oneShot
+        if self.__buttonPressed:
+            self.__buttonPressed = False
+            d = self._drawingMgr()
+            if d :
+                d.moveSecondPoint(x,y)
+                d.endDraw()
+            return self._oneShot
 
     def mouseMove(self,x,y) :
         if self.__buttonPressed :

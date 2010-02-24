@@ -6,6 +6,7 @@ from Qub.Objects.QubDrawingEvent import QubPressedNDrag1Point,QubPressedNDrag2Po
 from Qub.Objects.QubDrawingEvent import QubModifyAbsoluteAction
 from Qub.Objects.QubDrawingEvent import QubModifyRelativeAction
 from Qub.Tools import QubWeakref
+from Qub.CTools import polygone
 ##@defgroup DrawingManager Drawing object manager
 #
 #those class are used with the Qub::Objects::QubEventMgr::QubEventMgr to
@@ -337,11 +338,11 @@ class QubDrawingMgr :
     ##@brief key pressed callback
     def rawKeyPressed(self,keyevent) :
         if self._keyPressedCbk:
-            self._keyPressedCbk(keyevent)
+            self._keyPressedCbk(self, keyevent)
     ##@brief key pressed callback
     def rawKeyReleased(self,keyevent) :
         if self._keyReleasedCbk:
-            self._keyReleasedCbk(keyevent)
+            self._keyReleasedCbk(self, keyevent)
     ##@brief object was clicked
     def wasClicked(self) :
         if self._clickedCbk:
@@ -1003,9 +1004,11 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
 
     ##@brief get a modify class to move or resize the polygone
     def _getModifyClass(self,x,y) :
+        point_screen = []
         for i,(xpoint,ypoint) in enumerate(self._points) :
             if self._matrix is not None :
                 xpoint,ypoint = self._matrix.map(xpoint,ypoint)
+            point_screen.append([xpoint,ypoint])
             if(abs(x - xpoint) < 5 and abs(y - ypoint) < 5) :
                 (constraintIdList,constraintObject) = self.__modifierConstraint.get(i,(None,None))
                 if constraintIdList is None:
@@ -1016,6 +1019,15 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
                     tmpfunc = new.function(func.func_code,func.func_globals,'tmpmove',(self,0,0,i,constraintIdList,constraintObject))
                 callBack = new.instancemethod(tmpfunc,self,QubPolygoneDrawingMgr)
                 return QubModifyAbsoluteAction(self,callBack)
+        
+        match_points = polygone.points_inclusion([[x,y]],point_screen,False)
+        if match_points[0]:
+            return QubModifyRelativeAction(self, self.move_rel)
+        
+    def move_rel(self, dx, dy):
+        for i,(xpoint,ypoint) in enumerate(self._points):
+            self.move(xpoint+dx, ypoint+dy, i)
+                     
 
     ##@brief this methode is use when a drawing object has contraint on point modification
     #
@@ -1044,3 +1056,4 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         except:
             import traceback
             traceback.print_exc()
+            

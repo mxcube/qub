@@ -15,7 +15,6 @@ try:
     from Qub.CTools.opencv import qtTools
 except ImportError:
     cv = None
- 
 
 ##@defgroup DrawingCanvasTools Low level objects drawing
 #@brief this is the group of all vector objects which can be put in a simple QCanvas.
@@ -1326,58 +1325,74 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
             self.__whole_region = None
             self.__dirtyFlag = False
             self.__realGridRegion = None
+        self.__show = False
         self.__oldMatrixValues = None
         self.__contraintAngle = QubAngleConstraint(self.__angle + 90)
         self.__translateFromFirstPoint = QubCanvasGrid._translateFromFirstPoint(self)
         self.__rotateOrTranslateFromSecondPoint = QubCanvasGrid._rotateOrTranslateFromSecondPoint(self)
         
     def move(self,x,y,point_id = 0) :
-        self.__dirtyFlag = True
-        if point_id == 0:               # FIRST
-            qtcanvas.QCanvasRectangle.move(self,x,y)
-        elif point_id == 1:
-            self.__secondPoints = (x,y)
-            x1,y1 = self.x(),self.y()
-            X,Y = (x - x1,y - y1)
-            dist = math.sqrt(X ** 2 + Y ** 2)
-            try:
-                self.__angle = math.acos(X / dist) * 180 / math.pi
-            except ZeroDivisionError :
-                self.__angle = 0
-            width = dist
-            if y - y1 < 0 :
-                self.__angle = -self.__angle
-            self.setSize (width,self.height())
-            self.__contraintAngle.setAngle(self.__angle + 90)
-        else:
-            if abs(self.__angle) == 90 :
-                height = self.x() - x
-                if self.__angle < 0:
-                    height = -height
-                self.setSize(self.width(),height)
-            elif self.__angle == 180 or self.__angle == 0 :
-                height = y - self.y()
-                if self.__angle == 180:
-                    height = -height
-                self.setSize(self.width(),height)
-            else :
-                x1,y1 = self.__secondPoints
-                height = math.sqrt((x - x1) ** 2 + (y - y1) ** 2)
-                u = (x1 - self.x(),y1 - self.y())
-                v = (x - x1,y - y1)
-                #prod vect
-                z = u[0] * v[1] - u[1] * v[0]
-                if z < 0. :
-                    height = -height
-                self.setSize(self.width(),height)
-            return True
+        if self.__show:                
+            self.__dirtyFlag = True
+            if point_id == 0:               # FIRST
+                qtcanvas.QCanvasRectangle.move(self,x,y)
+            elif point_id == 1:
+                self.__secondPoints = (x,y)
+                x1,y1 = self.x(),self.y()
+                X,Y = (x - x1,y - y1)
+                dist = math.sqrt(X ** 2 + Y ** 2)
+                try:
+                    self.__angle = math.acos(X / dist) * 180 / math.pi
+                except ZeroDivisionError :
+                    self.__angle = 0
+                width = dist
+                if y - y1 < 0 :
+                    self.__angle = -self.__angle
+                self.setSize (width,self.height())
+                self.__contraintAngle.setAngle(self.__angle + 90)
+            else:
+                if abs(self.__angle) == 90 :
+                    height = self.x() - x
+                    if self.__angle < 0:
+                        height = -height
+                    self.setSize(self.width(),height)
+                elif self.__angle == 180 or self.__angle == 0 :
+                    height = y - self.y()
+                    if self.__angle == 180:
+                        height = -height
+                    self.setSize(self.width(),height)
+                else :
+                    x1,y1 = self.__secondPoints
+                    height = math.sqrt((x - x1) ** 2 + (y - y1) ** 2)
+                    u = (x1 - self.x(),y1 - self.y())
+                    v = (x - x1,y - y1)
+                    #prod vect
+                    z = u[0] * v[1] - u[1] * v[0]
+                    if z < 0. :
+                        height = -height
+                    self.setSize(self.width(),height)
+        
+                return True
 
     def setNbPointAxis1(self,nbPoint) :
         self.__dirtyFlag = True
         self.__nbPointAxis1 = nbPoint
+        
+        self.update()
+        canvas = self.canvas()
+        if canvas:
+            canvas.setAllChanged()
+            canvas.update()
+
     def setNbPointAxis2(self,nbPoint) :
         self.__dirtyFlag = True
         self.__nbPointAxis2 = nbPoint
+        
+        self.update()
+        canvas = self.canvas()
+        if canvas:
+            canvas.setAllChanged()
+            canvas.update()
 
     def angle(self) :
         return self.__angle
@@ -1386,6 +1401,12 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
         self.__addRegion = addRegion
         self.__minusRegion = minusRegion
         self.__dirtyFlag = True
+        
+        self.update()
+        canvas = self.canvas()
+        if canvas:
+            canvas.setAllChanged()
+            canvas.update()
 
     def setMatrix(self,matrix) :
         self.__matrix = matrix
@@ -1393,97 +1414,116 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
         
     def setRealGridRegion(self,region) :
         self.__realGridRegion = region
+        
+    def show(self):
+        self.__show = True
+        qtcanvas.QCanvasRectangle.show(self)
+        
+        self.update()
+        canvas = self.canvas()
+        if canvas: canvas.update()
+        
+    def hide(self):
+        self.__show = False
+        qtcanvas.QCanvasRectangle.hide(self)
+        
+        self.update()
+        canvas = self.canvas()
+        if canvas: canvas.update()
+        
     def drawShape(self,painter) :
-        wm = painter.worldMatrix()
-        if self.__matrix :
-            matrixValues = (self.__matrix.m11(),self.__matrix.m12(),
-                            self.__matrix.m21(),self.__matrix.m22(),
-                            wm.dx() + self.__matrix.dx(),wm.dy() + self.__matrix.dy())
-        else:
-            matrixValues = None
-            
-        if self.__dirtyFlag or matrixValues != self.__oldMatrixValues:
-            self.__dirtyFlag = False
+        if self.__show:                
+            wm = painter.worldMatrix()
+            if self.__matrix :
+                matrixValues = (self.__matrix.m11(),self.__matrix.m12(),
+                                self.__matrix.m21(),self.__matrix.m22(),
+                                wm.dx() + self.__matrix.dx(),wm.dy() + self.__matrix.dy())
+            else:
+                matrixValues = None
 
-            
-            self.__oldMatrixValues = tuple([x for x in matrixValues])
-
-            self.__whole_region = None
-            if self.__addRegion or self.__minusRegion :
-                if self.__addRegion :
-                    for region in self.__addRegion :
-                        if self.__whole_region:
-                            self.__whole_region = self.__whole_region.unite(region)
-                        else:
-                            self.__whole_region = region
-                if self.__whole_region :
-                    for region in self.__minusRegion :
-                        self.__whole_region = self.__whole_region.subtract(region)
-                else:
-                    for region in self.__minusRegion :
-                        if self.__whole_region :
-                            self.__whole_region = self.__whole_region.unite(region)
-                        else:
-                            self.__whole_region = region
-
-                if self.__matrix:
-                    wm = qt.QWMatrix(*matrixValues)
-                    self.__whole_region = wm.map(self.__whole_region)
-
-                if self.__minusRegion and not self.__addRegion :
-                    matrix = qt.QWMatrix(1,0,0,1,0,0)
-                    matrix.translate(self.x(),self.y())
-                    matrix.rotate(self.__angle)
-                    matrix.translate(-self.x(),-self.y())
-                    rect = matrix.map(self.rect())
-                    rect.moveBy(wm.dx() - self.__matrix.dx(),wm.dy() - self.__matrix.dy())
-                    region = qt.QRegion(rect)
-                    self.__whole_region = region.subtract(self.__whole_region)
-                    
-        if self.__angle :
-            painter.translate(self.x(),self.y())
-            painter.rotate(self.__angle)
-            painter.translate(-self.x(),-self.y())
-
-        qtcanvas.QCanvasRectangle.drawShape(self,painter)
-        xOri = self.x() + self.width()
-        painter.drawLine(xOri,self.y(),xOri + 20,self.y())
-        painter.drawLine(xOri + 15,self.y() - 2,xOri + 20,self.y())
-        painter.drawLine(xOri + 15,self.y() + 2,xOri + 20,self.y())
-        
-        yOri = self.y() + self.height()
-        painter.drawLine(self.x(),yOri,self.x(),yOri + 20)
-        painter.drawLine(self.x() - 2,yOri + 15,self.x(),yOri + 20)
-        painter.drawLine(self.x() + 2,yOri + 15,self.x(),yOri + 20)
-        if self.__whole_region is not None:
-            painter.setClipRegion(self.__whole_region)
-
-        if self.__nbPointAxis2 :
-            yStep = float(self.height()) / self.__nbPointAxis2
-            y0 = self.y()
-            for i in range(self.__nbPointAxis2) :
-                x0,x1 = self.x(),self.x() + self.width()
-                painter.drawLine(x0,y0,x1,y0)
-                y0 += yStep
-
-        if self.__nbPointAxis1:
-            self.__pen = qt.QPen(qt.Qt.DotLine)
-            self.__pen.setColor(painter.pen().color())
-            painter.setPen(self.__pen)
-            xStep = float(self.width()) / self.__nbPointAxis1
-            x0 = self.x()
-            for i in range(self.__nbPointAxis1) :
-                y0,y1 = self.y(),self.y() + self.height()
-                painter.drawLine(x0,y0,x0,y1)
-                x0 += xStep
+            if self.__dirtyFlag or matrixValues != self.__oldMatrixValues:
+                self.__dirtyFlag = False
 
 
-        if self.__whole_region is not None: painter.setClipping(False)
-        
-        if self.__angle :
-            painter.translate(self.x(),self.y())
-            painter.rotate(-self.__angle)
-            painter.translate(-self.x(),-self.y())
+                self.__oldMatrixValues = tuple([x for x in matrixValues])
+
+                self.__whole_region = None
+                if self.__addRegion or self.__minusRegion :
+                    if self.__addRegion :
+                        for region in self.__addRegion :
+                            if self.__whole_region:
+                                self.__whole_region = self.__whole_region.unite(region)
+                            else:
+                                self.__whole_region = region
+                    if self.__whole_region :
+                        for region in self.__minusRegion :
+                            self.__whole_region = self.__whole_region.subtract(region)
+                    else:
+                        for region in self.__minusRegion :
+                            if self.__whole_region :
+                                self.__whole_region = self.__whole_region.unite(region)
+                            else:
+                                self.__whole_region = region
+
+                    if self.__matrix:
+                        wm = qt.QWMatrix(*matrixValues)
+                        self.__whole_region = wm.map(self.__whole_region)
+
+                    if self.__minusRegion and not self.__addRegion :
+                        matrix = qt.QWMatrix(1,0,0,1,0,0)
+                        matrix.translate(self.x(),self.y())
+                        matrix.rotate(self.__angle)
+                        matrix.translate(-self.x(),-self.y())
+                        rect = matrix.map(self.rect())
+                        rect.moveBy(wm.dx() - self.__matrix.dx(),wm.dy() - self.__matrix.dy())
+                        region = qt.QRegion(rect)
+                        self.__whole_region = region.subtract(self.__whole_region)
+
+            if self.__angle :
+                painter.translate(self.x(),self.y())
+                painter.rotate(self.__angle)
+                painter.translate(-self.x(),-self.y())
+
+            qtcanvas.QCanvasRectangle.drawShape(self,painter)
+            xOri = self.x() + self.width()
+            painter.drawLine(xOri,self.y(),xOri + 20,self.y())
+            painter.drawLine(xOri + 15,self.y() - 2,xOri + 20,self.y())
+            painter.drawLine(xOri + 15,self.y() + 2,xOri + 20,self.y())
+
+            yOri = self.y() + self.height()
+            painter.drawLine(self.x(),yOri,self.x(),yOri + 20)
+            painter.drawLine(self.x() - 2,yOri + 15,self.x(),yOri + 20)
+            painter.drawLine(self.x() + 2,yOri + 15,self.x(),yOri + 20)
+            if self.__whole_region is not None:
+                painter.setClipRegion(self.__whole_region)
+
+            if self.__nbPointAxis2 :
+                yStep = float(self.height()) / self.__nbPointAxis2
+                y0 = self.y()
+                for i in range(self.__nbPointAxis2) :
+                    x0,x1 = self.x(),self.x() + self.width()
+                    painter.drawLine(x0,y0,x1,y0)
+                    y0 += yStep
+
+            if self.__nbPointAxis1:
+                self.__pen = qt.QPen(qt.Qt.DotLine)
+                self.__pen.setColor(painter.pen().color())
+                painter.setPen(self.__pen)
+                xStep = float(self.width()) / self.__nbPointAxis1
+                x0 = self.x()
+                for i in range(self.__nbPointAxis1) :
+                    y0,y1 = self.y(),self.y() + self.height()
+                    painter.drawLine(x0,y0,x0,y1)
+                    x0 += xStep
+
+
+            if self.__whole_region is not None: painter.setClipping(False)
+
+            if self.__angle :
+                painter.translate(self.x(),self.y())
+                painter.rotate(-self.__angle)
+                painter.translate(-self.x(),-self.y())
+                                
     ##@brief set the drawing constraint
     #
     #Has the grid is a rectangle, the last point (3th) must be drawn to have a square angle
@@ -1499,6 +1539,23 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
     
     def update(self) :
         self.__dirtyFlag = True
+    
+    # add by GB to remove arrow in top/right and down/left corner    
+    def boundingRect(self) :
+        rect = qtcanvas.QCanvasRectangle.boundingRect(self)        
+        xOri = self.x() + self.width()
+        rect = rect.unite(qt.QRect(xOri, self.y() - 2, 20, 4))
+        yOri = self.y() + self.height()
+        rect = rect.unite(qt.QRect(self.x()-2, yOri, 4, 20))
+        
+        matrix = qt.QWMatrix(1,0,0,1,0,0)
+        matrix.translate(self.x()-2,self.y()-2)
+        matrix.rotate(self.__angle)
+        matrix.translate(-self.x()+2,-self.y()+2)
+        
+        rect1 = matrix.map(rect)
+        
+        return rect1.normalize()
 
 ##@brief a simple zoom dependent rectangle
 #
