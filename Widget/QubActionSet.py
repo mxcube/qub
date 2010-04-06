@@ -2182,20 +2182,21 @@ class QubBeamAction(QubToggleImageAction):
         if self.__drawingType == "Point":
             data["x"] = drawingMgr.point()[0]
             data["y"] = drawingMgr.point()[1]
-        if self.__drawingType == "Rectangle":
+            self.emit(qt.PYSIGNAL("BeamSelected"), (data["x"], data["y"]))
+        elif self.__drawingType == "Rectangle":
             data["w"] = drawingMgr.rect().width() 
             data["h"] = drawingMgr.rect().height() 
             data["x"] = drawingMgr.rect().x() + int(data["w"] / 2.0)
             data["y"] = drawingMgr.rect().y() + int(data["h"] / 2.0)
-        if self.__drawingType == "StripeH":
+            self.emit(qt.PYSIGNAL("BeamSelected"), (data,))
+        elif self.__drawingType == "StripeH":
             data["h"] = drawingMgr.size()[1]
             data["y"] = drawingMgr.point()[1]
-        if self.__drawingType == "StripeV":
+            self.emit(qt.PYSIGNAL("BeamSelected"), (data,))
+        elif self.__drawingType == "StripeV":
             data["w"] = drawingMgr.size()[0]
             data["x"] = drawingMgr.point()[0]
-            
-        
-        self.emit(qt.PYSIGNAL("BeamSelected"), (data,))
+            self.emit(qt.PYSIGNAL("BeamSelected"), (data,))
                 
 ####################################################################
 ##########                                                ##########
