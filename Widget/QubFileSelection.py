@@ -199,6 +199,7 @@ class QubFileDialog(qt.QDialog):
         self.iconView.setResizeMode(qt.QIconView.Adjust)
         self.iconView.setArrangement(qt.QIconView.TopToBottom)
         self.iconView.setWordWrapIconText(False)
+        self.iconView.setShowToolTips(True)
         self.iconView.setVScrollBarMode(qt.QScrollView.AlwaysOff)
         self.connect(self.iconView, qt.SIGNAL("doubleClicked(QIconViewItem *)"),
                      self.__iconViewDoubleClick)
