@@ -950,11 +950,11 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         if fromPointId is not None and len(self._points) > fromPointId :
             x0,y0 = self._points[fromPointId]
             if self._matrix is not None :
-                x0,y0 = self._matrix.map(x0,y0)
+                x0,y0 = self._matrix.map(float(x0),float(y0))
             x0,y0,x,y = constraintObject.calc(x0,y0,x,y)
             
         if self._matrix is not None :
-            xWarp,yWarp = self._matrix.invert()[0].map(x,y)
+            xWarp,yWarp = self._matrix.invert()[0].map(float(x),float(y))
         else:
             xWarp,yWarp = x,y
 
@@ -975,7 +975,7 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
     def update(self) :
         for point_id,(x,y) in enumerate(self._points) :
             if self._matrix is not None :
-                x,y = self._matrix.map(x,y)
+                x,y = self._matrix.map(float(x),float(y))
 
             for drawingObject in self._drawingObjects :
                 drawingObject.move(x,y,point_id)
@@ -1007,7 +1007,7 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         point_screen = []
         for i,(xpoint,ypoint) in enumerate(self._points) :
             if self._matrix is not None :
-                xpoint,ypoint = self._matrix.map(xpoint,ypoint)
+                xpoint,ypoint = self._matrix.map(float(xpoint),float(ypoint))
             point_screen.append([xpoint,ypoint])
             if(abs(x - xpoint) < 5 and abs(y - ypoint) < 5) :
                 (constraintIdList,constraintObject) = self.__modifierConstraint.get(i,(None,None))
@@ -1026,6 +1026,8 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         
     def move_rel(self, dx, dy):
         for i,(xpoint,ypoint) in enumerate(self._points):
+            if self._matrix is not None :
+                xpoint,ypoint = self._matrix.map(float(xpoint),float(ypoint))
             self.move(xpoint+dx, ypoint+dy, i)
                      
 
@@ -1036,7 +1038,7 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
         for Id in pointIdList :
             xp,yp = self._points[Id]
             if self._matrix is not None:
-                xp,yp = self._matrix.map(xp,yp)
+                xp,yp = self._matrix.map(float(xp),float(yp))
             pointList.append((xp,yp))
         newPointList = constraintobject.calc(x,y,pointList)
         self.move(x,y,pointId)
@@ -1049,7 +1051,7 @@ class QubPolygoneDrawingMgr(QubDrawingMgr) :
             for link,canvas,matrix,objectlist in self._foreignObjects :
                 x,y = self._points[point_id]
                 if matrix is not None :
-                    x,y = matrix.map(x,y)
+                    x,y = matrix.map(float(x),float(y))
                 for drawingObject in objectlist :
                     drawingObject.move(x,y,point_id)
                 if canvas: canvas.update()

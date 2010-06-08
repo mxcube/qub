@@ -8,11 +8,11 @@ from Qub.CTools import pixmaptools
 
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
-#try:
-#    from opencv import cv
-#    from Qub.CTools.opencv import qtTools
-#except ImportError:
-cv = None
+try:
+    from opencv import cv
+    from Qub.CTools.opencv import qtTools
+except ImportError:
+    cv = None
     
 ##@brief This class manage the copy between QImage and QPixmap
 #
@@ -307,7 +307,8 @@ class QubImage2PixmapPlug :
             height *= self.__zoom[1]
             width = int(width)
             height = int(height)
-            oldroi = imageOpencv.roi
+            #oldroi = imageOpencv.roi
+	    oldroi = None
             roiX,roiY,roiWidth,roiHeight = (0,0,0,0)
             if oldroi is not None :
                 roiX,roiY,roiWidth,roiHeight = (oldroi.xOffset,oldroi.yOffset,oldroi.width,oldroi.height)

@@ -1308,8 +1308,8 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
             self.__nbPointAxis1 = canvas._QubCanvasGrid__nbPointAxis1
             self.__nbPointAxis2 = canvas._QubCanvasGrid__nbPointAxis2
             self.__points = list(canvas._QubCanvasGrid__points)
-            self.__addRegion = list(canvas._QubCanvasGrid__addRegion)
-            self.__minusRegion = list(canvas._QubCanvasGrid__minusRegion)
+            self.__addRegionPoints = list(canvas._QubCanvasGrid__addRegionPoints)
+            self.__minusRegionPoints = list(canvas._QubCanvasGrid__minusRegionPoints)
             self.__matrix = canvas._QubCanvasGrid__matrix
             self.__whole_region = canvas._QubCanvasGrid__whole_region
             self.__dirtyFlag = canvas._QubCanvasGrid__dirtyFlag
@@ -1319,8 +1319,8 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
             self.__nbPointAxis1 = 0
             self.__nbPointAxis2 = 0
             self.__secondPoints = (0,0)
-            self.__addRegion = []
-            self.__minusRegion = []
+            self.__addRegionPoints = []
+            self.__minusRegionPoints = []
             self.__matrix = None
             self.__whole_region = None
             self.__dirtyFlag = False
@@ -1397,9 +1397,9 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
     def angle(self) :
         return self.__angle
        
-    def setRegion(self,addRegion,minusRegion) :
-        self.__addRegion = addRegion
-        self.__minusRegion = minusRegion
+    def setPointRegion(self,addPointList,minusPointlist) :
+        self.__addRegionPoints = addPointList
+        self.__minusRegionPoints = minusPointlist
         self.__dirtyFlag = True
         
         self.update()
@@ -1438,9 +1438,11 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
                 matrixValues = (self.__matrix.m11(),self.__matrix.m12(),
                                 self.__matrix.m21(),self.__matrix.m22(),
                                 wm.dx() + self.__matrix.dx(),wm.dy() + self.__matrix.dy())
+                workingMatrix = qt.QWMatrix(*matrixValues)
             else:
                 matrixValues = None
-
+                workingMatrix = None
+                
             if self.__dirtyFlag or matrixValues != self.__oldMatrixValues:
                 self.__dirtyFlag = False
 
@@ -1448,28 +1450,27 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
                 self.__oldMatrixValues = tuple([x for x in matrixValues])
 
                 self.__whole_region = None
-                if self.__addRegion or self.__minusRegion :
-                    if self.__addRegion :
-                        for region in self.__addRegion :
+                if self.__addRegionPoints or self.__minusRegionPoints:
+                    if self.__addRegionPoints :
+                        for pointsList in self.__addRegionPoints :
+                            region = self.__createRegionFromPoint(pointsList,workingMatrix)
                             if self.__whole_region:
                                 self.__whole_region = self.__whole_region.unite(region)
                             else:
                                 self.__whole_region = region
                     if self.__whole_region :
-                        for region in self.__minusRegion :
+                        for pointsList in self.__minusRegionPoints :
+                            region = self.__createRegionFromPoint(pointsList,workingMatrix)
                             self.__whole_region = self.__whole_region.subtract(region)
                     else:
-                        for region in self.__minusRegion :
+                        for pointList in self.__minusRegionPoints :
+                            region = self.__createRegionFromPoint(pointList,workingMatrix)
                             if self.__whole_region :
                                 self.__whole_region = self.__whole_region.unite(region)
                             else:
                                 self.__whole_region = region
 
-                    if self.__matrix:
-                        wm = qt.QWMatrix(*matrixValues)
-                        self.__whole_region = wm.map(self.__whole_region)
-
-                    if self.__minusRegion and not self.__addRegion :
+                    if self.__minusRegionPoints and not self.__addRegionPoints :
                         matrix = qt.QWMatrix(1,0,0,1,0,0)
                         matrix.translate(self.x(),self.y())
                         matrix.rotate(self.__angle)
@@ -1497,24 +1498,43 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
             if self.__whole_region is not None:
                 painter.setClipRegion(self.__whole_region)
 
+            h = self.height()
+            w = self.width()
             if self.__nbPointAxis2 :
-                yStep = float(self.height()) / self.__nbPointAxis2
+                x0 = self.x()
+                x1 = x0 + w
                 y0 = self.y()
-                for i in range(self.__nbPointAxis2) :
-                    x0,x1 = self.x(),self.x() + self.width()
+                y1 = y0 + h
+                while y0 <= y1:
                     painter.drawLine(x0,y0,x1,y0)
-                    y0 += yStep
+                    y0 += 11
+                
+                #yStep = float(self.height()) / self.__nbPointAxis2
+                #y0 = self.y()
+                #for i in range(self.__nbPointAxis2) :
+                #    x0,x1 = self.x(),self.x() + self.width()
+                #    painter.drawLine(x0,y0,x1,y0)
+                #    y0 += yStep
 
             if self.__nbPointAxis1:
                 self.__pen = qt.QPen(qt.Qt.DotLine)
                 self.__pen.setColor(painter.pen().color())
                 painter.setPen(self.__pen)
-                xStep = float(self.width()) / self.__nbPointAxis1
+                
                 x0 = self.x()
-                for i in range(self.__nbPointAxis1) :
-                    y0,y1 = self.y(),self.y() + self.height()
+                x1 = x0 + w
+                y0 = self.y()
+                y1 = y0 + h
+                while x0 <= x1:
                     painter.drawLine(x0,y0,x0,y1)
-                    x0 += xStep
+                    x0 += 11
+                
+                #xStep = float(self.width()) / self.__nbPointAxis1
+                #x0 = self.x()
+                #for i in range(self.__nbPointAxis1) :
+                #    y0,y1 = self.y(),self.y() + self.height()
+                #    painter.drawLine(x0,y0,x0,y1)
+                #    x0 += xStep
 
 
             if self.__whole_region is not None: painter.setClipping(False)
@@ -1556,6 +1576,13 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
         rect1 = matrix.map(rect)
         
         return rect1.normalize()
+
+    def __createRegionFromPoint(self,pointList,workingMatrix) :
+        array = qt.QPointArray(len(pointList))
+        for i,(x,y) in enumerate(pointList) :
+            x1,y1 = workingMatrix.map(x,y)
+            array.setPoint(i,x1,y1)
+        return qt.QRegion(array)
 
 ##@brief a simple zoom dependent rectangle
 #
