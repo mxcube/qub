@@ -1760,8 +1760,6 @@ class QubDataPositionValueAction(QubPositionAction):
                     valueWidget.setText(value)
             except TypeError: return
         else:
-            QubPositionAction.mouseFollow(self,x,y)
-
             if xScale < 1.0 or yScale < 1.0 :
                 color = qt.Qt.red
             else:
