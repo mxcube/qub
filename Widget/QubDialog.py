@@ -78,7 +78,7 @@ class QubMeasureListDialog(qt.QDialog):
 
         def drawingMgr(self) :
             return self.__drawingMgr
-        
+
     ##@param args  params are equivalent of a Dialog constructor
     # -# parent
     # -# name
@@ -100,7 +100,7 @@ class QubMeasureListDialog(qt.QDialog):
         self.__matrix = matrix
         self.__eventMgr = eventMgr
         self.__drawingObjectLayer = drawingObjectLayer
-        
+
         ## Description tools table
         # (name,DrawingManager,DrawingObject,end draw callback)
         self.__tools = [('point',QubPointDrawingMgr,QubCanvasTarget,self.__endPointDrawing),
@@ -108,11 +108,11 @@ class QubMeasureListDialog(qt.QDialog):
                         ('rectangle',Qub2PointSurfaceDrawingMgr,qtcanvas.QCanvasRectangle,self.__endSurfaceDrawing),
                         ('angle',QubPolygoneDrawingMgr,QubCanvasAngle,self.__endAngleDrawing),
                         ('polygon',QubPolygoneDrawingMgr,QubCanvasCloseLinePolygone,self.__defaultEnd)]
-        
+
         self.__ToolIdSelected = 1
         self.__lastdrawingMgr = None
         self.__mesID = 0
-        
+
         MeasureWindowLayout = qt.QVBoxLayout(self,11,6,"MeasureWindowLayout")
 
         layout2 = qt.QHBoxLayout(None,0,6,"layout2")
@@ -131,7 +131,7 @@ class QubMeasureListDialog(qt.QDialog):
         self.__activeButton.setText('Start')
         self.connect(self.__activeButton,qt.SIGNAL('clicked()'),
                      self.__startMeasure)
-        
+
         layout2.addWidget(self.__activeButton)
         MeasureWindowLayout.addLayout(layout2)
 
@@ -146,18 +146,18 @@ class QubMeasureListDialog(qt.QDialog):
         self.connect(colormenu, qt.PYSIGNAL("colorSelected"),
                      self.__colorChanged)
         self.__measurePopUp.insertItem('colors',colormenu)
-            
+
         self.connect(self.__measureList,qt.SIGNAL('rightButtonPressed(QListViewItem*,const QPoint &,int)'),
                      self.__measurePopUpDisplay)
         MeasureWindowLayout.addWidget(self.__measureList)
 
         self.resize(qt.QSize(347,251).expandedTo(self.minimumSizeHint()))
         self.clearWState(qt.Qt.WState_Polished)
-        
+
         self.__xPixelSize = 0
         self.__yPixelSize = 0
         self.__defaultColor = qt.Qt.black
-        
+
     ##@brief set horizontal pixel size (scale)
     #@param size pixel size in meter
     def setXPixelSize(self,size) :
@@ -173,13 +173,13 @@ class QubMeasureListDialog(qt.QDialog):
             self.__yPixelSize = abs(size)
         except:
             self.__yPixelSize = 0
-            
+
     ##@brief set the default color of the drawing measure
     #@param color qt.QColor
     #@see QColor
     def setDefaultColor(self,color) :
         self.__defaultColor = color
-        
+
     def __tr(self,s,c = None):
         return qt.qApp.translate("MeasureWindow",s,c)
 
@@ -188,7 +188,7 @@ class QubMeasureListDialog(qt.QDialog):
 
         for i,tool in enumerate(self.__tools) :
             popMenu.insertItem(tool[0],i)
-        
+
         self.connect(popMenu, qt.SIGNAL("activated(int )"),
                      self.__toolSelect)
         return popMenu
@@ -196,7 +196,7 @@ class QubMeasureListDialog(qt.QDialog):
     def __toolSelect(self,idTool) :
         self.__ToolIdSelected = idTool
         self.__measureTool.setText(self.__tools[self.__ToolIdSelected][0])
-        
+
     def __startMeasure(self) :
         try:
             if self.__lastdrawingMgr is not None :
@@ -249,12 +249,12 @@ class QubMeasureListDialog(qt.QDialog):
                self.__yPixelSize is not None and self.__yPixelSize) :
                 dist = self.__getDistanceString(math.sqrt(((width * self.__xPixelSize) ** 2) +
                                                           ((height * self.__yPixelSize) ** 2)))
-                
+
                 anItem.setText(1,"distance -> %sm" % dist)
             else :
                 anItem.setText(1,'distance -> %d pixel' % math.sqrt(width ** 2 + height ** 2))
         self.__followMullot = None
-        
+
     def __endSurfaceDrawing(self,drawingMgr) :
         anItem = self.__getItemWithDrawingObject(drawingMgr)
         if self.__lastdrawingMgr == drawingMgr :
@@ -285,7 +285,7 @@ class QubMeasureListDialog(qt.QDialog):
                self.__yPixelSize is not None and self.__yPixelSize) :
                 x1 *= self.__xPixelSize;x2 *= self.__xPixelSize
                 y1 *= self.__yPixelSize;y2 *= self.__yPixelSize
-                
+
             scalar = x1 * x2 + y1 * y2
             dist1 = math.sqrt(x1 **2 + y1 **2)
             dist2 = math.sqrt(x2 **2 + y2 ** 2)
@@ -296,7 +296,7 @@ class QubMeasureListDialog(qt.QDialog):
         anItem = self.__getItemWithDrawingObject(drawingMgr)
         if self.__lastdrawingMgr == drawingMgr :
             self.__lastdrawingMgr = None
-            
+
     def __getDistanceString(self,dist) :
         for unit,unitString in [(1e-3,'m'),(1e-6,'\xb5'),(1e-9,'n'),(1e-12,'p')] :
             tmpDist = dist / unit
@@ -310,7 +310,7 @@ class QubMeasureListDialog(qt.QDialog):
             if 0.01 <= tmpDist < 1000. :
                 return "%.2f %s" % (tmpDist,unitString)
         return "%.2f" % surface
-    
+
     def __getItemWithDrawingObject(self,drawingMgr) :
         Item = self.__measureList.firstChild()
         while Item :
@@ -326,7 +326,7 @@ class QubMeasureListDialog(qt.QDialog):
     def __colorChanged(self,color) :
         for item in self.__getSelectedIterator() :
             item.drawingMgr().setColor(color)
-        
+
     def __getSelectedIterator(self) :
         Item = self.__measureList.firstChild()
         while Item :
@@ -334,15 +334,15 @@ class QubMeasureListDialog(qt.QDialog):
             if Item.isSelected() :
                 yield Item
             Item = NextItem
-            
-        
+
+
     def __measurePopUpDisplay(self,item,point,columnid) :
         self.__measurePopUp.exec_loop(point)
 
     def closeEvent(self,closeEvent)  :
         self.hide()
         self.__lastdrawingMgr = None
-        
+
 ####################################################################
 ##########                                                ##########
 ##########               QubSaveImageWidget               ##########
@@ -364,7 +364,7 @@ class QubSaveImageWidget(qt.QWidget):
             self.__dialog = weakref.ref(dialog)
             self.__dataZoom = None
             self.__snapFlag = False
-            
+
         def setPixmap(self,pixmap,image) :
             self.__inPollFlag = False
             if self.__dataZoom :
@@ -391,7 +391,7 @@ class QubSaveImageWidget(qt.QWidget):
                 except:
                     import traceback
                     traceback.print_exc()
-            return True # One Shot 
+            return True # One Shot
 
         def refresh(self,withSnap = False) :
             self.__snapFlag = self.__snapFlag or withSnap
@@ -404,10 +404,10 @@ class QubSaveImageWidget(qt.QWidget):
 
         def setInPoll(self) :
             self.__inPollFlag = True
-            
+
         def setDataZoom(self,zoom) :
             self.__dataZoom = zoom
-            
+
         def getImage(self) :
             return self.__lastImage
 
@@ -432,7 +432,7 @@ class QubSaveImageWidget(qt.QWidget):
 
         def getVectorZoom(self) :
             return self.__srczoom
-        
+
         def draw(self,p) :
             zoom = self.__zoom / self.__srczoom
             nwm = qt.QWMatrix(p.worldMatrix())
@@ -458,7 +458,7 @@ class QubSaveImageWidget(qt.QWidget):
 
         vlayout = qt.QVBoxLayout(self)
         vlayout.setMargin(10)
-        
+
         self.__ImView = QubPixmapDisplay(self)
         self.__ImView.setScrollbarMode("Fit2Screen")
 
@@ -513,11 +513,11 @@ class QubSaveImageWidget(qt.QWidget):
         self.__buttonFile.setEnabled(False)
         qt.QObject.connect(self.__buttonFile, qt.SIGNAL("clicked()"),self.snapCBK)
         self.__imagePlug = QubSaveImageWidget._Image2Pixmap(self,self.__ImView,self.__buttonFile)
-                        
+
         iconSet = qt.QIconSet(loadIcon("snapshot.png"))
         self.__snapButton = qt.QPushButton(iconSet, "", self)
         qt.QObject.connect(self.__snapButton, qt.SIGNAL("clicked()"),self.__refresh)
-           
+
         self.__vectorCheck = qt.QCheckBox(self)
         self.__vectorCheck.setText('vector')
         qt.QObject.connect(self.__vectorCheck,qt.SIGNAL("toggled(bool)"),self.__drawVector)
@@ -592,7 +592,7 @@ class QubSaveImageWidget(qt.QWidget):
             self.vectorDrawing.show()
         else:
             self.vectorDrawing.hide()
-            
+
     def __refresh(self) :
         for item in self.__ImView.canvas().allItems() :
             item.setCanvas(None)
@@ -601,7 +601,7 @@ class QubSaveImageWidget(qt.QWidget):
             self.vectorDrawing = QubSaveImageWidget._Vector(self.__canvas,self.__matrix,self.__ImView.canvas())
             self.vectorDrawing.show()
         self.__imagePlug.refresh()
-    
+
     def __browseButtonClicked(self) :
         get_dir = qt.QFileDialog(self)
         s=self.font().pointSize()
@@ -636,7 +636,7 @@ class QubSaveImageDialog(qt.QDialog) :
 
     def __nonzero__(self) :
         return True
-    
+
     def __getattr__(self, attr):
         if not attr.startswith("__") :
             try:
@@ -649,7 +649,7 @@ class QubSaveImageDialog(qt.QDialog) :
 ##########                                                ##########
 ##########                QubDataStatWidget               ##########
 ##########                                                ##########
-####################################################################        
+####################################################################
 ##@brief widget to display statistique of data
 #
 from Qub.Widget.QubDataStat import Histogram
@@ -664,13 +664,13 @@ class QubDataStatWidget(Histogram) :
         nbChannelWidget.setText('10')
         qt.QObject.connect(nbChannelWidget,qt.SIGNAL('returnPressed ()'),self.__refreshIdle)
         qt.QObject.connect(nbChannelWidget,qt.SIGNAL('lostFocus ()'),self.__refreshIdle)
-        
+
         for widgetName in ['__minHisto','__maxHisto'] :
             widget = self.child(widgetName)
             widget.setValidator(qt.QDoubleValidator(widget))
             qt.QObject.connect(widget,qt.SIGNAL('returnPressed ()'),self.__refreshIdle)
             qt.QObject.connect(widget,qt.SIGNAL('lostFocus ()'),self.__refreshIdle)
-            
+
 
                      ####### PRINT ACTION #######
         from Qub.Widget.QubActionSet import QubPrintPreviewAction
@@ -701,13 +701,13 @@ class QubDataStatWidget(Histogram) :
 
         self.__idle = qt.QTimer(self)
         self.connect(self.__idle,qt.SIGNAL('timeout()'),self.__refresh)
-        
+
     def show(self) :
         QubWidgetFromUI.show(self)
         self.setMinimumSize(self.sizeHint())
         self.__zoom.setZoomBase()
         self.__refreshIdle()
-        
+
     def setData(self,data) :
         self.__data = data
         self.__refreshIdle()
@@ -715,11 +715,11 @@ class QubDataStatWidget(Histogram) :
     def setDataRoi(self,x,y,width,height) :
         self.__roi = (x,y,width,height)
         self.__refreshIdle()
-        
+
     def __refreshIdle(self) :
         if self.isVisible() and not self.__idle.isActive() :
             self.__idle.start(0)
-            
+
     def __refresh(self) :
         self.__idle.stop()
         if self.isVisible() and self.__data is not None:
@@ -752,12 +752,12 @@ class QubDataStatWidget(Histogram) :
             stringVal = minHistoWidget.text()
             minHisto,ok = stringVal.toFloat()
             if not ok: minHisto = minVal
-            
+
             maxHistoWidget = self.child('__maxHisto')
             stringVal = maxHistoWidget.text()
             maxHisto,ok = stringVal.toFloat()
             if not ok: maxHisto = maxVal
-            
+
             nbChannelWidget = self.child('__numberOfChannels')
             stringVal = nbChannelWidget.text()
             bins,ok = stringVal.toInt()
@@ -775,7 +775,7 @@ class QubDataStatWidget(Histogram) :
             self.__graph.setAxisAutoScale(self.__graph.xBottom)
             self.__graph.replot()
             self.__zoom.setZoomBase()
-            
+
 ##@brief the data statistique dialog
 #
 #@see QubDataStatWidget
@@ -789,10 +789,10 @@ class QubDataStatDialog(qt.QDialog) :
     def show(self) :
         qt.QDialog.show(self)
         self.setMinimumSize(self.sizeHint())
-        
+
     def __nonzero__(self) :
         return True
-    
+
     def __getattr__(self, attr):
         if not attr.startswith("__") :
             try:
@@ -802,75 +802,234 @@ class QubDataStatDialog(qt.QDialog) :
         else:
                 raise AttributeError,'QubDataStatDialog instance has not attribute %s' % attr
 
+
+
 ####################################################################
 ##########                                                ##########
-##########        QubBrightnessContrastDialog             ##########
+##########             QubImageTuningDialog               ##########
 ##########                                                ##########
-####################################################################        
+####################################################################
 ##@brief Brightness and contrast control for falcon device
 #The popup dialog display two slider:
 # -# for the brightness
 # -# for the contrast
 class QubBrightnessContrastDialog(qt.QDialog):
+
     def __init__(self, parent):
         qt.QDialog.__init__(self, parent)
-        
+
         """
         variables
         """
         self.__camera = None
-        
-        self.__contrast = 0
-        self.__contrastMin = 0
-        self.__contrastMax = 200
-        
+
         self.__brightness = 0
         self.__brightnessMin = 0
-        self.__brightnessMax = 255
-        
+        self.__brightnessMax = 123
+        self.__brightnessExists = False
+
+        self.__contrast = 0
+        self.__contrastMin = 0
+        self.__contrastMax = 123
+        self.__contrastExists = False
+
+        self.__gain = 0
+        self.__gainMin = 0
+        self.__gainMax = 123
+        self.__gainExists = False
+
+        self.__gamma = 0
+        self.__gammaMin = 0
+        self.__gammaMax = 123
+        self.__gammaExists = False
+
         """
         widget
-        """        
-        vlayout = qt.QVBoxLayout(self)
-        vlayout.setMargin(10)
-        
         """
-        contrast updater
+        vlayout = qt.QVBoxLayout(self, -1, 0, "layoutOfQubImageTuningDialog")
+
         """
-        self.contrastLabel = qt.QLabel("Contrast:", self)
-        vlayout.addWidget(self.contrastLabel)
-       
-        self.contrastSlider = QubSlider(self.__contrastMin,
-                                        self.__contrastMax,
-                                        10, self.__contrast,
-                                        qt.Qt.Horizontal,self)
-        self.connect(self.contrastSlider, qt.PYSIGNAL("sliderChanged"),
-                     self.setContrast)
-        vlayout.addWidget(self.contrastSlider)
-        
-        vlayout.addSpacing(10)
-                 
+        BRIGHTNESS updater
         """
-        brightness updater
-        """
-        self.brightLabel = qt.QLabel("Brightness:", self)
-        vlayout.addWidget(self.brightLabel)
-        
+        # print "--QubDialog.py--init--self.__brightnessMax=", self.__brightnessMax
+        self.brightnessUpdaterLayout = qt.QHBoxLayout(vlayout, -1, "brightnessUpdaterLayout")
+        self.brightnessUpdaterLayout.addSpacing(5)
+
+        '''label'''
+        self.brightnessLabel = qt.QLabel("Brightness:", self)
+        self.brightnessUpdaterLayout.addWidget(self.brightnessLabel)
+
+        '''Slider'''
         self.brightnessSlider = QubSlider(self.__brightnessMin,
-                                           self.__brightnessMax, 
-                                           10, self.__brightness,
-                                           qt.Qt.Horizontal, self)
+                                    self.__brightnessMax,
+                                    5, self.__brightness,
+                                    qt.Qt.Horizontal,self)
         self.connect(self.brightnessSlider, qt.PYSIGNAL("sliderChanged"),
                      self.setBrightness)
-        vlayout.addWidget(self.brightnessSlider)
+        self.brightnessSlider.setMinimumWidth(100)
+        self.brightnessUpdaterLayout.addWidget(self.brightnessSlider)
 
-    ##@brief set the constrast range
+        '''Value in percentage'''
+        self.brightnessPCValue = qt.QLineEdit("%d"%int(self.__brightness), self)
+        self.brightnessUpdaterLayout.addWidget(self.brightnessPCValue)
+        self.brightnessPCValue.setFixedWidth(30)
+        self.brightnessPCLabel = qt.QLabel("%", self)
+        self.brightnessUpdaterLayout.addWidget(self.brightnessPCLabel)
+        self.brightnessUpdaterLayout.addSpacing(10)
+
+        '''abs value'''
+        self.brightnessAbsLabel = qt.QLabel("[%s/%s]"%(self.__brightness, self.__brightnessMax), self)
+        self.brightnessUpdaterLayout.addWidget(self.brightnessAbsLabel)
+        self.brightnessAbsLabel.setFixedWidth(50)
+
+        vlayout.addLayout(self.brightnessUpdaterLayout)
+        vlayout.addSpacing(1)
+
+
+        """
+        CONTRAST updater
+        """
+        # print "--QubDialog.py--init--self.__contrastMax=", self.__contrastMax
+        self.contrastUpdaterLayout = qt.QHBoxLayout(vlayout, -1, "contrastUpdaterLayout")
+        self.contrastUpdaterLayout.addSpacing(5)
+
+        '''label'''
+        self.contrastLabel = qt.QLabel("Contrast:", self)
+        self.contrastUpdaterLayout.addWidget(self.contrastLabel)
+
+        '''Slider'''
+        self.contrastSlider = QubSlider(self.__contrastMin,
+                                    self.__contrastMax,
+                                    5, self.__contrast,
+                                    qt.Qt.Horizontal,self)
+        self.connect(self.contrastSlider, qt.PYSIGNAL("sliderChanged"),
+                     self.setContrast)
+        self.contrastSlider.setMinimumWidth(100)
+        self.contrastUpdaterLayout.addWidget(self.contrastSlider)
+
+        '''Value in percentage'''
+        self.contrastPCValue = qt.QLineEdit("%d"%int(self.__contrast), self)
+        self.contrastUpdaterLayout.addWidget(self.contrastPCValue)
+        self.contrastPCValue.setFixedWidth(30)
+        self.contrastPCLabel = qt.QLabel("%", self)
+        self.contrastUpdaterLayout.addWidget(self.contrastPCLabel)
+        self.contrastUpdaterLayout.addSpacing(10)
+
+        '''abs value'''
+        self.contrastAbsLabel = qt.QLabel("[%s/%s]"%(self.__contrast, self.__contrastMax), self)
+        self.contrastUpdaterLayout.addWidget(self.contrastAbsLabel)
+        self.contrastAbsLabel.setFixedWidth(50)
+
+        vlayout.addLayout(self.contrastUpdaterLayout)
+        vlayout.addSpacing(1)
+
+
+        """
+        GAIN updater
+        """
+        # print "--QubDialog.py--init--self.__gainMax=", self.__gainMax
+        self.gainUpdaterLayout = qt.QHBoxLayout(vlayout, -1, "gainUpdaterLayout")
+        self.gainUpdaterLayout.addSpacing(5)
+
+        '''label'''
+        self.gainLabel = qt.QLabel("Gain:", self)
+        self.gainUpdaterLayout.addWidget(self.gainLabel)
+
+        '''Slider'''
+        self.gainSlider = QubSlider(self.__gainMin,
+                                    self.__gainMax,
+                                    5, self.__gain,
+                                    qt.Qt.Horizontal, self)
+        self.connect(self.gainSlider, qt.PYSIGNAL("sliderChanged"), self.setGain)
+        self.gainSlider.setMinimumWidth(100)
+        self.gainUpdaterLayout.addWidget(self.gainSlider)
+
+        '''Value in percentage'''
+        self.gainPCValue = qt.QLineEdit("%d"%int(self.__gain), self)
+        self.gainUpdaterLayout.addWidget(self.gainPCValue)
+        self.gainPCValue.setFixedWidth(30)
+        self.gainPCLabel = qt.QLabel("%", self)
+        self.gainUpdaterLayout.addWidget(self.gainPCLabel)
+        self.gainUpdaterLayout.addSpacing(10)
+
+        '''abs value'''
+        self.gainAbsLabel = qt.QLabel("[%s/%s]"%(self.__gain, self.__gainMax), self)
+        self.gainUpdaterLayout.addWidget(self.gainAbsLabel)
+        self.gainAbsLabel.setFixedWidth(50)
+
+        vlayout.addLayout(self.gainUpdaterLayout)
+        vlayout.addSpacing(1)
+
+
+        """
+        GAMMA updater
+        """
+        # print "--QubDialog.py--init--self.__gammaMax=", self.__gammaMax
+        self.gammaUpdaterLayout = qt.QHBoxLayout(vlayout, -1, "gammaUpdaterLayout")
+        self.gammaUpdaterLayout.addSpacing(5)
+
+        '''label'''
+        self.gammaLabel = qt.QLabel("Gamma:", self)
+        self.gammaUpdaterLayout.addWidget(self.gammaLabel)
+
+        '''Slider'''
+        self.gammaSlider = QubSlider(self.__gammaMin,
+                                    self.__gammaMax,
+                                    5, self.__gamma,
+                                    qt.Qt.Horizontal,self)
+        self.connect(self.gammaSlider, qt.PYSIGNAL("sliderChanged"),
+                     self.setGamma)
+        self.gammaSlider.setMinimumWidth(100)
+        self.gammaUpdaterLayout.addWidget(self.gammaSlider)
+
+        '''Value in percentage'''
+        self.gammaPCValue = qt.QLineEdit("%d"%int(self.__gamma), self)
+        self.gammaUpdaterLayout.addWidget(self.gammaPCValue)
+        self.gammaPCValue.setFixedWidth(30)
+        self.gammaPCLabel = qt.QLabel("%", self)
+        self.gammaUpdaterLayout.addWidget(self.gammaPCLabel)
+        self.gammaUpdaterLayout.addSpacing(10)
+
+        '''abs value'''
+        self.gammaAbsLabel = qt.QLabel("[%s/%s]"%(self.__gamma, self.__gammaMax), self)
+        self.gammaUpdaterLayout.addWidget(self.gammaAbsLabel)
+        self.gammaAbsLabel.setFixedWidth(50)
+
+        vlayout.addLayout(self.gammaUpdaterLayout)
+        vlayout.addSpacing(10)
+
+        self.disableControls()
+
+    def disableControls(self):
+        if not self.__brightnessExists:
+            pass
+        if not self.__contrastExists:
+            self.contrastLabel.setEnabled(False)
+            self.contrastSlider.setEnabled(False)
+            self.contrastPCValue.setEnabled(False)
+            self.contrastPCLabel.setEnabled(False)
+            self.contrastAbsLabel.setEnabled(False)
+
+        if not self.__gainExists:
+            pass
+
+        if not self.__gammaExists:
+            pass
+
+
+    '''
+    CONTRAST
+    '''
+    ##@brief set the gain range
     def setContrastLimits(self, contrastMin, contrastMax):
+        # not called ?
+        print "----------------------Set Contrast Limits  ???????-----------------"
         self.__contrastMin = contrastMin
         self.__contrastMax = contrastMax
-        
+
         self.setContrast(self.__contrast)
         self.contrastChanged(self.__contrast)
+
     ##@brief set the contrast
     #
     #Callback of the contrast slider
@@ -882,25 +1041,45 @@ class QubBrightnessContrastDialog(qt.QDialog):
             self.__contrast = self.__contrastMin
         if contrast > self.__contrastMax:
             self.__contrast = self.__contrastMax
-            
+
+        if self.__contrastMax==0:
+            self.__contrastPC = 0
+        else:
+            self.__contrastPC = int(self.__contrast*100/float(self.__contrastMax))
+
         if self.__camera is not None:
             self.__camera.setContrast(self.__contrast)
-                    
+            self.contrastPCValue.setText(str(self.__contrastPC))
+            self.contrastAbsLabel.setText("[%s/%s]"%(int(round(self.__contrast)), self.__contrastMax))
+
     def contrastChanged(self, contrast):
+        # print "--QubDialog.py--contrastChanged--", contrast
         self.__contrast = contrast
         if contrast < self.__contrastMin:
             self.__contrast = self.__contrastMin
         if contrast > self.__contrastMax:
             self.__contrast = self.__contrastMax
 
+        self.__contrastPC = int(self.__contrast*100/float(self.__contrastMax))
+        self.contrastPCValue.setText(str(self.__contrastPC))
+
         self.contrastSlider.setValue(self.__contrast)
+        self.contrastSlider.setMaxValue(float(self.__contrastMax))
+        self.contrastAbsLabel.setText("[%s/%s]"%(int(round(self.__contrast)), self.__contrastMax))
+
+    '''
+    BRIGHTNESS
+    '''
     ##@brief set the brightness range
     def setBrightnessLimits(self, brightnessMin, brightnessMax):
+        # not called ?
+        print "----------------------Set Brightness Limits  ???????-----------------"
         self.__brightnessMin = brightnessMin
         self.__brightnessMax = brightnessMax
-        
+
         self.setBrightness(self.__brightness)
-        self.BrightnessChanged(self.__brightness)
+        self.brightnessChanged(self.__brightness)
+
     ##@brief set the brightness
     #
     #Callback of the brightness slider
@@ -912,35 +1091,229 @@ class QubBrightnessContrastDialog(qt.QDialog):
             self.__brightness = self.__brightnessMin
         if brightness > self.__brightnessMax:
             self.__brightness = self.__brightnessMax
-            
+
+        if self.__brightnessMax==0:
+            self.__brightnessPC = 0
+        else:
+            self.__brightnessPC = int(self.__brightness*100/float(self.__brightnessMax))
+
         if self.__camera is not None:
             self.__camera.setBrightness(self.__brightness)
-        
+            self.brightnessPCValue.setText(str(self.__brightnessPC))
+            self.brightnessAbsLabel.setText("[%s/%s]"%(int(round(self.__brightness)), self.__brightnessMax))
+
     def brightnessChanged(self, brightness):
+        # print "--QubDialog.py--brightnessChanged--", brightness
         self.__brightness = brightness
         if brightness < self.__brightnessMin:
             self.__brightness = self.__brightnessMin
         if brightness > self.__brightnessMax:
             self.__brightness = self.__brightnessMax
-            
+
+        self.__brightnessPC = int(self.__brightness*100/float(self.__brightnessMax))
+        self.brightnessPCValue.setText(str(self.__brightnessPC))
+
         self.brightnessSlider.setValue(self.__brightness)
+        self.brightnessSlider.setMaxValue(float(self.__brightnessMax))
+        self.brightnessAbsLabel.setText("[%s/%s]"%(int(round(self.__brightness)), self.__brightnessMax))
+
+
+
+    '''
+    GAIN
+    '''
+    ##@brief set the gain range
+    def setGainLimits(self, gainMin, gainMax):
+        # not called ?
+        print "----------------------Set Gain Limits ???????-----------------"
+        self.__gainMin = gainMin
+        self.__gainMax = gainMax
+
+        self.setGain(self.__gain)
+        self.gainChanged(self.__gain)
+
+    ##@brief set the gain
+    #
+    #Callback of the gain slider
+    #@param gain must be between gainMax and gainMin
+    #@see setGainLimits
+    def setGain(self, gain):
+        self.__gain = gain
+        if gain < self.__gainMin:
+            self.__gain = self.__gainMin
+        if gain > self.__gainMax:
+            self.__gain = self.__gainMax
+
+        if self.__gainMax==0:
+            self.__gainPC = 0
+        else:
+            self.__gainPC = int(self.__gain*100/float(self.__gainMax))
+
+        if self.__camera is not None:
+            self.__camera.setGain(self.__gain)
+            self.gainPCValue.setText(str(self.__gainPC))
+            self.gainAbsLabel.setText("[%s/%s]"%(int(round(self.__gain)), self.__gainMax))
+
+    def gainChanged(self, gain):
+        # print "--QubDialog.py--gainChanged--", gain
+        self.__gain = gain
+        if gain < self.__gainMin:
+            self.__gain = self.__gainMin
+        if gain > self.__gainMax:
+            self.__gain = self.__gainMax
+
+        self.__gainPC = int(self.__gain*100/float(self.__gainMax))
+        self.gainPCValue.setText(str(self.__gainPC))
+
+        self.gainSlider.setValue(self.__gain)
+        self.gainSlider.setMaxValue(float(self.__gainMax))
+        self.gainAbsLabel.setText("[%s/%s]"%(int(round(self.__gain)), self.__gainMax))
+
+
+    '''
+    GAMMA
+    '''
+    ##@brief set the gamma range
+    def setGammaLimits(self, gammaMin, gammaMax):
+        # not called ?
+        print "----------------------Set Gamma Limits ???????-----------------"
+        self.__gammaMin = gammaMin
+        self.__gammaMax = gammaMax
+
+        self.setGamma(self.__gamma)
+        self.gammaChanged(self.__gamma)
+
+    ##@brief set the gamma
+    #
+    #Callback of the gamma slider
+    #@param gamma must be between gammaMax and gammaMin
+    #@see setGammaLimits
+    def setGamma(self, gamma):
+        self.__gamma = gamma
+        if gamma < self.__gammaMin:
+            self.__gamma = self.__gammaMin
+        if gamma > self.__gammaMax:
+            self.__gamma = self.__gammaMax
+
+        if self.__gammaMax==0:
+            self.__gammaPC = 0
+        else:
+            self.__gammaPC = int(self.__gamma*100/float(self.__gammaMax))
+
+        if self.__camera is not None:
+            self.__camera.setGamma(self.__gamma)
+            self.gammaPCValue.setText(str(self.__gammaPC))
+            self.gammaAbsLabel.setText("[%s/%s]"%(int(round(self.__gamma)), self.__gammaMax))
+
+    def gammaChanged(self, gamma):
+        # print "--QubDialog.py--gammaChanged--", gamma
+        self.__gamma = gamma
+        if gamma < self.__gammaMin:
+            self.__gamma = self.__gammaMin
+        if gamma > self.__gammaMax:
+            self.__gamma = self.__gammaMax
+
+        self.__gammaPC = int(self.__gamma*100/float(self.__gammaMax))
+        self.gammaPCValue.setText(str(self.__gammaPC))
+
+        self.gammaSlider.setValue(self.__gamma)
+        self.gammaSlider.setMaxValue(float(self.__gammaMax))
+        self.gammaAbsLabel.setText("[%s/%s]"%(int(round(self.__gamma)), self.__gammaMax))
+
+
+    '''
+    CHECK ATTRIBUTES OF CAMERA.
+    '''
+    ##@brief Check if Attributes existance and configuration.
+    def checkCameraAttributes(self):
+        self.checkAttributesExistance()
+        self.gatherAttributesMaxValues()
+
+
+    def checkAttributesExistance(self):
+        attributeList = self.__camera.device.get_attribute_list()
+
+        if "Brightness" in attributeList:
+            # print "Brightness exists"
+            self.__brightnessExists = True
+        else:
+            # print "Brightness does not exist"
+            self.__brightnessExists = False
+
+        if "Contrast" in attributeList:
+            # print "Contrast exists"
+            self.__contrastExists = True
+        else:
+            # print "Contrast does not exist"
+            self.__contrastExists = False
+
+        if "Gain" in attributeList:
+            # print "Gain exists"
+            self.__gainExists = True
+        else:
+            # print "Gain does not exist"
+            self.__gainExists = False
+
+        if "Gamma" in attributeList:
+            # print "Gamma exists"
+            self.__gammaExists = True
+        else:
+            # print "Gamma does not exist"
+            self.__gammaExists = False
+
+    ##@brief Gathers maximum values for attributes.
+    #
+    # Max values have to be defined in "Attribute config" panel of Jive.
+    def gatherAttributesMaxValues(self):
+        if self.__brightnessExists:
+            self.__brightnessMax = self.__camera.device.attribute_query("Brightness").max_value
+        else:
+            self.__brightnessMax = 100
+
+        if self.__contrastExists:
+            self.__contrastMax = self.__camera.device.attribute_query("Contrast").max_value
+        else:
+            self.__contrastMax = 100
+
+        if self.__gainExists:
+            self.__gainMax = self.__camera.device.attribute_query("Gain").max_value
+        else:
+            self.__gainMax = 100
+
+        if self.__gammaExists:
+            self.__gammaMax = self.__camera.device.attribute_query("Gamma").max_value
+        else:
+            self.__gammaMax = 100
+
+
     ##@brief set the camera hardware object
     #
     #You have to call this methode at least one to set the hardware object
     #for a full init of this dialog
     def setCamera(self, camera):
         self.__camera = camera
-        
+
         if self.__camera is not None:
+            # print "--QubDialog.py--CAMERA SET"
+            self.checkCameraAttributes()
+
             self.contrastChanged(self.__camera.getContrast())
             self.brightnessChanged(self.__camera.getBrightness())
-    
+            self.gainChanged(self.__camera.getGain())
+            self.gammaChanged(self.__camera.getGamma())
+
     def show(self):
         if self.__camera is not None:
+            # print "--QubDialog.py----show"
             self.contrastChanged(self.__camera.getContrast())
             self.brightnessChanged(self.__camera.getBrightness())
-        
+            self.gainChanged(self.__camera.getGain())
+            self.gammaChanged(self.__camera.getGamma())
+
         qt.QDialog.show(self)
+
+
+
 ##@brief a class to display a quick image view
 #
 #This class can also drive a scrollView
@@ -982,7 +1355,7 @@ class QubQuickView(qt.QLabel) :
         if self.__grabMouseOnFirstDraw:
             self.grabMouse()
             self.__grabMouseOnFirstDraw = False
-            
+
         if self.__dirtyFlag :
             self.__dirtyFlag = False
             self.__pixmap = qt.QPixmap(self.__image.smoothScale(self.__width,self.__height,self.__image.ScaleMin))
@@ -1000,7 +1373,7 @@ class QubQuickView(qt.QLabel) :
                 paint.setPen(qt.QPen(qt.Qt.red,1))
                 paint.drawRect(rect)
                 self.__curentRect = rect
-        
+
     def __update_rectangle(self,x,y) :
         if self.__curentRect is not None:
             rect,_ = self.__getViewRect(self.__scrollView(),x,y)
@@ -1020,7 +1393,7 @@ class QubQuickView(qt.QLabel) :
         matrix = qt.QWMatrix(self.__pixmap.width() / float(width),0,
                              0,self.__pixmap.height() / float(height),0,0)
         return matrix.map(rect),matrix
-    
+
     def mouseReleaseEvent(self,mouseReleaseEvent) :
         if self.__popUpMode :
             self.__popUpMode = False
@@ -1068,7 +1441,7 @@ class QubInfoTableWidget(qt.QTabWidget) :
         self.addTab(self.__motorInfo,'motors')
         self.__miscInfo = QubInfoBaseTableWidget(self)
         self.addTab(self.__miscInfo,'misc.')
-        
+
     def setInfo(self,info):
         try:
             counter_mne = info.pop('counter_mne').split()
@@ -1082,7 +1455,7 @@ class QubInfoTableWidget(qt.QTabWidget) :
         except AttributeError:
             pass
         self.__miscInfo.setInfo(info)
-        
+
 ##@brief widget to display dictionnary info in a table
 #
 #display info in table in two column (key,value)
@@ -1096,7 +1469,7 @@ class QubInfoBaseTableWidget(qttable.QTable):
         self.setSelectionMode(qttable.QTable.NoSelection)
         if iconName:
             self.setIcon(loadIcon('%s.png' % iconName))
-            
+
     def setInfo(self,info) :
         self.__info = info
         self.__refresh()
@@ -1104,7 +1477,7 @@ class QubInfoBaseTableWidget(qttable.QTable):
     def show(self) :
         qttable.QTable.show(self)
         self.__refresh()
-        
+
     def __refresh(self) :
         if self.isShown() :
             self.removeRows(range(self.numRows()))
@@ -1145,5 +1518,5 @@ class QubInfoTableDialog(qt.QDialog) :
 
     def setInfo(self,info) :
         self.__infoTable.setInfo(info)
-        
-    
+
+
