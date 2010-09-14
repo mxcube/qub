@@ -198,7 +198,10 @@ class QubView(qt.QWidget):
             return self.__actionList[name]
             
         return None
-        
+
+    def getActionList(self):
+        return self.__actionList
+
     def customEvent(self,event) :
         if event.event_name == "_appendActionInContextMenu" :
             for action in self.__actionPending4ContextMenu:
