@@ -251,30 +251,34 @@ class QubDataDisplay(qt.QWidget) :
             self.__colormapDialog.setColormapNRefreshCallBack(self.__ImageNViewPlug.colormap(),
                                                               self.refresh)
             self.__ImageNViewPlug.setColorMapDialog(self.__colormapDialog)
-               ####### CHANGE FOREGROUND COLOR #######
+
+        ####### CHANGE FOREGROUND COLOR #######
         if QubDataDisplay.CHANGE_FOREGROUND_COLOR in action_enum:
             fcoloraction = QubForegroundColorAction(name="color", group="selection")
             action_list.append(fcoloraction)
 
-                 ####### Horizontal selection #######
+        ####### Horizontal selection #######
         if QubDataDisplay.HORIZONTAL_SELECTION in action_enum:
             self.__hLineSelection = QubHLineDataSelectionAction(parent=mainWidget,group="selection")
             self.__hLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
             action_list.append(self.__hLineSelection)
             self.__actionDataActionPlug.append(self.__hLineSelection)
-                 ####### Vertical selection #######
+
+        ####### Vertical selection #######
         if QubDataDisplay.VERTICAL_SELECTION in action_enum:
             self.__vLineSelection = QubVLineDataSelectionAction(parent=mainWidget,group="selection")
             self.__vLineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
             action_list.append(self.__vLineSelection)
             self.__actionDataActionPlug.append(self.__vLineSelection)
-                    ####### Line selection #######
+
+        ####### Line selection #######
         if QubDataDisplay.LINE_SELECTION in action_enum:
             self.__lineSelection = QubLineDataSelectionAction(parent=mainWidget,group="selection")
             self.__lineSelection.setDataZoom(self.__ImageNViewPlug.zoom())
             action_list.append(self.__lineSelection)
             self.__actionDataActionPlug.append(self.__lineSelection)
-                  ####### Position and Value #######
+
+        ####### Position and Value #######
         if QubDataDisplay.POSITION_AND_VALUE in action_enum:
             self.__dataPositionValueAction = QubDataPositionValueAction(name="position",
                                                                         group="image",place="statusbar")
@@ -371,13 +375,19 @@ class QubDataDisplay(qt.QWidget) :
     #@return a numpy 2 dimension array
     def getData(self) :
         return self.__curentdata
+
     ##@brief set data roi
     def setDataRoi(self,x,y,width,height) :
         zoomClass = self.__ImageNViewPlug.zoom()
         zoomClass.setRoiNZoom(x,y,width,height,*zoomClass.zoom())
         if self.__dataStat:
             self.__dataStat.setDataRoi(x,y,width,height)
-        
+
+    ##@brief set data roi
+    def setDataRoiNoImg(self,x,y,width,height) :
+        if self.__dataStat:
+            self.__dataStat.setDataRoi(x,y,width,height)
+
     ##@brief set data to all action which need it
     #
     #Dont call this methode (internal call)
