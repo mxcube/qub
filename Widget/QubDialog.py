@@ -15,6 +15,7 @@ import os.path
 import itertools
 import numpy
 import Qwt5 as qwt
+import sys
 
 from Qub.Objects.QubPixmapDisplay import QubPixmapDisplay
 from Qub.Objects.QubPixmapDisplay import QubPixmapZoomPlug
@@ -672,7 +673,7 @@ class QubDataStatWidget(Histogram) :
             qt.QObject.connect(widget,qt.SIGNAL('lostFocus ()'),self.__refreshIdle)
 
 
-                     ####### PRINT ACTION #######
+        ####### PRINT ACTION #######
         from Qub.Widget.QubActionSet import QubPrintPreviewAction
         printAction = QubPrintPreviewAction(name="print",group="admin")
         printAction.previewConnect(getPrintPreviewDialog())
@@ -889,19 +890,25 @@ class QubBrightnessContrastDialog(qt.QDialog):
 
     def contrastChanged(self, contrast):
         self.__contrast = contrast
+
         if contrast < self.__contrastMin:
             self.__contrast = self.__contrastMin
+
         if contrast > self.__contrastMax:
             self.__contrast = self.__contrastMax
 
         self.contrastSlider.setValue(self.__contrast)
+
     ##@brief set the brightness range
     def setBrightnessLimits(self, brightnessMin, brightnessMax):
+        print "_)&*(*)&(*&()&*_()*&_&*()*&_)(*&_*&()*&_)&*(*_)(&*_&*()&*_)&*(_************"
         self.__brightnessMin = brightnessMin
         self.__brightnessMax = brightnessMax
 
         self.setBrightness(self.__brightness)
         self.BrightnessChanged(self.__brightness)
+
+
     ##@brief set the brightness
     #
     #Callback of the brightness slider
@@ -986,9 +993,15 @@ class QubBrightnessContrastDialog(qt.QDialog):
 ##########                                                ##########
 ####################################################################
 ##@brief Brightness and contrast control for falcon device
-#The popup dialog display two slider:
-# -# for the brightness
-# -# for the contrast
+#The popup dialog displays N sliders if attribute is avaliable:
+# - for the brightness
+# - for the contrast
+# - for the gain
+# - for the gamma
+
+#TODO : 
+# - connect qlineedit display of % to allow changing by typing a number.
+
 class QubBrightnessContrastDialog(qt.QDialog):
 
     def __init__(self, parent):
@@ -1010,7 +1023,7 @@ class QubBrightnessContrastDialog(qt.QDialog):
         self.__contrastExists = False
 
         self.__gain = 0
-        self.__gainMin = 0
+        self.__gainMin = 3.14
         self.__gainMax = 123
         self.__gainExists = False
 
@@ -1060,7 +1073,7 @@ class QubBrightnessContrastDialog(qt.QDialog):
         '''abs value'''
         self.brightnessAbsLabel = qt.QLabel("[%s/%s]"%(self.__brightness, self.__brightnessMax), self)
         self.brightnessUpdaterLayout.addWidget(self.brightnessAbsLabel)
-        self.brightnessAbsLabel.setFixedWidth(50)
+        self.brightnessAbsLabel.setFixedWidth(100)
 
         vlayout.addLayout(self.brightnessUpdaterLayout)
         vlayout.addSpacing(1)
@@ -1098,7 +1111,7 @@ class QubBrightnessContrastDialog(qt.QDialog):
         '''abs value'''
         self.contrastAbsLabel = qt.QLabel("[%s/%s]"%(self.__contrast, self.__contrastMax), self)
         self.contrastUpdaterLayout.addWidget(self.contrastAbsLabel)
-        self.contrastAbsLabel.setFixedWidth(50)
+        self.contrastAbsLabel.setFixedWidth(100)
 
         vlayout.addLayout(self.contrastUpdaterLayout)
         vlayout.addSpacing(1)
@@ -1135,11 +1148,10 @@ class QubBrightnessContrastDialog(qt.QDialog):
         '''abs value'''
         self.gainAbsLabel = qt.QLabel("[%s/%s]"%(self.__gain, self.__gainMax), self)
         self.gainUpdaterLayout.addWidget(self.gainAbsLabel)
-        self.gainAbsLabel.setFixedWidth(50)
+        self.gainAbsLabel.setFixedWidth(100)
 
         vlayout.addLayout(self.gainUpdaterLayout)
         vlayout.addSpacing(1)
-
 
         """
         GAMMA updater
@@ -1173,7 +1185,7 @@ class QubBrightnessContrastDialog(qt.QDialog):
         '''abs value'''
         self.gammaAbsLabel = qt.QLabel("[%s/%s]"%(self.__gamma, self.__gammaMax), self)
         self.gammaUpdaterLayout.addWidget(self.gammaAbsLabel)
-        self.gammaAbsLabel.setFixedWidth(50)
+        self.gammaAbsLabel.setFixedWidth(100)
 
         vlayout.addLayout(self.gammaUpdaterLayout)
         vlayout.addSpacing(10)
@@ -1235,6 +1247,21 @@ class QubBrightnessContrastDialog(qt.QDialog):
     def contrastChanged(self, contrast):
         print "--QubDialog.py--contrastChanged--", contrast
         self.__contrast = contrast
+
+        # if self.__camera is not None:
+        #     self.__contrastMin =self.__camera.device.get_attribute_config('contrast').min_value
+
+        try:
+            self.__contrastMax = float(self.__contrastMax)
+        except:
+            self.__contrastMax = 123
+
+        try:
+            self.__contrastMin = float(self.__contrastMin)
+        except:
+            self.__contrastMin = 0
+
+
         if contrast < self.__contrastMin:
             self.__contrast = self.__contrastMin
         if contrast > self.__contrastMax:
@@ -1249,80 +1276,18 @@ class QubBrightnessContrastDialog(qt.QDialog):
 
 
 
-
-##    ##@brief set the contrast range
-##    def setContrastLimits(self, contrastMin, contrastMax):
-##        self.__contrastMin = contrastMin
-##        self.__contrastMax = contrastMax
-##
-##        self.setContrast(self.__contrast)
-##        self.contrastChanged(self.__contrast)
-##    ##@brief set the contrast
-##    #
-##    #Callback of the contrast slider
-##    #@param contrast must be between contrastMax and contrastMin
-##    #@see setContrastLimits
-##    def setContrast(self, contrast):
-##        self.__contrast = contrast
-##        if contrast < self.__contrastMin:
-##            self.__contrast = self.__contrastMin
-##        if contrast > self.__contrastMax:
-##            self.__contrast = self.__contrastMax
-##
-##        if self.__camera is not None:
-##            self.__camera.setContrast(self.__contrast)
-##
-##    def contrastChanged(self, contrast):
-##        self.__contrast = contrast
-##        if contrast < self.__contrastMin:
-##            self.__contrast = self.__contrastMin
-##        if contrast > self.__contrastMax:
-##            self.__contrast = self.__contrastMax
-##
-##        self.contrastSlider.setValue(self.__contrast)
-
-
-##    ##@brief set the brightness range
-##    def setBrightnessLimits(self, brightnessMin, brightnessMax):
-##        self.__brightnessMin = brightnessMin
-##        self.__brightnessMax = brightnessMax
-##
-##        self.setBrightness(self.__brightness)
-##        self.BrightnessChanged(self.__brightness)
-##    ##@brief set the brightness
-##    #
-##    #Callback of the brightness slider
-##    #@param brightness must be between brightnessMax and brightnessMin
-##    #@see setBrightnessLimits
-##    def setBrightness(self, brightness):
-##        self.__brightness = brightness
-##        if brightness < self.__brightnessMin:
-##            self.__brightness = self.__brightnessMin
-##        if brightness > self.__brightnessMax:
-##            self.__brightness = self.__brightnessMax
-##
-##        if self.__camera is not None:
-##            self.__camera.setBrightness(self.__brightness)
-##
-##    def brightnessChanged(self, brightness):
-##        self.__brightness = brightness
-##        if brightness < self.__brightnessMin:
-##            self.__brightness = self.__brightnessMin
-##        if brightness > self.__brightnessMax:
-##            self.__brightness = self.__brightnessMax
-##
-##        self.brightnessSlider.setValue(self.__brightness)
-
-
     '''
     BRIGHTNESS
     '''
     ##@brief set the brightness range
     def setBrightnessLimits(self, brightnessMin, brightnessMax):
         # not called ?
+        sys.exit(-1)
         print "----------------------Set Brightness Limits  ???????-----------------"
         self.__brightnessMin = brightnessMin
         self.__brightnessMax = brightnessMax
+
+
 
         self.setBrightness(self.__brightness)
         self.brightnessChanged(self.__brightness)
@@ -1352,15 +1317,32 @@ class QubBrightnessContrastDialog(qt.QDialog):
     def brightnessChanged(self, brightness):
         print "--QubDialog.py--brightnessChanged--", brightness
         self.__brightness = brightness
+
+        if self.__camera is not None:
+            self.__brightnessMin =self.__camera.device.get_attribute_config('brightness').min_value
+
+        try:
+            self.__brightnessMax = float(self.__brightnessMax)
+        except:
+            self.__brightnessMax = 123
+
+        try:
+            self.__brightnessMin = float(self.__brightnessMin)
+        except:
+            self.__brightnessMin = 0
+
+
         if brightness < self.__brightnessMin:
             self.__brightness = self.__brightnessMin
         if brightness > self.__brightnessMax:
             self.__brightness = self.__brightnessMax
 
         self.__brightnessPC = int(self.__brightness*100/float(self.__brightnessMax))
+
         self.brightnessPCValue.setText(str(self.__brightnessPC))
 
         self.brightnessSlider.setValue(self.__brightness)
+        self.brightnessSlider.setMinValue(float(self.__brightnessMin))
         self.brightnessSlider.setMaxValue(float(self.__brightnessMax))
         self.brightnessAbsLabel.setText("[%s/%s]"%(int(round(self.__brightness)), self.__brightnessMax))
 
@@ -1375,7 +1357,6 @@ class QubBrightnessContrastDialog(qt.QDialog):
         print "----------------------Set Gain Limits ???????-----------------"
         self.__gainMin = gainMin
         self.__gainMax = gainMax
-
         self.setGain(self.__gain)
         self.gainChanged(self.__gain)
 
@@ -1402,8 +1383,18 @@ class QubBrightnessContrastDialog(qt.QDialog):
             self.gainAbsLabel.setText("[%s/%s]"%(int(round(self.__gain)), self.__gainMax))
 
     def gainChanged(self, gain):
-        print "--QubDialog.py--gainChanged--", gain
         self.__gain = gain
+
+        try:
+            self.__gainMax = float(self.__gainMax)
+        except:
+            self.__gainMax = 123
+
+        try:
+            self.__gainMin = float(self.__gainMin)
+        except:
+            self.__gainMin = 1
+
         if gain < self.__gainMin:
             self.__gain = self.__gainMin
         if gain > self.__gainMax:
@@ -1413,6 +1404,7 @@ class QubBrightnessContrastDialog(qt.QDialog):
         self.gainPCValue.setText(str(self.__gainPC))
 
         self.gainSlider.setValue(self.__gain)
+        self.gainSlider.setMinValue(float(self.__gainMin))
         self.gainSlider.setMaxValue(float(self.__gainMax))
         self.gainAbsLabel.setText("[%s/%s]"%(int(round(self.__gain)), self.__gainMax))
 
@@ -1454,7 +1446,22 @@ class QubBrightnessContrastDialog(qt.QDialog):
 
     def gammaChanged(self, gamma):
         print "--QubDialog.py--gammaChanged--", gamma
+
         self.__gamma = gamma
+
+        if self.__camera is not None:
+            self.__gammaMin =self.__camera.device.get_attribute_config('gamma').min_value
+
+        try:
+            self.__gammaMax = float(self.__gammaMax)
+        except:
+            self.__gammaMax = 123
+
+        try:
+            self.__gammaMin = float(self.__gammaMin)
+        except:
+            self.__gammaMin = 0
+
         if gamma < self.__gammaMin:
             self.__gamma = self.__gammaMin
         if gamma > self.__gammaMax:
@@ -1465,6 +1472,7 @@ class QubBrightnessContrastDialog(qt.QDialog):
 
         self.gammaSlider.setValue(self.__gamma)
         self.gammaSlider.setMaxValue(float(self.__gammaMax))
+        self.gammaSlider.setMinValue(float(self.__gammaMin))
         self.gammaAbsLabel.setText("[%s/%s]"%(int(round(self.__gamma)), self.__gammaMax))
 
 
@@ -1478,59 +1486,27 @@ class QubBrightnessContrastDialog(qt.QDialog):
 
 
     def checkAttributesExistance(self):
-        attributeList = self.__camera.device.get_attribute_list()
-
-        if "Brightness" in attributeList:
-            print "Brightness exists"
-            self.__brightnessExists = True
-        else:
-            print "Brightness does not exist"
-            self.__brightnessExists = False
-
-        if "Contrast" in attributeList:
-            print "Contrast exists"
-            self.__contrastExists = True
-        else:
-            print "Contrast does not exist"
-            self.__contrastExists = False
-
-        if "Gain" in attributeList:
-            print "Gain exists"
-            self.__gainExists = True
-        else:
-            print "Gain does not exist"
-            self.__gainExists = False
-
-        if "Gamma" in attributeList:
-            print "Gamma exists"
-            self.__gammaExists = True
-        else:
-            print "Gamma does not exist"
-            self.__gammaExists = False
+        self.__brightnessExists = self.__camera.brightnessExists()
+        self.__contrastExists   = self.__camera.contrastExists()
+        self.__gainExists       = self.__camera.gainExists()
+        self.__gammaExists      = self.__camera.gammaExists()
 
     ##@brief Gathers maximum values for attributes.
     #
     # Max values have to be defined in "Attribute config" panel of Jive.
     def gatherAttributesMaxValues(self):
         if self.__brightnessExists:
-            self.__brightnessMax = self.__camera.device.attribute_query("Brightness").max_value
-        else:
-            self.__brightnessMax = 100
+            (self.__brightnessMin, self.__brightnessMax) = self.__camera.getBrightnessMinMax()
 
         if self.__contrastExists:
-            self.__contrastMax = self.__camera.device.attribute_query("Contrast").max_value
-        else:
-            self.__contrastMax = 100
+            (self.__contrastMin, self.__contrastMax) = self.__camera.getContrastMinMax()
 
         if self.__gainExists:
-            self.__gainMax = self.__camera.device.attribute_query("Gain").max_value
-        else:
-            self.__gainMax = 100
+            (self.__gainMin, self.__gainMax) = self.__camera.getGainMinMax()
 
         if self.__gammaExists:
-            self.__gammaMax = self.__camera.device.attribute_query("Gamma").max_value
-        else:
-            self.__gammaMax = 100
+            # self.__gammaMax = self.__camera.device.attribute_query("Gamma").max_value
+            (self.__gammaMin, self.__gammaMax) = self.__camera.getGammaMinMax()
 
 
     ##@brief set the camera hardware object
@@ -1544,18 +1520,33 @@ class QubBrightnessContrastDialog(qt.QDialog):
             print "--QubDialog.py--CAMERA SET"
             self.checkCameraAttributes()
 
-            self.contrastChanged(self.__camera.getContrast())
-            self.brightnessChanged(self.__camera.getBrightness())
-            self.gainChanged(self.__camera.getGain())
-            self.gammaChanged(self.__camera.getGamma())
+            if self.__contrastExists:
+                self.contrastChanged(self.__camera.getContrast())
+
+            if self.__brightnessExists:
+                self.brightnessChanged(self.__camera.getBrightness())
+
+            if self.__gainExists:
+                self.gainChanged(self.__camera.getGain())
+
+            if self.__gammaExists:
+                self.gammaChanged(self.__camera.getGamma())
 
     def show(self):
         if self.__camera is not None:
             print "--QubDialog.py----show"
-            self.contrastChanged(self.__camera.getContrast())
-            self.brightnessChanged(self.__camera.getBrightness())
-            self.gainChanged(self.__camera.getGain())
-            self.gammaChanged(self.__camera.getGamma())
+
+            if self.__brightnessExists:
+                self.brightnessChanged(self.__camera.getBrightness())
+
+            if self.__contrastExists:
+                self.contrastChanged(self.__camera.getContrast())
+
+            if self.__gainExists:
+                self.gainChanged(self.__camera.getGain())
+
+            if self.__gammaExists:
+                self.gammaChanged(self.__camera.getGamma())
 
         qt.QDialog.show(self)
 
