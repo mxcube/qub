@@ -93,11 +93,11 @@ class QubToolButtonAction(QubAction):
                     automatically created and the action is added to it.
         index .. :  Position of the selection widget of the action in its
                     group.
-        
+
         Store in self._label the pushbutton label
         """
         QubAction.__init__(self,**keys)
-        
+
         self._item  = None
         self._label = label
 
@@ -113,9 +113,9 @@ class QubToolButtonAction(QubAction):
             self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
                                  self.sendSignal)
             qt.QToolTip.add(self._widget, self._label)
-            
+
         return self._widget
-        
+
     def addMenuWidget(self, menu):
         """
         Create context menu item pushbutton
@@ -124,7 +124,7 @@ class QubToolButtonAction(QubAction):
         icon = qt.QIconSet(loadIcon("%s.png" % self._iconName))
         self._item = menu.insertItem(icon, qt.QString("%s"%self._label),
                                       self.sendSignal)
-        
+
     def addStatusWidget(self, parent):
         """
         create pushbutton in the statusbar of the view
@@ -134,14 +134,14 @@ class QubToolButtonAction(QubAction):
             self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
                                  self.sendSignal)
             qt.QToolTip.add(self._widget, self._label)
-            
+
         return self._widget
-         
+
     def sendSignal(self):
         """
         User have hit toolbar/contextmenu or statusbar pushbutton
         send "ButtonPressed" signal
-        """ 
+        """
         self.emit(qt.PYSIGNAL("ButtonPressed"), ())
 
 ###############################################################################
@@ -155,7 +155,7 @@ class QubButtonAction(QubAction):
         QubAction.__init__(self,**keys)
         self._item  = None
         self._label = label
-        
+
     def addToolWidget(self, parent):
         """
         create default pushbutton (with a label) in the toolbar of the view.
@@ -169,9 +169,9 @@ class QubButtonAction(QubAction):
             self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
                                  self.sendSignal)
             qt.QToolTip.add(self._widget, self._label)
-            
+
         return self._widget
-        
+
     def addMenuWidget(self, menu):
         """
         Create context menu item pushbutton
@@ -184,7 +184,7 @@ class QubButtonAction(QubAction):
         else:
             self._item = menu.insertItem(qt.QString(self._label),
                                          self.sendSignal)
-        
+
     def addStatusWidget(self, parent):
         """
         create pushbutton in the statusbar of the view
@@ -194,17 +194,17 @@ class QubButtonAction(QubAction):
             self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
                                  self.sendSignal)
             qt.QToolTip.add(self._widget, self._label)
-            
+
         return self._widget
-         
+
     def sendSignal(self):
         """
         User have hit toolbar/contextmenu or statusbar pushbutton
         send "ButtonPressed" signal
-        """ 
+        """
         self.emit(qt.PYSIGNAL("ButtonPressed"), ())
 
-  
+
 ###############################################################################
 ###############################################################################
 ####################                                       ####################
@@ -232,7 +232,7 @@ class QubPrintPreviewAction(QubAction):
         self._item = None
         self.__withVector = False
         self.__withVectorMenu = withVectorMenu
-        
+
     def addToolWidget(self, parent):
         """
         create print preview pushbutton in the toolbar of the view
@@ -244,7 +244,7 @@ class QubPrintPreviewAction(QubAction):
             self._widget.connect(self._widget, qt.SIGNAL("clicked()"),
                                  self.addPixmapToPP)
             qt.QToolTip.add(self._widget, "add this window to print preview")
-            
+
             if self.__withVectorMenu:
                 popMenu = qt.QPopupMenu(self._widget)
                 self._widget.setPopup(popMenu)
@@ -253,7 +253,7 @@ class QubPrintPreviewAction(QubAction):
                 qt.QObject.connect(vectorToogle,qt.SIGNAL('toggled(bool)'),self.__vectorCBK)
                 popMenu.insertItem(vectorToogle)
         return self._widget
-    
+
     def addMenuWidget(self, menu):
         """
         Create context menu item pushbutton
@@ -262,15 +262,15 @@ class QubPrintPreviewAction(QubAction):
         self._menu = menu
         self._item = menu.insertItem(iconSet, qt.QString("Print preview"),
                                       self.addPixmapToPP)
-        
+
     def addStatusWidget(self, parent):
         return self.addToolWidget(self,parent)
-    
+
     def addPixmapToPP(self):
         """
         if the print preview widget parameter is set, show the print preview
         widget and send it the pixmap of the associated view
-        """ 
+        """
         if self._preview is not None:
             view = self._view and self._view() or None
             if view is not None:
@@ -299,7 +299,7 @@ class QubPrintPreviewAction(QubAction):
 
     def __vectorCBK(self,onOff) :
         self.__withVector = onOff
-  
+
 ###############################################################################
 ###############################################################################
 ####################                                       ####################
@@ -321,7 +321,7 @@ class QubSeparatorAction(QubAction):
         """
         create widget for the view toolbar
         """
-                
+
         if self._widget is None:
             self._widget = qt.QFrame(parent)
             self._widget.setFrameShape(qt.QFrame.VLine)
@@ -329,7 +329,7 @@ class QubSeparatorAction(QubAction):
             #rect = self._widget.rect()
             #rect.setY(rect.y()+2)
             #self._widget.setFrameRect(rect)
-        
+
         return self._widget
 
 ###############################################################################
@@ -349,7 +349,7 @@ class QubZoomRectangle(QubToggleImageAction) :
         self.__drawingMgr = None
         self.__drawingObjectLayer = drawingObjectLayer
         self.__unactiveActionWhenDub = unactiveActionWhenDub
-        
+
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self, qubImage)
 
@@ -360,15 +360,15 @@ class QubZoomRectangle(QubToggleImageAction) :
         self.__drawingMgr.setPen(pen)
         if self.__drawingObjectLayer :
             self.__drawingMgr.setZ(self.__drawingObjectLayer)
-            
+
         self.__drawingMgr.setColor(qubImage.foregroundColor())
-        
+
         self.__drawingMgr.setEndDrawCallBack(self.rectangleChanged)
         if self.__unactiveActionWhenDub:
             self.__drawingMgr.setDubModeCallBack(self._unactiveAction)
-        
+
     def setColor(self,color) :
-        """   
+        """
         Slot connected to "ForegroundColorChanged" "qubImage" signal
         """
         self.__drawingMgr.setColor(color)
@@ -377,7 +377,7 @@ class QubZoomRectangle(QubToggleImageAction) :
         if self.__drawingMgr is not None :
             self.__drawingMgr.setRect(ox,oy,width,height)
             self.rectangleChanged(self.__drawingMgr)
-        
+
     def rectangleChanged(self, drawingMgr):
         rect =  drawingMgr.rect()
         self.emit(qt.PYSIGNAL("RectangleSelected"),
@@ -404,7 +404,7 @@ class QubZoomRectangle(QubToggleImageAction) :
             self.__drawingMgr.stopDrawing()
 
         self.emit(qt.PYSIGNAL("Actif"),(aFlag,))
-        
+
 
 ###############################################################################
 ####################            QubLineSelection           ####################
@@ -432,21 +432,24 @@ class QubLineDataSelectionAction(QubToggleImageAction):
         self._curve = QubGraphCurve(graphLegend)
         self._curve.attach(self._graph)
 
-                     ####### PRINT ACTION #######
+        ####### PRINT ACTION #######
         self.__printAction = QubPrintPreviewAction(name="print",group="admin")
         self.__printAction.previewConnect(getPrintPreviewDialog())
-                 ####### MEASURE CURVE MARKER #######
+
+        ####### MEASURE CURVE MARKER #######
         self.__curveMeasure = QubFollowGraphCurveAction(curve=self._curve,name="measure",group="tools")
-                         ####### ZOOM #######
+
+        ####### ZOOM #######
         self.__zoom = QubGraphZoomAction(graph=self._graph,name="zoom",group="tools")
-                      ####### LOG SCALE #######
+
+        ####### LOG SCALE #######
         self.__logSwitch = QubGraphYAxisLogSwitchAction(graph = self._graph,name='log swicth',group="tools")
-                
+
         self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom,self.__logSwitch])
 
         self._graph.setAxisTitle(self._graph.yLeft,'Data value')
         self._graph.enableAxis(self._graph.xTop)
-        
+
     def addToolWidget(self,parent) :
         widget = QubToggleImageAction.addToolWidget(self,parent)
         popupMenu = qt.QPopupMenu(self._widget)
@@ -458,6 +461,8 @@ class QubLineDataSelectionAction(QubToggleImageAction):
         popupMenu.insertItem(averageButton)
         return widget
 
+
+    # defines what happens on click when line action is selected.
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self,qubImage)
         self._line,_ = QubAddDrawing(qubImage,QubLineDrawingMgr,qtcanvas.QCanvasLine)
@@ -472,7 +477,7 @@ class QubLineDataSelectionAction(QubToggleImageAction):
     ##brief set the caption prefix of the window graph
     def setCaptionPrefix(self,captionPrefix) :
         self._graph.setCaption(captionPrefix)
-        
+
     ##@brief set the data array
     def setData(self,data) :
         if self._data and data is None:
@@ -484,7 +489,7 @@ class QubLineDataSelectionAction(QubToggleImageAction):
     ##@brief set Data Zoom
     def setDataZoom(self,zoom) :
         self._zoom = zoom
-        
+
     ##@brief set the forground color of the line
     def setColor(self, color):
         self._line.setColor(color)
@@ -603,6 +608,8 @@ class QubLineDataSelectionAction(QubToggleImageAction):
     def __averageCBK(self,aFlag) :
         self._average = aFlag
         self._refreshIdle()
+
+
 ###############################################################################
 #######              QubHLineDataSelectionAction                        #######
 ###############################################################################
@@ -621,47 +628,71 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
         self._captionPrefix = None
         self._graphLegend = graphLegend
         self._idle = qt.QTimer()
+
         qt.QObject.connect(self._idle,qt.SIGNAL('timeout()'),self._refreshGraph)
         mdiManager,mainWindow = QubMdiCheckIfParentIsMdi(parent)
+
+
+
+        ######### Graph ########
+        # for selections  (only ?)
+
         if mdiManager:
             self._graph = QubGraphView(mdiManager,name = graphLegend)
             self._graph.setIcon(loadIcon("%s.png" % name))
             mdiManager.addNewChildOfMainWindow(mainWindow,self._graph)
         else:
             self._graph = QubGraphView(parent,name = graphLegend)
+
         self._curve = QubGraphCurve(graphLegend)
         self._curve.attach(self._graph)
-        
-                     ####### PRINT ACTION #######
+
+        # PRINT ACTION #
         self.__printAction = QubPrintPreviewAction(name="print",group="admin")
         self.__printAction.previewConnect(getPrintPreviewDialog())
-                 ####### MEASURE CURVE MARKER #######
+
+        # MEASURE CURVE MARKER #
         self.__curveMeasure = QubFollowGraphCurveAction(curve=self._curve,name="measure",group="tools")
-                         ####### ZOOM #######
+
+        # ZOOM #
         self.__zoom = QubGraphZoomAction(graph=self._graph,name="zoom",group="tools")
-                              ####### LOG SCALE #######
+
+        # LOG SCALE #
         self.__logSwitch = QubGraphYAxisLogSwitchAction(graph = self._graph,name='log swicth',group="tools")
 
+        # add previous actions to graph
         self._graph.addAction([self.__printAction,self.__curveMeasure,self.__zoom,self.__logSwitch])
         self._graph.setAxisTitle(self._graph.yLeft,'Data value')
         self._graph.setAxisTitle(self._graph.xBottom,'X value')
-        
+
+
+
     def addToolWidget(self,parent) :
         widget = QubToggleImageAction.addToolWidget(self,parent)
         popupMenu = qt.QPopupMenu(self._widget)
         widget.setPopup(popupMenu)
         widget.setPopupDelay(0)
+
         averageButton = qt.QCheckBox('Average',popupMenu)
         averageButton.setChecked(True)
         qt.QObject.connect(averageButton,qt.SIGNAL('toggled(bool)'),self.__averageCBK)
+
+        nbLines = qt.QLineEdit('1', popupMenu)
+        nbLines.setValidator(qt.QIntValidator(1,1000,popupMenu))
+        qt.QObject.connect(nbLines, qt.SIGNAL('textChanged(const QString &)'),self.__nbLinesCBK)
+
         popupMenu.insertItem(averageButton)
+        popupMenu.insertItem(nbLines)
+
         return widget
-    
+
     def viewConnect(self, qubImage):
         QubToggleImageAction.viewConnect(self, qubImage)
         self._line,_ = QubAddDrawing(qubImage,QubPointDrawingMgr,QubCanvasHLine)
         self._line.setEventName('HLineDataSelection')
         self._line.setExceptExclusiveListName(['HLineDataSelection_help','VLineDataSelection','VLineDataSelection_help'])
+
+        # on click, _lineSelect is called.
         self._line.setEndDrawCallBack(self._lineSelect)
         self._line.setDubModeCallBack(self._unactiveAction)
         self._line.setKeyPressedCallBack(self.__rawKeyPressed)
@@ -673,13 +704,15 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
         self._helpLine.setExceptExclusiveListName(['HLineDataSelection','VLineDataSelection','VLineDataSelection_help'])
 
         self._initDrawing()
-            
+
     def changeLineWidth(self,width) :
         self._lineWidth = width
         self._initDrawing()
-    ##brief set the caption prefix of the window graph
+
+    ##@brief set the caption prefix of the window graph
     def setCaptionPrefix(self,captionPrefix) :
          self._captionPrefix = captionPrefix
+
     ##@brief set the data array
     def setData(self,data) :
         if self._data and data is None:
@@ -688,14 +721,16 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
 
         self._data = data is not None and weakref.ref(data) or None
         self._refreshIdle()
+
     ##@brief set Data Zoom
     def setDataZoom(self,zoom) :
         self._zoom = zoom
+
     ##@brief set the forground color of the line
     def setColor(self, color):
         self._line.setColor(color)
         self._helpLine.setColor(color)
-        
+
     def _setState(self,aFlag):
         for line in [self._line,self._helpLine] :
             if aFlag:
@@ -710,13 +745,13 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
         if qubImage:
             self._line.setPen(qt.QPen(qubImage.foregroundColor(),self._lineWidth,qt.Qt.SolidLine))
             self._helpLine.setPen(qt.QPen(qubImage.foregroundColor(),self._lineWidth,qt.Qt.DashLine))
-        
-    def _lineSelect(self,drawingMgr) :
-        self._columnId,self._lineId = drawingMgr.point()
+
+    def _lineSelect(self, drawingMgr) :
+        self._columnId, self._lineId = drawingMgr.point()
         self._refreshIdle()
 
-        
-    def __rawKeyPressed(self,mgr, keyevent) :
+
+    def __rawKeyPressed(self, mgr, keyevent) :
         if self._data is not None:
             data = self._data()
             if data is not None:
@@ -732,22 +767,29 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                 canvas = self._line.canvas()[0]
                 canvas.update()
                 self._refreshIdle()
-            
+
+    # Called when point is clicked; behaviour depends on selected actions.
     def _refreshIdle(self) :
         if not self._idle.isActive() :
             if self._columnId >= 0 and self._lineId >= 0 and self._data is not None:
                 data = self._data()
-                if data is not None: self._graph.show()
+                if data is not None:
+                    #
+                    self._graph.show()
+
             self._idle.start(0)
 
     def _refreshGraph(self) :
         self._idle.stop()
         if not self._graph.isShown() : return
-        
+
         if self._lineId >= 0 and self._data is not None:
             rawdata = self._data()
             if rawdata is not None:
                 nbLine,yzoom = self._lineWidth,1
+
+                print "--------------------- number of lines / yzoom :" , nbLine, yzoom
+
                 if self._average and self._zoom :
                     _,yzoom = self._zoom.zoom()
                     if yzoom < 1.:
@@ -787,6 +829,7 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
                     for line in lines :
                          yVales = yVales + line
                     yVales = yVales / nbLine
+
                     self._curve.setData(numpy.arange(ori,ori + len(yVales)),yVales)
                     self._graph.replot()
                     self._graph.setTitle('%s %s' % (self._graphLegend,caption))
@@ -795,7 +838,18 @@ class QubHLineDataSelectionAction(QubToggleImageAction):
     def __averageCBK(self,aFlag) :
         self._average = aFlag
         self._refreshIdle()
-        
+
+    def __nbLinesCBK(self, value) :
+        try:
+            intValue = int(str(value))
+        except:
+            print "ERROR : value not int ?"
+
+        print "on Average %d lines"%intValue
+        self.changeLineWidth(intValue)
+
+
+
 ###############################################################################
 #######              QubVLineDataSelectionAction                        #######
 ###############################################################################
@@ -812,12 +866,12 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
          self._line.setDubModeCallBack(self._unactiveAction)
          self._line.setKeyPressedCallBack(self.__rawKeyPressed)
          self._line.setDrawingEvent(QubFollowMouseOnClick)
-         
+
          self._helpLine,_ = QubAddDrawing(qubImage,QubPointDrawingMgr,QubCanvasVLine)
          self._helpLine.setDrawingEvent(QubMoveNPressed1Point)
          self._helpLine.setEventName('VLineDataSelection_help')
          self._helpLine.setExceptExclusiveListName(['VLineDataSelection','HLineDataSelection','HLineDataSelection_help'])
-          
+
          self._initDrawing()
          self._graph.setAxisTitle(self._graph.xBottom,'Y value')
 
@@ -892,7 +946,7 @@ class QubVLineDataSelectionAction(QubHLineDataSelectionAction):
 #######                   QubArcDataSelection                           #######
 ###############################################################################
 class QubArcDataSelection(QubToggleImageAction):
-            
+
     def __init__(self,parent = None,name='disc',graphLegend = 'Arc',autoConnect = True,**keys) :
         QubToggleImageAction.__init__(self,parent = parent,name=name,autoConnect=autoConnect,**keys)
         self._arc = None
@@ -936,7 +990,7 @@ class QubArcDataSelection(QubToggleImageAction):
         self.__center = None
         self.__inRayon = 1
         self.__discWidth = 1
-        
+
     def addToolWidget(self,parent) :
         widget = QubToggleImageAction.addToolWidget(self,parent)
         popupMenu = qt.QPopupMenu(widget)
@@ -970,13 +1024,13 @@ class QubArcDataSelection(QubToggleImageAction):
     def setData(self,data) :
         self._data = data is not None and weakref.ref(data) or None
         self._refreshIdle()
-        
+
     def setColor(self,color) :
         self._arc.setColor(color)
 
     def setCaptionPrefix(self,caption) :
         self._captionPrefix = caption
-        
+
     def _setState(self,aFlag) :
         try:
             if aFlag:
@@ -986,7 +1040,7 @@ class QubArcDataSelection(QubToggleImageAction):
                 self._arc.hide()
                 self.__center = None    # desactive refresh
         except AttributeError: pass
-        
+
     def _initDrawing(self) :
         qubImage = self._qubImage()
         if qubImage:
@@ -1009,7 +1063,7 @@ class QubArcDataSelection(QubToggleImageAction):
             extRayon = math.sqrt(extXRayon ** 2 + extXRayon ** 2)
             self.__discWidth = extRayon - self.__inRayon
             if self.__discWidth < 1 : self.__discWidth = 1
-            
+
         if len(points) <= 3 :           # CIRCLE OR DONUT
             self.__angleStart = 0
             self.__angleLenght = 2 * math.pi
@@ -1033,14 +1087,14 @@ class QubArcDataSelection(QubToggleImageAction):
             if z < 0 : self.__angleLenght = 2 * math.pi - self.__angleLenght
 
         self._refreshIdle()
-        
+
     def _refreshIdle(self) :
         if not self._idle.isActive() :
             data = self._data and self._data() is not None or None
             if self.__center and data is not None:
                 self._graph.show()
             self._idle.start(0)
-            
+
     def _refreshGraph(self) :
         self._idle.stop()
         if not self._graph.isShown() : return
@@ -1074,7 +1128,7 @@ class QubArcDataSelection(QubToggleImageAction):
                 self._graph.setCaption('%s %s' % (self._captionPrefix or '',toolName))
                 self._graph.setIcon(loadIcon(self.__tools[self.__idToolSelected][0]))
                 self._graph.setName(toolName)
-            
+
     def __toolSelected(self,idTool) :
         try:
             self.__idToolSelected = idTool
@@ -1094,7 +1148,7 @@ class QubArcDataSelection(QubToggleImageAction):
         self._arc_setAngles(0,360 * 16)
         self._arc_setSize(10,10)
         self._arc.hide()
-        
+
     def __donutInit(self,*args) :
         self._arc_setAngles(0,360 * 16)
         self._arc_setSize(10,10)
@@ -1123,7 +1177,7 @@ class QubDiscSelection(QubToggleImageAction):
         self.__x0 = 0
         self.__y0 = 0
         self.__radius = 0
-    
+
     def viewConnect(self, qubImage):
         """
         Once the qubImage is connected, create QCanvas Item
@@ -1137,7 +1191,7 @@ class QubDiscSelection(QubToggleImageAction):
         self.setColor(qubImage.foregroundColor())
 
     def setColor(self, color):
-        """   
+        """
         Slot connected to "ForegroundColorChanged" "qubImage" signal
         """
         self.__disc.setBrush(qt.QBrush(color, qt.Qt.DiagCrossPattern))
@@ -1157,7 +1211,7 @@ class QubDiscSelection(QubToggleImageAction):
             else:
                 self.signalDisconnect(self._qubImage())
                 self.__disc.hide()
-            
+
             self.__disc.update()
 
     def mousePress(self, event):
@@ -1171,16 +1225,16 @@ class QubDiscSelection(QubToggleImageAction):
         self.__y0 = y
         self.__rectCoord.setRect(x, y, 1, 1)
         self.viewportUpdate()
-    
+
     def mouseMove(self, event):
         """
         Upper-left corner of the rectangle has been fixed when mouse press,
         Updates now the width and height to follow the mouse position
         """
         if event.state() == qt.Qt.LeftButton:
-            (x, y) = self._qubImage().matrix().invert()[0].map(event.x(), 
+            (x, y) = self._qubImage().matrix().invert()[0].map(event.x(),
                                                            event.y())
-            
+
             dx = x - self.__x0
             dy = y - self.__y0
             radius = math.sqrt( pow(dx,2) + pow(dy,2) )
@@ -1191,17 +1245,17 @@ class QubDiscSelection(QubToggleImageAction):
             self.__radius = radius
             self.__rectCoord.setRect(xc, yc, w, h)
             self.viewportUpdate()
-            
+
     def mouseRelease(self, event):
         """
         Rectangle selection is finished, send corresponding signal
         with coordinates
         """
-        self.emit(qt.PYSIGNAL("DiscSelected"), 
+        self.emit(qt.PYSIGNAL("DiscSelected"),
                   (self.__x0, self.__y0, self.__radius))
-        
+
         self.viewportUpdate()
-        
+
     def viewportUpdate(self):
         """
         Draw Disc either if qubImage pixmap has been updated or
@@ -1212,8 +1266,8 @@ class QubDiscSelection(QubToggleImageAction):
 
         self.__disc.setSize(rect.width(), rect.height())
         self.__disc.move(x, y)
-        
-        self.__disc.update()            
+
+        self.__disc.update()
 
 
 
@@ -1237,19 +1291,19 @@ class QubZoomListAction(QubAction):
 
         self._zoomValList = zoomValList
         self._initZoom = initZoom
-        
+
         self._keepROI = keepROI
 
         self._zoomVal = 1
 
         self._item = None
-        
+
         self._qubImage = None
 
         self._listPopupMenu = None
 
         self.__lastIdSelected = 0
-        
+
         self._actionZoomMode = None
 
         self._name = 'zoomlist'
@@ -1258,7 +1312,7 @@ class QubZoomListAction(QubAction):
         connect actio0n with the QubImage object on which it will be applied
         """
         self._qubImage = weakref.ref(qubImage)
-              
+
     def changeZoomList(self,zoomValList,defaultzoom) :
         """
         zoomValList : list of zoom
@@ -1270,7 +1324,7 @@ class QubZoomListAction(QubAction):
             self._listPopupMenu,idDefaultZoom = self._createPopMenu(self._listPopupMenu.parentWidget())
             self._widget.setPopup(self._listPopupMenu)
             self._widget.setText(qt.QString('%d%%' % int(self._zoomValList[idDefaultZoom] * 100)))
-            
+
     def addToolWidget(self, parent):
         """
         Creates widgets to be added in the toolbar
@@ -1288,14 +1342,14 @@ class QubZoomListAction(QubAction):
         self._widget.setPopup(self._listPopupMenu)
         self._widget.setPopupDelay(0)
         self._widget.setText(qt.QString('%d%%' % int(self._zoomValList[idDefaultZoom] * 100)))
-        
+
         qt.QToolTip.add(self._widget, "Zoom List")
-                                     
+
         return self._widget
-        
+
     def addMenuWidget(self, menu):
         self._menu = menu
-        
+
         if self._item is None:
             qstr = qt.QString("%d%%"%(int(self._zoomVal*100)))
             self._item = menu.insertItem(qstr, self._listPopupMenu)
@@ -1312,11 +1366,11 @@ class QubZoomListAction(QubAction):
         self.connect(popMenu, qt.SIGNAL("activated(int )"),
                      self._applyZoomFromList)
         return (popMenu,idDefaultZoom)
- 
+
     def _applyZoomFromList(self, index):
             """
             Calculate zoom value from array
-            """        
+            """
             try:
                 if self._actionZoomMode is not None :
                     actionZoomMode = self._actionZoomMode()
@@ -1326,7 +1380,7 @@ class QubZoomListAction(QubAction):
             except :
                 import traceback
                 traceback.print_exc()
-    
+
     def _applyZoom(self, zoomVal):
         try:
             qubImage = self._qubImage and self._qubImage() or None
@@ -1343,8 +1397,8 @@ class QubZoomListAction(QubAction):
 
                 """
                 update zoom value as percentage in toolbar and menu widget
-                """   
-                self.writeStrValue("%d%%"%(int(self._zoomVal*100)))    
+                """
+                self.writeStrValue("%d%%"%(int(self._zoomVal*100)))
 
                 """
                 calculate and display new pixmap not centered
@@ -1362,11 +1416,11 @@ class QubZoomListAction(QubAction):
             return self._zoomValList[self.__lastIdSelected]
         except:
             return 1
-        
+
     def writeStrValue(self, strVal):
             """
             update zoom value in toolbar and menu widget
-            """        
+            """
             qstr = qt.QString(strVal)
             self._widget.setText(qstr)
             if self._item is not None:
@@ -1395,15 +1449,15 @@ class QubZoomAction(QubAction):
         Initialyse variables
         """
         QubAction.__init__(self,**keys)
-        
+
         self._selIndex = 0
         self._selName  = "Fit2Screen"
-        
+
         self._toolName = ["Fit2Screen", "FillScreen"]
         self._toolIcon = {}
         self._toolIcon["Fit2Screen"] = qt.QIconSet(loadIcon("zfit.png"))
         self._toolIcon["FillScreen"] = qt.QIconSet(loadIcon("zfill.png"))
-        
+
         self._item = None
         self._qubImage = None
         self._sigConnected = False
@@ -1411,13 +1465,13 @@ class QubZoomAction(QubAction):
 
         self._keepROI = keepROI
         self._listAction = None
-        
+
     def viewConnect(self, qubImage):
         """
         connect action with the QubImage object on which it will be applied
         """
         self._qubImage = weakref.ref(qubImage)
-        
+
     def addToolWidget(self, parent):
         """
         Creates widgets to be added in the toolbar
@@ -1432,7 +1486,7 @@ class QubZoomAction(QubAction):
                                            qt.QString(self._toolName[i]),i)
         self.connect(self._toolPopupMenu, qt.SIGNAL("activated(int )"),
                         self._selectToolFromList)
-        
+
         """
         ToolButton to set or not selected zoom tool
         """
@@ -1446,16 +1500,16 @@ class QubZoomAction(QubAction):
         qt.QToolTip.add(self._widget, "%s"%self._name)
 
         return self._widget
-        
+
     def addMenuWidget(self, menu):
         self._menu = menu
-        
+
         if self._item is None:
             icon = self._toolIcon[self._selName]
             self._item = menu.insertItem(icon, qt.QString(self._selName),
                                          self._toolPopupMenu)
             menu.connectItem(self._item, self._toolPopupMenu.exec_loop)
-                
+
     def setState(self, state):
         """
         "state" is True or False.
@@ -1465,12 +1519,12 @@ class QubZoomAction(QubAction):
         """
         if self._widget is not None:
             self._widget.setOn(state)
-        
+
         if self._item is not None:
             self._menu.setItemChecked(self._item, state)
-        
+
         self._setState(state)
-        
+
     def _setState(self, state):
         """
         manage behavior of the action toolbutton according to the "state" value
@@ -1480,7 +1534,7 @@ class QubZoomAction(QubAction):
         if qubImage is not None:
             if state:
                 qubImage.setScrollbarMode(self._selName)
-                
+
                 """
                 update zoom value on the ZoomListAction  object if needed
                 and link update zoom value to the view resize event
@@ -1508,15 +1562,15 @@ class QubZoomAction(QubAction):
                         zoom = listAction.zoom()
                         qubImage.setZoom(zoom,zoom,self._keepROI)
                         self._updateZoomValue()
-                    
+
                 if self._sigConnected == True:
                     self.disconnect(qubImage,
                                     qt.PYSIGNAL("ContentViewChanged"),
                                     self._updateZoomValue)
                     self._sigConnected = False
-                
 
-        
+
+
     def _selectToolFromList(self, index):
         """
         change zoom tool
@@ -1524,18 +1578,18 @@ class QubZoomAction(QubAction):
         """
         self._selIndex = index
         self._selName = self._toolName[index]
-        
-        if self._widget is not None:                
+
+        if self._widget is not None:
             self._widget.setIconSet(self._toolIcon[self._selName])
             if self._item is not None:
                 self._menu.changeItem(self._item, self._toolIcon[self._selName],
                                       qt.QString(self._selName))
-            
+
             self.setState(1)
-        
+
     def setList(self, listAction):
         self._listAction = weakref.ref(listAction)
-        
+
     def _updateZoomValue(self,*args):
         """
         when a new zoom tool is selected or when image view is resized,
@@ -1552,7 +1606,7 @@ class QubZoomAction(QubAction):
                     strVal = "???"
 
                 listAction.writeStrValue(strVal)
-        
+
 
 
 ###############################################################################
@@ -1566,11 +1620,11 @@ class QubForegroundColorAction(QubAction):
     """
     def __init__(self, view=None,**keys):
         QubAction.__init__(self,**keys)
-        
+
         self._view = view and weakref.ref(view) or None
-        
+
         self._colorMenu = None
-        
+
         if view is not None:
             self.viewConnect(view)
 
@@ -1580,7 +1634,7 @@ class QubForegroundColorAction(QubAction):
         "setForegroundColor" method
         """
         self._view = weakref.ref(view)
-       
+
     def addToolWidget(self, parent):
         """
         Creates action widget to put in "group" dockarea of the "toolbar"
@@ -1591,9 +1645,9 @@ class QubForegroundColorAction(QubAction):
             self.connect(self._widget, qt.PYSIGNAL("colorSelected"),
                          self.colorChanged)
             qt.QToolTip.add(self._widget, "change color pen for selections")
-        
+
         return self._widget
-             
+
     def addMenuWidget(self, menu):
         """
         This method should be reimplemented.
@@ -1605,7 +1659,7 @@ class QubForegroundColorAction(QubAction):
                 self._colorMenu = QubColorToolMenu(menu)
                 self.connect(self._colorMenu, qt.PYSIGNAL("colorSelected"),
                              self.colorChanged)
-                    
+
             self._item = menu.insertItem(self._colorMenu.iconSet,
                                          qt.QString("Color"), self._colorMenu)
             menu.connectItem(self._item, self._colorMenu.exec_loop)
@@ -1613,16 +1667,16 @@ class QubForegroundColorAction(QubAction):
     def setColor(self,color) :
         self._colorMenu.setColor(color)
         self.colorChanged(color)
-        
+
     def colorChanged(self, color):
         view = self._view and self._view() or None
         if view is not None:
             view.setForegroundColor(color)
-        
+
         if self._item is not None:
             self._menu.changeItem(self._item, self._colorMenu.iconSet,
                                   qt.QString("Color"))
-                                  
+
     def setColor(self, color="Black"):
         try:
             qcolor = qt.QColor(color)
@@ -1631,14 +1685,14 @@ class QubForegroundColorAction(QubAction):
         else:
             if self._widget is not None:
                 self._widget.setColor(qcolor)
-            
+
             if self._item is not None:
                 self._colorMenu.setColor(qcolor)
 
             view = self._view and self._view() or None
             if view is not None:
                 view.setForegroundColor(qcolor)
-                                                  
+
 ####################################################################
 ##########                                                ##########
 ##########                 QubPositionAction               ##########
@@ -1647,34 +1701,34 @@ class QubForegroundColorAction(QubAction):
 class QubPositionAction(QubImageAction):
     def __init__(self,autoConnect=True,**keys):
         QubImageAction.__init__(self,autoConnect=autoConnect,**keys)
-        
+
     def addStatusWidget(self, parent):
         if self._widget is None:
             self._widget = qt.QWidget(parent)
-            
+
             hlayout = qt.QHBoxLayout(self._widget)
 
             self._xLabel = qt.QLabel("X:", self._widget)
             self._xLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             hlayout.addWidget(self._xLabel)
-            
+
             self._xValue = qt.QLabel("x", self._widget)
             self._xValue.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             font = self._xValue.font()
             font.setBold(True)
             self._xValue.setFont(font)
             hlayout.addWidget(self._xValue)
-            
+
             hlayout.addSpacing(5)
-                   
+
             self._yLabel = qt.QLabel("Y:", self._widget)
             self._yLabel.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             hlayout.addWidget(self._yLabel)
-            
+
             self._yValue = qt.QLabel("x", self._widget)
             self._yValue.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             self._yValue.setFont(font)
-                        
+
             hlayout.addWidget(self._yValue)
             hlayout.addStretch()
         return self._widget
@@ -1690,13 +1744,13 @@ class QubPositionAction(QubImageAction):
                 if cnt: cnt.mouseFollow(x,y)
         self.__event = _MouseFollow(self)
         view.addDrawingEvent(self.__event)
-        
+
     def mouseFollow(self,x,y) :
         qubImage = self._qubImage and self._qubImage() or None
         if qubImage: (x, y) = qubImage.matrix().invert()[0].map(x,y)
         self._xValue.setText(str(x))
         self._yValue.setText(str(y))
-        
+
 ####################################################################
 ##########                                                ##########
 ##########            QubDataPositionValueAction          ##########
@@ -1708,7 +1762,7 @@ class QubDataPositionValueAction(QubPositionAction):
         self.__valueLabel = None
         self.__data = None
         self.__scaleClass = None
-        
+
     def setData(self,data) :
         self.__data = data is not None and weakref.ref(data) or None
 
@@ -1728,9 +1782,9 @@ class QubDataPositionValueAction(QubPositionAction):
         else:
             for labelName,labelWidget in zip(['X:','Y:','\tZ:'],[self._xLabel,self._yLabel,self.__valueLabel]) :
                 labelWidget.setText(labelName)
-                
+
         self.__scaleClass = scaleClass
-        
+
     def addStatusWidget(self,parent) :
         QubPositionAction.addStatusWidget(self,parent)
         self._zLabel = qt.QLabel("\tZ:",self._widget)
@@ -1794,15 +1848,15 @@ class QubSliderNSpinAction(QubImageAction) :
             qt.QSpinBox.__init__(self,parent)
         def mapValueToText(self,value) :
             return '%d/%d' % (value,self.maxValue())
-        
+
     def __init__(self,autoConnect=True,**keys) :
         QubImageAction.__init__(self,autoConnect = autoConnect,**keys)
         self.__cbk = None
         self.__maxVal = 1
-        
+
     def setCallBack(self,cbk) :
         self.__cbk = cbk
-        
+
     def addStatusWidget(self,parent) :
         if not self._widget:
             self._widget = qt.QHBox(parent)
@@ -1828,7 +1882,7 @@ class QubSliderNSpinAction(QubImageAction) :
             widget.setValue(val)
         if self.__cbk :
             self.__cbk(val)
-            
+
     def setMaxVal(self,maxVal) :
         self.__maxVal = maxVal
         try:
@@ -1865,14 +1919,14 @@ class QubQuickScroll(QubImageAction) :
 
         def setScrollView(self,scrollView) :
             self.__scrollView = scrollView
-            
+
         def mousePressEvent(self,mouseEvent) :
             self.quickView = QubQuickView(None,autoclose = True)
             self.quickView.setScrollView(self.__scrollView)
             self.quickView.setImage(self.__image)
             self.quickView.popAt(mouseEvent.globalX(),mouseEvent.globalY())
 
-        
+
     def __init__(self,autoConnect=True,**keys):
         QubImageAction.__init__(self,autoConnect=autoConnect,**keys)
 
@@ -1884,13 +1938,13 @@ class QubQuickScroll(QubImageAction) :
 
     def viewConnect(self,view) :
         self._widget.setScrollView(view)
-        
+
     def setImageNPixmap(self,image,pixmap = None) :
         self._widget.setImage(image)
         if pixmap is None :
             pixmap = qt.QPixmap(image.smoothScale(22,22,fullimage.ScaleMin))
         self._widget.setPixmap(pixmap)
-    
+
 ####################################################################
 ##########                                                ##########
 ##########                  QubSubDataView                ##########
@@ -1910,12 +1964,12 @@ class QubSubDataViewAction(QubToggleImageAction) :
             qt.QToolButton.enterEvent(self,event)
             cnt = self.__cnt()
             if cnt: cnt.showToolTip(True)
-            
+
         def leaveEvent(self,event) :
             qt.QToolButton.leaveEvent(self,event)
             cnt = self.__cnt()
             if cnt: cnt.showToolTip(False)
- 
+
     def __init__(self,name = 'point',autoConnect = True,**keys) :
         QubToggleImageAction.__init__(self,name=name,autoConnect=autoConnect,**keys)
         self.__data = None
@@ -1926,7 +1980,7 @@ class QubSubDataViewAction(QubToggleImageAction) :
         self.__stateFlag = False
         self.__idle = qt.QTimer()
         qt.QObject.connect(self.__idle,qt.SIGNAL('timeout()'),self.__refreshPixmap)
-        
+
     def viewConnect(self,qubImage) :
         import sys
         QubToggleImageAction.viewConnect(self,qubImage)
@@ -1949,14 +2003,14 @@ class QubSubDataViewAction(QubToggleImageAction) :
     def showToolTip(self,aShowFlag) :
         if aShowFlag and self.__stateFlag : self.__toolTip.show()
         else: self.__toolTip.hide()
-        
+
     def setCoordOnWidget(self,x,y) :
         xShift = (self._widget.width() - 20) / 2
         yShift = (self._widget.height() - 20 ) / 2
         self.__xOn,self.__yOn = x - xShift,y - yShift
         if not self.__idle.isActive() :
             self.__idle.start(0)
-        
+
     def addStatusWidget(self, parent):
         try:
             if self._widget is None:
@@ -1969,14 +2023,14 @@ class QubSubDataViewAction(QubToggleImageAction) :
                 scr = qt.QApplication.desktop().screenNumber(self._widget);
                 self.__toolTip = qt.QLabel(qt.QApplication.desktop().screen(scr),"tooltips",
                                            qt.Qt.WStyle_StaysOnTop | qt.Qt.WStyle_Customize | qt.Qt.WStyle_NoBorder | qt.Qt.WStyle_Tool | qt.Qt.WX11BypassWM)
- 
+
                 self.__toolTip.setPaletteBackgroundColor(qt.Qt.white)
                 self._widget.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
             return self._widget
         except:
             import traceback
             traceback.print_exc()
-            
+
     def _setState(self,aFlag) :
         self.__stateFlag = aFlag
         if aFlag :
@@ -1989,12 +2043,12 @@ class QubSubDataViewAction(QubToggleImageAction) :
             self.__toolTip.hide()
             self.__toolTip.setText('')
             self.__toolTip.setFixedSize(0,0)
-            
+
     def __refresh(self,drawingMgr) :
         self.__x,self.__y = drawingMgr.point()
         if not self.__idle.isActive() :
             self.__idle.start(0)
-            
+
     def __refreshPixmap(self) :
         self.__idle.stop()
         if self.__data:
@@ -2050,7 +2104,7 @@ class QubSubDataViewAction(QubToggleImageAction) :
                 if point.x() + tootipSize.width() > screen.width() : point.setX(point.x() - tootipSize.width() - self._widget.width())
                 self.__toolTip.setFixedSize(tootipSize)
                 self.__toolTip.move(point)
-        
+
 ####################################################################
 ##########                                                ##########
 ##########                 QubInfoAction               ##########
@@ -2059,13 +2113,13 @@ class QubSubDataViewAction(QubToggleImageAction) :
 class QubInfoAction(QubImageAction) :
     def __init__(self,autoConnect=True,**keys) :
         QubImageAction.__init__(self,autoConnect=autoConnect,**keys)
-        
+
     def addStatusWidget(self,parent) :
         if self._widget is None :
             self._widget = qt.QLabel(parent)
             self._widget.setSizePolicy(qt.QSizePolicy.Fixed,qt.QSizePolicy.Fixed)
         return self._widget
-    
+
     def viewConnect(self,qubImage) :
         self._qubImage = weakref.ref(qubImage)
         if qubImage is not None :
@@ -2079,7 +2133,7 @@ class QubInfoAction(QubImageAction) :
             except:
                 import traceback
                 traceback.print_exc()
-                
+
 ####################################################################
 ##########                                                ##########
 ##########                 QubBeamAction                  ##########
@@ -2093,7 +2147,7 @@ class QubBeamAction(QubToggleImageAction):
         self.__onMove = False
         self.__drawingMgr = None
         self.__drawingType = drawing
-        
+
     def viewConnect(self, qubImage):
         """
         Once the qubImage is connected, create QCanvas Item
@@ -2101,14 +2155,14 @@ class QubBeamAction(QubToggleImageAction):
         QubToggleImageAction.viewConnect(self, qubImage)
 
         self.setDrawingType(self.__drawingType)
-        
+
 
     def setColor(self, color):
-        """   
+        """
         Slot connected to "ForegroundColorChanged" "qubImage" signal
         """
         self.__drawingMgr.setColor(color)
-      
+
     def _setState(self, aFlag):
         """
         Draw or Hide the 2 ellipse canvas items
@@ -2116,7 +2170,7 @@ class QubBeamAction(QubToggleImageAction):
         self.__state = aFlag
         qubImage = self._qubImage and self._qubImage() or None
         if qubImage is None : return
-        
+
         if self.__drawingMgr is not None:
             if self.__state:
                 self.__drawingMgr.setColor(qubImage.foregroundColor())
@@ -2125,11 +2179,11 @@ class QubBeamAction(QubToggleImageAction):
             else:
                 self.signalDisconnect(qubImage)
                 self.__drawingMgr.hide()
-                
+
     def setCanBeModify(self, aflag):
         if self.__drawingMgr is not None:
             self.__drawingMgr.setCanBeModify(aflag)
-            
+
     def setBeamPosition(self, y = 0, z = 0, w = 3, h = 3):
         if self.__drawingMgr is not None and self.__drawingType is not None:
             if self.__drawingType == "Point":
@@ -2139,30 +2193,30 @@ class QubBeamAction(QubToggleImageAction):
             if self.__drawingType=="StripeH" or self.__drawingType=="StripeV":
                 self.__drawingMgr.setPoint(y, z)
                 self.__drawingMgr.setSize(w, h)
-    
+
     def setDrawingType(self, drawingType):
         if drawingType in ["Point", "Rectangle", "StripeH", "StripeV"]:
             self.__drawingType = drawingType
-        
+
             qubImage = self._qubImage and self._qubImage() or None
             if qubImage is None : return
-            
+
             cvs = qubImage.canvas()
             matrix = qubImage.matrix()
-            
+
             if drawingType == "Point":
                 self.__drawingMgr = QubPointDrawingMgr(cvs, matrix)
                 drawingObject = QubCanvasBeam(qubImage.canvas())
-                
+
             if drawingType == "Rectangle":
                 self.__drawingMgr = Qub2PointSurfaceDrawingMgr(cvs, matrix)
                 drawingObject = QubCanvasRectangle(qubImage.canvas())
-               
+
             if drawingType == "StripeH":
                 self.__drawingMgr = QubPointDrawingMgr(cvs, matrix)
                 self.__drawingMgr.setAuthorizedHeightResize(True)
                 drawingObject = QubCanvasStripeH(qubImage.canvas())
-                
+
             if drawingType == "StripeV":
                 self.__drawingMgr = QubPointDrawingMgr(cvs, matrix)
                 self.__drawingMgr.setAuthorizedWidthResize(True)
@@ -2170,16 +2224,16 @@ class QubBeamAction(QubToggleImageAction):
 
             self.__drawingMgr.addDrawingObject(drawingObject)
             qubImage.addDrawingMgr(self.__drawingMgr)
-            
+
             if drawingType != "Point":
                 self.__drawingMgr.setBrush(qt.QBrush(qt.Qt.Dense7Pattern))
                 pen = qt.QPen(qt.Qt.DashDotLine)
                 pen.setWidth(2)
                 self.__drawingMgr.setPen(pen)
-                
+
             self.__drawingMgr.setColor(qubImage.foregroundColor())
             self.__drawingMgr.setEndDrawCallBack(self.sendBeamMove)
-        
+
     def sendBeamMove(self, drawingMgr):
         data = {}
         if self.__drawingType == "Point":
@@ -2187,8 +2241,8 @@ class QubBeamAction(QubToggleImageAction):
             data["y"] = drawingMgr.point()[1]
             self.emit(qt.PYSIGNAL("BeamSelected"), (data["x"], data["y"]))
         elif self.__drawingType == "Rectangle":
-            data["w"] = drawingMgr.rect().width() 
-            data["h"] = drawingMgr.rect().height() 
+            data["w"] = drawingMgr.rect().width()
+            data["h"] = drawingMgr.rect().height()
             data["x"] = drawingMgr.rect().x() + int(data["w"] / 2.0)
             data["y"] = drawingMgr.rect().y() + int(data["h"] / 2.0)
             self.emit(qt.PYSIGNAL("BeamSelected"), (data,))
@@ -2200,7 +2254,7 @@ class QubBeamAction(QubToggleImageAction):
             data["w"] = drawingMgr.size()[0]
             data["x"] = drawingMgr.point()[0]
             self.emit(qt.PYSIGNAL("BeamSelected"), (data,))
-                
+
 ####################################################################
 ##########                                                ##########
 ##########               QubRotCenterAction               ##########
@@ -2213,12 +2267,12 @@ class QubRotCenterAction(QubToggleImageAction):
         self.__state = False
         self.__onMove = False
         self.__drawingMgr = None
-        
+
     def viewConnect(self, qubImage):
         """
         Once the qubImage is connected, create QCanvas Item
         """
-        QubToggleImageAction.viewConnect(self, qubImage)        
+        QubToggleImageAction.viewConnect(self, qubImage)
 
         self.__drawingMgr = QubPointDrawingMgr(qubImage.canvas(),
                                                 qubImage.matrix())
@@ -2227,15 +2281,15 @@ class QubRotCenterAction(QubToggleImageAction):
         qubImage.addDrawingMgr(self.__drawingMgr)
 
         self.__drawingMgr.setColor(qubImage.foregroundColor())
-        
+
         self.__drawingMgr.setEndDrawCallBack(self.sendRotCenterMove)
 
     def setColor(self, color):
-        """   
+        """
         Slot connected to "ForegroundColorChanged" "qubImage" signal
         """
         self.__drawingMgr.setColor(color)
-      
+
     def _setState(self, aFlag):
         """
         Draw or Hide the 2 ellipse canvas items
@@ -2243,7 +2297,7 @@ class QubRotCenterAction(QubToggleImageAction):
         self.__state = aFlag
         qubImage = self._qubImage and self._qubImage() or None
         if qubImage is None : return
-        
+
         if self.__drawingMgr is not None:
             if self.__state:
                 self.__drawingMgr.setColor(qubImage.foregroundColor())
@@ -2252,24 +2306,24 @@ class QubRotCenterAction(QubToggleImageAction):
             else:
                 self.signalDisconnect(qubImage)
                 self.__drawingMgr.hide()
-                
+
     def setCanBeModify(self, aflag):
         if self.__drawingMgr is not None:
             self.__drawingMgr.setCanBeModify(aflag)
-            
+
     def setRotCenterPosition(self, x, y):
         if x is None or y is None:
             x, y = 50, 50
-            
+
         if self.__drawingMgr is not None:
             self.__drawingMgr.setPoint(x, y)
-            
+
     def sendRotCenterMove(self, drawingMgr):
         data = {}
         data["x"] = drawingMgr.point()[0]
         data["y"] = drawingMgr.point()[1]
         self.emit(qt.PYSIGNAL("RotCenterSelected"), (data,))
-        
+
 #####################################################################
 ##########                  QubScaleAction                 ##########
 #####################################################################
@@ -2285,7 +2339,7 @@ class QubScaleAction(QubToggleImageAction) :
         self.__autorizeValues = authorized_values
 
         self.__scale = None
-                
+
     def viewConnect(self, qubImage):
         QubToggleImageAction.viewConnect(self,qubImage)
         self.__scale = QubContainerDrawingMgr(qubImage.canvas(),qubImage.matrix())
@@ -2298,7 +2352,7 @@ class QubScaleAction(QubToggleImageAction) :
         self.__scale.setMode(self.__mode)
         self.__scale.setAutorizedValues(self.__autorizeValues)
 
-        
+
     def setXPixelSize(self,size) :
         try:
             self.__xPixelSize = abs(size)
@@ -2309,7 +2363,7 @@ class QubScaleAction(QubToggleImageAction) :
 
     def xPixelSize(self) :
         return self.__xPixelSize
-    
+
     def setYPixelSize(self,size) :
         try:
             self.__yPixelSize = abs(size)
@@ -2320,7 +2374,7 @@ class QubScaleAction(QubToggleImageAction) :
 
     def yPixelSize(self) :
         return self.__yPixelSize
-                    
+
     def addToolWidget(self,parent) :
         widget = QubToggleImageAction.addToolWidget(self,parent)
         self.__colorToolButton = QubColorToolButton()
@@ -2333,7 +2387,7 @@ class QubScaleAction(QubToggleImageAction) :
 
     def __colorChanged(self,color) :
         self.__scale.setColor(color)
-        
+
     def _setState(self,aFlag) :
         if self.__scale is not None :
             if aFlag:
@@ -2341,8 +2395,8 @@ class QubScaleAction(QubToggleImageAction) :
                 self.__scale.show()
             else:
                 self.__scale.hide()
-                
-                
+
+
 #####################################################################
 ##########                  QubRulerAction                 ##########
 #####################################################################
@@ -2362,7 +2416,7 @@ class QubRulerAction(QubToggleImageAction) :
             else:
                 ruler.setPositionMode(QubCanvasRuler.HORIZONTAL)
             self.__ruler.append(ruler)
-            
+
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self,qubImage)
         for ruler in self.__ruler :
@@ -2370,7 +2424,7 @@ class QubRulerAction(QubToggleImageAction) :
             qubImage.addDrawingMgr(ruler)
             self.connect(qubImage,qt.PYSIGNAL("ForegroundColorChanged"),
                          ruler.setColor)
-            
+
     ##@brief create widget for the view toolbar
     def addToolWidget(self, parent):
         if self._widget is None:
@@ -2412,7 +2466,7 @@ class QubRulerAction(QubToggleImageAction) :
         except:
             import traceback
             traceback.print_exc()
-        
+
     def _setState(self,aFlag) :
         for ruler in self.__ruler:
             if aFlag: ruler.show()
@@ -2433,7 +2487,7 @@ class QubRulerAction(QubToggleImageAction) :
         self.__ruler[QubRulerAction.VERTICAL].setLabel(0,'samz')
         self.__ruler[QubRulerAction.VERTICAL].setLabel(1,'sampz')
 
-        
+
         self.__ruler[QubRulerAction.HORIZONTAL].setLimits(0,-10,1000)
         self.__ruler[QubRulerAction.HORIZONTAL].setLimits(1,-50,50)
         self.__ruler[QubRulerAction.VERTICAL].setLimits(0,0,3)
@@ -2443,7 +2497,7 @@ class QubRulerAction(QubToggleImageAction) :
         self.__ruler[QubRulerAction.HORIZONTAL].setCursorPosition(1,43)
         self.__ruler[QubRulerAction.VERTICAL].setCursorPosition(0,2.1)
         self.__ruler[QubRulerAction.VERTICAL].setCursorPosition(1,-1.5)
-        
+
 ####################################################################
 ##########                                                ##########
 ##########               QubSelectPointAction             ##########
@@ -2463,7 +2517,7 @@ class QubSelectPointAction(QubToggleImageAction) :
         self.drawingMgrPt = None
         self.__mosaicMode = mosaicMode
         self.__residualMode = residualMode
-        
+
     def viewConnect(self,qubImage) :
         QubToggleImageAction.viewConnect(self,qubImage)
         self.drawingMgrPt,_ = QubAddDrawing(qubImage,
@@ -2484,7 +2538,7 @@ class QubSelectPointAction(QubToggleImageAction) :
         if self.__actionInfo: self.drawingMgrPt.setActionInfo(self.__actionInfo)
         self.connect(qubImage,qt.PYSIGNAL("ForegroundColorChanged"),
                      self.drawingMgrPt.setColor)
-            
+
     ##@brief create widget for the view toolbar
     def addToolWidget(self, parent):
         if self._widget is None:
@@ -2516,7 +2570,7 @@ class QubSelectPointAction(QubToggleImageAction) :
             self.drawingMgrPt.stopDrawing()
             if self.__residualPoint:
                 self.__residualPoint.hide()
-                
+
     def pointSelected(self, drawingMgr):
         self.emit(qt.PYSIGNAL("PointSelected"), (drawingMgr,))
         if self.__residualPoint:
@@ -2528,7 +2582,7 @@ class QubSelectPointAction(QubToggleImageAction) :
         if self._widget:
             backgroundColor = self._widget.paletteBackgroundColor()
         return backgroundColor
-    
+
     def setPaletteBackgroundColor(self,color) :
         if self._widget:
             palette = qt.QPalette(color,color)
@@ -2541,7 +2595,7 @@ class QubSelectPointAction(QubToggleImageAction) :
 ####################################################################
 class QubOpenDialogAction(QubAction):
     """
-    This action will allow to open a dialog 
+    This action will allow to open a dialog
     """
     def __init__(self,label=None,iconName='fileopen',**keys):
         QubAction.__init__(self,iconName=iconName,**keys)
@@ -2562,16 +2616,16 @@ class QubOpenDialogAction(QubAction):
                 raise AttributeError,'QubOpenDialogAction instance has not attribute %s' % attr
         else:
                 raise AttributeError,'QubOpenDialogAction instance has not attribute %s' % attr
-    
+
     def addToolWidget(self, parent):
         """
         create save pushbutton in the toolbar of the view
         create the save dialog if not already done
         """
-        
+
         """
         create widget for the view toolbar
-        """   
+        """
         if self._widget is None:
             self._widget = qt.QToolButton(parent,self._name)
             self._widget.setAutoRaise(True)
@@ -2581,7 +2635,7 @@ class QubOpenDialogAction(QubAction):
             qt.QToolTip.add(self._widget,self._label)
 
         return self._widget
-        
+
     def addMenuWidget(self, menu):
         """
         Create context menu item pushbutton
@@ -2590,7 +2644,7 @@ class QubOpenDialogAction(QubAction):
         iconSet = qt.QIconSet(loadIcon("%s.png" % self._iconName))
         self._item = menu.insertItem(iconSet, qt.QString(self._label),
                                       self._showDialog)
-        
+
     def setDialog(self,dialog) :
         """ Interface to manage the dialogue window.
         this interface must have the methode :
@@ -2598,10 +2652,10 @@ class QubOpenDialogAction(QubAction):
              -> raiseW()
         """
         self._dialog = dialog
-        
+
     def setConnectCallBack(self,cbk) :
         self.__connectCBK = createWeakrefMethod(cbk)
-        
+
     def _showDialog(self):
         if self._dialog is not None :
             self._dialog.show()
@@ -2614,7 +2668,7 @@ class QubOpenDialogAction(QubAction):
             except :
                 import traceback
                 traceback.print_exc()
-            
+
             if hasattr(self._dialog, "refresh"):
                 self._dialog.refresh()
 
@@ -2626,14 +2680,14 @@ class QubListAction(QubAction) :
         QubAction.__init__(self, **keys)
 
         self.__itemList = items
-        
+
     def addToolWidget(self,parent) :
         if self._widget is None:
             """
             menu to select item
             """
             self._listPopupMenu,self.__default = self._createPopMenu(parent)
-            
+
             """
             tool button to use selected zoom value
             """
@@ -2642,12 +2696,12 @@ class QubListAction(QubAction) :
             self._widget.setPopup(self._listPopupMenu)
             self._widget.setPopupDelay(0)
             self._widget.setText(qt.QString('%s'%self.__itemList[self.__default]))
-                                             
+
             return self._widget
-        
+
     def addMenuWidget(self, menu):
         self._menu = menu
-        
+
         if self._item is None:
             qstr = qt.QString("%s"%self._default)
             self._item = menu.insertItem(qstr, self._listPopupMenu)
@@ -2661,11 +2715,11 @@ class QubListAction(QubAction) :
         self.connect(popMenu, qt.SIGNAL("activated(int )"),
                      self.itemSelectedCbk)
         return (popMenu,idDefaultZoom)
-    
+
     def setItemIndex(self, idx):
         if self._widget is not None and self.__itemList is not None:
             self._widget.setText("%s"%self.__itemList[idx])
-                
+
     def itemSelectedCbk(self, idx):
         if self._widget is not None:
             self.__default  = idx
@@ -2681,7 +2735,7 @@ class QubSaveImageAction(QubAction) :
         self.__dialog = None
         self.__connectCBK = None
         self.__configureOnClick = False
-        
+
     def addToolWidget(self,parent) :
         if self._widget is None:
             self._widget = qt.QToolButton(parent,"saveButton")
@@ -2718,7 +2772,7 @@ class QubSaveImageAction(QubAction) :
 
             self._item = menu.insertItem(qt.QIconSet(loadIcon('snapshot.png')),'Snap',popupMenu)
             self._menu = menu
-        
+
     def viewConnect(self,view) :
         if self.__connectCBK is not None:
             try:
@@ -2744,7 +2798,7 @@ class QubSaveImageAction(QubAction) :
     # - if <b>False</b> snap on click and add a popup menu to show the configure dialog
     def setConfigureOnClick(self,aFlag) :
         self.__configureOnClick = aFlag
-        
+
     def setConnectCallBack(self,cbk) :
         self.__connectCBK = createWeakrefMethod(cbk)
 
@@ -2765,7 +2819,7 @@ class QubFollowGraphCurveAction(QubAction):
         self.__curve = weakref.ref(curve)
         self.__pointMeasure = curve.getCurvePointFollowMarked()
         self.__pointMeasure.hide()
-        
+
     def addToolWidget(self,parent) :
         if self._widget is None:
             self._widget = qt.QToolButton(parent,"followCurve")
@@ -2781,7 +2835,7 @@ class QubFollowGraphCurveAction(QubAction):
             self.__pointMeasure.setVisible(aFlag)
             plot = self.__pointMeasure.plot()
             if plot: plot.replot()
-        
+
 ##@brief an action to zoom on graph
 #
 class QubGraphZoomAction(QubAction):
@@ -2796,7 +2850,7 @@ class QubGraphZoomAction(QubAction):
 
         qt.QObject.connect(self.__plotZoomer,qt.SIGNAL('zoomed(const QwtDoubleRect&)'),self.__zoomed)
         self.setState(False)
-        
+
     def addToolWidget(self,parent) :
         if self._widget is None:
             self._widget = qt.QToolButton(parent,"zoom")
@@ -2825,7 +2879,7 @@ class QubGraphZoomAction(QubAction):
                        qwt.QwtEventPattern.MousePattern(qt.Qt.NoButton, qt.Qt.NoButton),
                        qwt.QwtEventPattern.MousePattern(qt.Qt.NoButton, qt.Qt.NoButton)]
             self.__plotZoomer.setMousePattern(pattern)
-            
+
     def __zoomed(self,rect) :
         if rect == self.__plotZoomer.zoomBase() :
             graph = self.__graph()
@@ -2868,7 +2922,7 @@ class QubGraphYAxisLogSwitchAction(QubAction):
 class QubMain(qt.QMainWindow):
     def __init__(self, parent=None, mfile=None):
         qt.QMainWindow.__init__(self, parent)
-        
+
 #        self.colormapSps = [spslut.GREYSCALE, spslut.REVERSEGREY, spslut.TEMP,
 #                            spslut.RED, spslut.GREEN, spslut.BLUE, spslut.MANY]
         #pixmap = qt.QPixmap(file)
@@ -2877,21 +2931,21 @@ class QubMain(qt.QMainWindow):
 #        self.colorMin = self.dataMin
 #        self.colorMax = self.dataMax
 #        self.autoscale = 0
-        
+
         actions = []
-        
+
         # A1
 #        action = QubColormapAction(show=1, group="color")
 #        actions.append(action)
-#        
+#
 #        action.setParam(self.colormap, self.colorMin, self.colorMax,
 #                        self.dataMin, self.dataMax, self.autoscale)
 #        self.connect(action, qt.PYSIGNAL("ColormapChanged"),
 #                        self.colormapChanged)
-        
+
         action = QubForegroundColorAction(name="Foreground", group="color")
         actions.append(action)
-        
+
         action = QubSeparatorAction(name="sep1", show=1, group="admin")
         actions.append(action)
 
@@ -2902,7 +2956,7 @@ class QubMain(qt.QMainWindow):
                                name="listsel", show=1, group="admin")
         self.connect(action, qt.PYSIGNAL("ItemSelected"), self._itemSelected)
         actions.append(action)
-        
+
 #        action = QubVLineSelection(show=1, group="selection")
 #        actions.append(action)
 
@@ -2927,64 +2981,64 @@ class QubMain(qt.QMainWindow):
         # A3
         action1 = QubZoomAction(show=1, group="zoom")
         actions.append(action1)
-        
+
         action = QubZoomListAction(show=1, group="zoom")
         actions.append(action)
-        
+
         action1.setList(action)
-        
+
         container = qt.QWidget(self)
-        
+
         hlayout = qt.QVBoxLayout(container)
-    
+
         self.qubImage = QubPixmapDisplayView(container, "actions", actions)
         pixmap = qt.QPixmap(mfile)
         image = qt.QImage(mfile)
-        self.qubImage.setPixmap(pixmap, image)       
-        
+        self.qubImage.setPixmap(pixmap, image)
+
         hlayout.addWidget(self.qubImage)
-    
+
         self.setCentralWidget(container)
 
     def _itemSelected(self, idx, name):
         print idx, name
-        
+
 #    def colormapChanged(self, colormap, autoscale, colorMin, colorMax):
 #        self.colormap  = colormap
 #        self.autoscale = autoscale
 #        self.colorMin  = colorMin
 #        self.colorMax  = colorMax
 #        self.updatePixmap()
-        
+
     def updatePixmap(self):
         (image_str, size, minmax) = spslut.transform(self.data ,
-                                               (1,0), 
+                                               (1,0),
                                                (spslut.LINEAR, 3.0),
-                                               "BGRX", 
+                                               "BGRX",
                                                self.colormapSps[self.colormap],
-                                               self.autoscale, 
+                                               self.autoscale,
                                                (self.colorMin, self.colorMax))
         image = qt.QImage(image_str, size[0], size[1], 32, None, 0,
                           qt.QImage.IgnoreEndian)
         pixmap = qt.QPixmap()
-        pixmap.convertFromImage(image)         	      
-        
+        pixmap.convertFromImage(image)
+
         if self.qubImage is not None:
-            self.qubImage.setPixmap(pixmap)       
-        
-    def readEdfFile(self, file):    
+            self.qubImage.setPixmap(pixmap)
+
+    def readEdfFile(self, file):
         edf = EdfFile.EdfFile(file)
         self.data = edf.GetData(0)
         self.dataMin = min(self.data.ravel())
         self.dataMax = max(self.data.ravel())
 
-                       
-##  MAIN   
+
+##  MAIN
 if  __name__ == '__main__':
     from Qub.Objects.QubPixmapDisplayView import QubPixmapDisplayView
     import EdfFile
     import spslut
-    
+
     app = qt.QApplication(sys.argv)
 
     qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
@@ -2995,10 +3049,10 @@ if  __name__ == '__main__':
         sys.exit()
 
     window = QubMain(None, mfile = sys.argv[1])
-    
+
     window.resize(500,300)
     app.setMainWidget(window)
-    
+
     window.show()
     app.exec_loop()
- 
+
