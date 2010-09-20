@@ -13,7 +13,8 @@ except KeyError:
     platforms = cmd.read().split()
     cmd.close()
   else:
-    raise ImportError('This module cannot be imported without get_compat_os.share, or define the QUB_COMPAT_OS environment variable.')
+    __path__.append(os.path.join(dirname,'lib'))
 
 for plat in platforms:
     __path__.append(os.path.join(dirname,'lib',plat))
+
