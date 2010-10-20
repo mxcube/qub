@@ -1501,40 +1501,24 @@ class QubCanvasGrid(qtcanvas.QCanvasRectangle) :
             h = self.height()
             w = self.width()
             if self.__nbPointAxis2 :
-                x0 = self.x()
-                x1 = x0 + w
+                yStep = float(self.height()) / self.__nbPointAxis2
                 y0 = self.y()
-                y1 = y0 + h
-                while y0 <= y1:
+                for i in range(self.__nbPointAxis2) :
+                    x0,x1 = self.x(),self.x() + self.width()
                     painter.drawLine(x0,y0,x1,y0)
-                    y0 += 11
-                
-                #yStep = float(self.height()) / self.__nbPointAxis2
-                #y0 = self.y()
-                #for i in range(self.__nbPointAxis2) :
-                #    x0,x1 = self.x(),self.x() + self.width()
-                #    painter.drawLine(x0,y0,x1,y0)
-                #    y0 += yStep
+                    y0 += yStep
 
             if self.__nbPointAxis1:
                 self.__pen = qt.QPen(qt.Qt.DotLine)
                 self.__pen.setColor(painter.pen().color())
                 painter.setPen(self.__pen)
                 
+                xStep = float(self.width()) / self.__nbPointAxis1
                 x0 = self.x()
-                x1 = x0 + w
-                y0 = self.y()
-                y1 = y0 + h
-                while x0 <= x1:
+                for i in range(self.__nbPointAxis1) :
+                    y0,y1 = self.y(),self.y() + self.height()
                     painter.drawLine(x0,y0,x0,y1)
-                    x0 += 11
-                
-                #xStep = float(self.width()) / self.__nbPointAxis1
-                #x0 = self.x()
-                #for i in range(self.__nbPointAxis1) :
-                #    y0,y1 = self.y(),self.y() + self.height()
-                #    painter.drawLine(x0,y0,x0,y1)
-                #    x0 += xStep
+                    x0 += xStep
 
 
             if self.__whole_region is not None: painter.setClipping(False)
