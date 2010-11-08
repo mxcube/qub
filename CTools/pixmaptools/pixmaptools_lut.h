@@ -1,6 +1,7 @@
 #ifndef __PIXMAPTOOLS_LUT
 #define __PIXMAPTOOLS_LUT
 
+#include <stdlib.h>
 #include "qimage.h"
 
 class LutError

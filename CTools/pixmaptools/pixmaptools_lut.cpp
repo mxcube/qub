@@ -449,9 +449,9 @@ template<class IN> static void _linear_data_map(const IN *data,unsigned int *anI
 }
 
 ///@brief opti for unsigned short
-template<> static void _linear_data_map(unsigned short const *data,unsigned int *anImagePt,int column,int line,
-					unsigned int *palette,double,double,
-					unsigned short dataMin,unsigned short dataMax) throw()
+template<> void _linear_data_map(unsigned short const *data,unsigned int *anImagePt,int column,int line,
+				 unsigned int *palette,double,double,
+				 unsigned short dataMin,unsigned short dataMax) throw()
 {
   int aNbPixel = column * line;
   unsigned int *anImageEnd = anImagePt + aNbPixel;
@@ -467,7 +467,7 @@ template<> static void _linear_data_map(unsigned short const *data,unsigned int 
 }
 
 ///@brief opti for short
-template<> static void _linear_data_map(const short *data,unsigned int *anImagePt,int column,int line,
+template<> void _linear_data_map(const short *data,unsigned int *anImagePt,int column,int line,
 					unsigned int *palette,double,double,
 					short dataMin,short dataMax) throw()
 {
@@ -486,7 +486,7 @@ template<> static void _linear_data_map(const short *data,unsigned int *anImageP
 }
 
 ///@brief opti for char
-template<> static void _linear_data_map(const char *data,unsigned int *anImagePt,int column,int line,
+template<> void _linear_data_map(const char *data,unsigned int *anImagePt,int column,int line,
 					unsigned int *palette,double,double,
 					char dataMin,char dataMax) throw()
 {
@@ -504,7 +504,7 @@ template<> static void _linear_data_map(const char *data,unsigned int *anImagePt
     }
 }
 ///@brief opti for unsigned char
-template<> static void _linear_data_map(unsigned char const *data,unsigned int *anImagePt,int column,int line,
+template<> void _linear_data_map(unsigned char const *data,unsigned int *anImagePt,int column,int line,
 					unsigned int *palette,double,double,
 					unsigned char dataMin,unsigned char dataMax) throw()
 {
