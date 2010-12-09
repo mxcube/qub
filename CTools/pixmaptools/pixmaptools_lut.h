@@ -2,6 +2,7 @@
 #define __PIXMAPTOOLS_LUT
 
 #include "qimage.h"
+#include <cstdlib>
 
 class LutError
 {
