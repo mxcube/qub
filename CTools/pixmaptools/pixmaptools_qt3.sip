@@ -313,7 +313,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
  Py_DECREF(aRImage);
 %End
 
- static SIP_PYTUPLE map_on_min_max_val(SIP_PYOBJECT,Palette&,mapping_meth);
+ static SIP_PYTUPLE map_on_min_max_val(SIP_PYOBJECT,Palette&,LUT::mapping_meth);
 %MethodCode
 #ifdef MAP_IMAGE
 #undef MAP_IMAGE
@@ -328,7 +328,7 @@ template<class IN> void _create_palette_from_data(unsigned int *aDestPalette,con
 MAP_FUNCTION
 %End
 
- static SIP_PYTUPLE map(SIP_PYOBJECT,Palette&,mapping_meth,double,double);
+ static SIP_PYTUPLE map(SIP_PYOBJECT,Palette&,LUT::mapping_meth,double,double);
 %MethodCode
 #ifdef MAP_IMAGE
 #undef MAP_IMAGE
@@ -344,7 +344,7 @@ MAP_FUNCTION
 MAP_FUNCTION
 %End
 
- static SIP_PYTUPLE transform_autoscale(SIP_PYOBJECT,Palette&,mapping_meth);
+ static SIP_PYTUPLE transform_autoscale(SIP_PYOBJECT,Palette&,LUT::mapping_meth);
 %MethodCode
 #ifdef MAP_IMAGE
 #undef MAP_IMAGE
@@ -359,7 +359,7 @@ MAP_FUNCTION
 MAP_FUNCTION
 %End
 
- static SIP_PYTUPLE transform(SIP_PYOBJECT,Palette&,mapping_meth,double,double);
+ static SIP_PYTUPLE transform(SIP_PYOBJECT,Palette&,LUT::mapping_meth,double,double);
 %MethodCode
 #ifdef MAP_IMAGE
 #undef MAP_IMAGE

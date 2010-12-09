@@ -307,7 +307,7 @@ void LUT::Palette::_calcPalette(unsigned int palette[],int fmin, int fmax,
  *  @param dataMin return the min data value
  *  @param dataMax return the max data value
  */
-template<class IN> void LUT::map_on_min_max_val(const IN *data,unsigned int *anImagePt,int column,int row,Palette &aPalette,
+template<class IN> __attribute__ ((used)) void LUT::map_on_min_max_val(const IN *data,unsigned int *anImagePt,int column,int row,Palette &aPalette,
 						  mapping_meth aMeth,
 						  IN &dataMin,IN &dataMax)
 {
@@ -323,7 +323,7 @@ template<class IN> void LUT::map_on_min_max_val(const IN *data,unsigned int *anI
  *  simple look up between dataMin and dataMax
  *  @see map_on_min_max_val
  */
-template<class IN> static void _find_min_max(const IN *aData,int aNbValue,IN &dataMin,IN &dataMax)
+template<class IN> static __attribute__ ((used)) void _find_min_max(const IN *aData,int aNbValue,IN &dataMin,IN &dataMax)
 {
   dataMax = dataMin = *aData;++aData;
   for(int i = 1;i < aNbValue;++i,++aData)
@@ -333,7 +333,7 @@ template<class IN> static void _find_min_max(const IN *aData,int aNbValue,IN &da
     }
 }
 
-template<class IN> static void _find_minpos_max(const IN *aData,int aNbValue,IN &dataMin,IN &dataMax)
+template<class IN> static __attribute__ ((used)) void _find_minpos_max(const IN *aData,int aNbValue,IN &dataMin,IN &dataMax)
 {
   dataMax = *aData;
   if(*aData > 0) dataMin = *aData;
@@ -345,7 +345,7 @@ template<class IN> static void _find_minpos_max(const IN *aData,int aNbValue,IN 
       else if(*aData > 0. && (*aData < dataMin || dataMin == 0)) dataMin = *aData;
     }
 }
-template<class IN> void LUT::map(const IN *data,unsigned int *anImagePt,int column,int line,Palette &aPalette,
+template<class IN> __attribute__ ((used)) void LUT::map(const IN *data,unsigned int *anImagePt,int column,int line,Palette &aPalette,
 				 LUT::mapping_meth aMeth,
 				 IN dataMin,IN dataMax)
 {
@@ -369,7 +369,7 @@ template<class IN> void LUT::map(const IN *data,unsigned int *anImagePt,int colu
   _data_map(data,anImagePt,column,line,aMeth,aUsePalette,dataMin,dataMax);
 }
 
-template<class IN> static void _data_map(const IN *data,unsigned int *anImagePt,int column,int line,
+template<class IN> static __attribute__ ((used)) void _data_map(const IN *data,unsigned int *anImagePt,int column,int line,
 					 LUT::mapping_meth aMeth,unsigned int *aPalette,
 					 IN dataMin,IN dataMax) throw()
 {
@@ -430,7 +430,7 @@ template<class IN> static void _data_map(const IN *data,unsigned int *anImagePt,
 
 // LINEAR MAPPING FCT
 
-template<class IN> static void _linear_data_map(const IN *data,unsigned int *anImagePt,int column,int line,
+template<class IN> static __attribute__ ((used)) void _linear_data_map(const IN *data,unsigned int *anImagePt,int column,int line,
 						unsigned int *palette,double A,double B,
 						IN dataMin,IN dataMax) throw()
 {
@@ -449,7 +449,7 @@ template<class IN> static void _linear_data_map(const IN *data,unsigned int *anI
 }
 
 ///@brief opti for unsigned short
-template<> static void _linear_data_map(unsigned short const *data,unsigned int *anImagePt,int column,int line,
+template<> void _linear_data_map(unsigned short const *data,unsigned int *anImagePt,int column,int line,
 					unsigned int *palette,double,double,
 					unsigned short dataMin,unsigned short dataMax) throw()
 {
@@ -467,7 +467,7 @@ template<> static void _linear_data_map(unsigned short const *data,unsigned int 
 }
 
 ///@brief opti for short
-template<> static void _linear_data_map(const short *data,unsigned int *anImagePt,int column,int line,
+template<> void _linear_data_map(const short *data,unsigned int *anImagePt,int column,int line,
 					unsigned int *palette,double,double,
 					short dataMin,short dataMax) throw()
 {
@@ -486,7 +486,7 @@ template<> static void _linear_data_map(const short *data,unsigned int *anImageP
 }
 
 ///@brief opti for char
-template<> static void _linear_data_map(const char *data,unsigned int *anImagePt,int column,int line,
+template<> void _linear_data_map(const char *data,unsigned int *anImagePt,int column,int line,
 					unsigned int *palette,double,double,
 					char dataMin,char dataMax) throw()
 {
@@ -504,7 +504,7 @@ template<> static void _linear_data_map(const char *data,unsigned int *anImagePt
     }
 }
 ///@brief opti for unsigned char
-template<> static void _linear_data_map(unsigned char const *data,unsigned int *anImagePt,int column,int line,
+template<> void _linear_data_map(unsigned char const *data,unsigned int *anImagePt,int column,int line,
 					unsigned int *palette,double,double,
 					unsigned char dataMin,unsigned char dataMax) throw()
 {
@@ -520,7 +520,7 @@ template<> static void _linear_data_map(unsigned char const *data,unsigned int *
 	*anImagePt = *palette;
     }
 }
-template<class IN> static void _log_data_map(const IN *data,unsigned int *anImagePt,int column,int line,
+template<class IN> static __attribute__ ((used)) void _log_data_map(const IN *data,unsigned int *anImagePt,int column,int line,
 					     unsigned int *aPalette,double A,double B,
 					     IN dataMin,IN dataMax) throw()
 {
@@ -539,7 +539,7 @@ template<class IN> static void _log_data_map(const IN *data,unsigned int *anImag
     }
 }
 
-template<class IN> static void _log_data_map_shift(const IN *data,unsigned int *anImagePt,int column,int line,
+template<class IN> static __attribute__ ((used)) void _log_data_map_shift(const IN *data,unsigned int *anImagePt,int column,int line,
 						   unsigned int *aPalette,double A,double B,
 						   IN dataMin,IN dataMax,IN shift) throw()
 {
@@ -559,7 +559,7 @@ template<class IN> static void _log_data_map_shift(const IN *data,unsigned int *
     }
 }
 
-void init_template()
+static __attribute__ ((used)) void init_template()
 {
 #define INIT_MAP(TYPE)							\
   {									\

@@ -56,7 +56,7 @@ public:
     void _fillSegment(const XServer_Info&,
 		      int from,int to,
 		      double R1,double G1,double B1,double R2,double G2,double B2) throw();
-    void _calcPalette(unsigned int palette[],int fmin, int fmax,mapping_meth) throw();
+    void _calcPalette(unsigned int palette[],int fmin, int fmax,LUT::mapping_meth) throw();
 
     unsigned int _dataPalette[0x10000];
     mode         _mode;
