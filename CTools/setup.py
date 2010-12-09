@@ -18,6 +18,7 @@ config = pyqtconfig.Configuration()
 if QT3:
   sip_flags = config.pyqt_qt_sip_flags.split()
   qt_inc_dir = config.qt_inc_dir
+  qt_lib = config.qt_lib
 else:
   sip_flags = config.pyqt_sip_flags
 
@@ -73,7 +74,7 @@ mar345_module = Extension(name = "mar345",
 pixmaptools_module = Extension(name = "pixmaptools",
                                sources = ["pixmaptools/%s.sip" % (QT3 and "pixmaptools_qt3" or "pixmaptools_qt4")]+glob.glob('pixmaptools/pixmaptools_*.cpp'),
                                extra_compile_args = extra_compile_args,
-                               extra_link_args = extra_link_args,
+                               extra_link_args = extra_link_args+['-l'+qt_lib],
                                include_dirs = ['pixmaptools', numpy.get_include(), qt_inc_dir]) 
                                
 
