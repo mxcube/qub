@@ -19,6 +19,7 @@ if QT3:
   sip_flags = config.pyqt_qt_sip_flags.split()
   qt_inc_dir = config.qt_inc_dir
   qt_lib = config.qt_lib
+  qt_lib_dir = config.qt_lib_dir
 else:
   sip_flags = config.pyqt_sip_flags
 
@@ -75,7 +76,8 @@ pixmaptools_module = Extension(name = "pixmaptools",
                                sources = ["pixmaptools/%s.sip" % (QT3 and "pixmaptools_qt3" or "pixmaptools_qt4")]+glob.glob('pixmaptools/pixmaptools_*.cpp'),
                                extra_compile_args = extra_compile_args,
                                extra_link_args = extra_link_args+['-l'+qt_lib],
-                               include_dirs = ['pixmaptools', numpy.get_include(), qt_inc_dir]) 
+                               include_dirs = ['pixmaptools', numpy.get_include(), qt_inc_dir],
+                               library_dirs = [qt_lib_dir]) 
                                
 
 setup(name = "QubCTools",version = "1.0",
