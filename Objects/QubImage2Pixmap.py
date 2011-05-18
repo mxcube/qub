@@ -3,17 +3,23 @@ import new
 import qt
 if __name__ == "__main__":              # TEST
     a = qt.QApplication([])
-    
+
 from Qub.CTools import pixmaptools
 
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
-try:
-    from opencv import cv
-    from Qub.CTools.opencv import qtTools
-except ImportError:
-    cv = None
-    
+
+#try:
+#    from opencv import cv
+#    from Qub.CTools.opencv import qtTools
+#except ImportError:
+#    cv = None
+
+# No more try to import opencv module : API has changed ?
+# Let qt do the job.
+cv = None
+
+
 ##@brief This class manage the copy between QImage and QPixmap
 #
 #This is an effecient way to transforme a QImage to a QPixmap
