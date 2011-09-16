@@ -999,7 +999,7 @@ class QubBrightnessContrastDialog(qt.QDialog):
 # - for the gain
 # - for the gamma
 
-#TODO : 
+# TODO :
 # - connect qlineedit display of % to allow changing by typing a number.
 
 class QubBrightnessContrastDialog(qt.QDialog):
@@ -1012,185 +1012,167 @@ class QubBrightnessContrastDialog(qt.QDialog):
         """
         self.__camera = None
 
-        self.__brightness = 0
-        self.__brightnessMin = 0
-        self.__brightnessMax = 123
+        self.__brightness       = 0
+        self.__brightnessMin    = 0
+        self.__brightnessMax    = 123
         self.__brightnessExists = False
 
-        self.__contrast = 0
-        self.__contrastMin = 0
-        self.__contrastMax = 123
+        self.__contrast       = 0
+        self.__contrastMin    = 0
+        self.__contrastMax    = 123
         self.__contrastExists = False
 
-        self.__gain = 0
-        self.__gainMin = 3.14
-        self.__gainMax = 123
+        self.__gain       = 0
+        self.__gainMin    = 3.14
+        self.__gainMax    = 123
         self.__gainExists = False
 
-        self.__gamma = 0
-        self.__gammaMin = 0
-        self.__gammaMax = 123
+        self.__gamma       = 0
+        self.__gammaMin    = 0
+        self.__gammaMax    = 123
         self.__gammaExists = False
 
 
-        print "--init of QubImageTuningDialog"
+        """
+        layout widget
+        """
+        # QGridLayout <glayout> hosted by LayoutWidget is used to place all sliders /labels etc.
 
-        """
-        widget
-        """
-        vlayout = qt.QVBoxLayout(self, -1, 0, "layoutOfQubImageTuningDialog")
+        self.LayoutWidget = qt.QWidget(self, "layout wigdet for QubBrightnessContrastDialog")
+        self.LayoutWidget.resize(350, 150)
+        self.glayout = qt.QGridLayout(self.LayoutWidget, 4, 5, 10, 10, "layoutOfQubImageTuningDialog")
 
 
         """
         BRIGHTNESS updater
         """
-        # print "--QubDialog.py--init--self.__brightnessMax=", self.__brightnessMax
-        self.brightnessUpdaterLayout = qt.QHBoxLayout(vlayout, -1, "brightnessUpdaterLayout")
-        self.brightnessUpdaterLayout.addSpacing(5)
 
         '''label'''
-        self.brightnessLabel = qt.QLabel("Brightness:", self)
-        self.brightnessUpdaterLayout.addWidget(self.brightnessLabel)
+        self.brightnessLabel = qt.QLabel("Brightness:", self.LayoutWidget)
+        self.glayout.addWidget(self.brightnessLabel, 0, 0)
 
         '''Slider'''
         self.brightnessSlider = QubSlider(self.__brightnessMin,
                                     self.__brightnessMax,
                                     5, self.__brightness,
-                                    qt.Qt.Horizontal,self)
+                                    qt.Qt.Horizontal, self.LayoutWidget)
         self.connect(self.brightnessSlider, qt.PYSIGNAL("sliderChanged"),
                      self.setBrightness)
         self.brightnessSlider.setMinimumWidth(100)
-        self.brightnessUpdaterLayout.addWidget(self.brightnessSlider)
+        self.glayout.addWidget(self.brightnessSlider, 0, 1)
 
         '''Value in percentage'''
-        self.brightnessPCValue = qt.QLineEdit("%d"%int(self.__brightness), self)
-        self.brightnessUpdaterLayout.addWidget(self.brightnessPCValue)
+        self.brightnessPCValue = qt.QLineEdit("%d"%int(self.__brightness), self.LayoutWidget)
+        self.glayout.addWidget(self.brightnessPCValue, 0,2)
         self.brightnessPCValue.setFixedWidth(30)
-        self.brightnessPCLabel = qt.QLabel("%", self)
-        self.brightnessUpdaterLayout.addWidget(self.brightnessPCLabel)
-        self.brightnessUpdaterLayout.addSpacing(10)
+        self.brightnessPCLabel = qt.QLabel("%", self.LayoutWidget)
+        self.glayout.addWidget(self.brightnessPCLabel, 0, 3)
 
-        '''abs value'''
-        self.brightnessAbsLabel = qt.QLabel("[%s/%s]"%(self.__brightness, self.__brightnessMax), self)
-        self.brightnessUpdaterLayout.addWidget(self.brightnessAbsLabel)
+        '''absolute value'''
+        self.brightnessAbsLabel = qt.QLabel("[%s/%s]"%(self.__brightness, self.__brightnessMax), self.LayoutWidget)
+        self.glayout.addWidget(self.brightnessAbsLabel, 0, 4)
         self.brightnessAbsLabel.setFixedWidth(100)
 
-        vlayout.addLayout(self.brightnessUpdaterLayout)
-        vlayout.addSpacing(1)
 
 
         """
         CONTRAST updater
         """
-        # print "--QubDialog.py--init--self.__contrastMax=", self.__contrastMax
-        self.contrastUpdaterLayout = qt.QHBoxLayout(vlayout, -1, "contrastUpdaterLayout")
-        self.contrastUpdaterLayout.addSpacing(5)
 
         '''label'''
-        self.contrastLabel = qt.QLabel("Contrast:", self)
-        self.contrastUpdaterLayout.addWidget(self.contrastLabel)
+        self.contrastLabel = qt.QLabel("Contrast:", self.LayoutWidget)
+        self.glayout.addWidget(self.contrastLabel, 1, 0)
 
         '''Slider'''
         self.contrastSlider = QubSlider(self.__contrastMin,
                                     self.__contrastMax,
                                     5, self.__contrast,
-                                    qt.Qt.Horizontal,self)
+                                    qt.Qt.Horizontal, self.LayoutWidget)
         self.connect(self.contrastSlider, qt.PYSIGNAL("sliderChanged"),
                      self.setContrast)
         self.contrastSlider.setMinimumWidth(100)
-        self.contrastUpdaterLayout.addWidget(self.contrastSlider)
+        self.glayout.addWidget(self.contrastSlider, 1, 1)
 
         '''Value in percentage'''
-        self.contrastPCValue = qt.QLineEdit("%d"%int(self.__contrast), self)
-        self.contrastUpdaterLayout.addWidget(self.contrastPCValue)
+        self.contrastPCValue = qt.QLineEdit("%d"%int(self.__contrast), self.LayoutWidget)
+        self.glayout.addWidget(self.contrastPCValue, 1, 2)
         self.contrastPCValue.setFixedWidth(30)
-        self.contrastPCLabel = qt.QLabel("%", self)
-        self.contrastUpdaterLayout.addWidget(self.contrastPCLabel)
-        self.contrastUpdaterLayout.addSpacing(10)
+        self.contrastPCLabel = qt.QLabel("%", self.LayoutWidget)
+        self.glayout.addWidget(self.contrastPCLabel, 1, 3)
 
-        '''abs value'''
-        self.contrastAbsLabel = qt.QLabel("[%s/%s]"%(self.__contrast, self.__contrastMax), self)
-        self.contrastUpdaterLayout.addWidget(self.contrastAbsLabel)
+        '''absolute value'''
+        self.contrastAbsLabel = qt.QLabel("[%s/%s]"%(self.__contrast, self.__contrastMax), self.LayoutWidget)
+        self.glayout.addWidget(self.contrastAbsLabel, 1, 4)
         self.contrastAbsLabel.setFixedWidth(100)
 
-        vlayout.addLayout(self.contrastUpdaterLayout)
-        vlayout.addSpacing(1)
 
 
         """
         GAIN updater
         """
-        # print "--QubDialog.py--init--self.__gainMax=", self.__gainMax
-        self.gainUpdaterLayout = qt.QHBoxLayout(vlayout, -1, "gainUpdaterLayout")
-        self.gainUpdaterLayout.addSpacing(5)
 
         '''label'''
-        self.gainLabel = qt.QLabel("Gain:", self)
-        self.gainUpdaterLayout.addWidget(self.gainLabel)
+        self.gainLabel = qt.QLabel("Gain:", self.LayoutWidget)
+        self.glayout.addWidget(self.gainLabel, 2, 0)
 
         '''Slider'''
         self.gainSlider = QubSlider(self.__gainMin,
                                     self.__gainMax,
                                     5, self.__gain,
-                                    qt.Qt.Horizontal, self)
+                                    qt.Qt.Horizontal, self.LayoutWidget)
         self.connect(self.gainSlider, qt.PYSIGNAL("sliderChanged"), self.setGain)
         self.gainSlider.setMinimumWidth(100)
-        self.gainUpdaterLayout.addWidget(self.gainSlider)
+        self.glayout.addWidget(self.gainSlider, 2, 1)
 
         '''Value in percentage'''
-        self.gainPCValue = qt.QLineEdit("%d"%int(self.__gain), self)
-        self.gainUpdaterLayout.addWidget(self.gainPCValue)
+        self.gainPCValue = qt.QLineEdit("%d"%int(self.__gain), self.LayoutWidget)
+        self.glayout.addWidget(self.gainPCValue, 2, 2)
         self.gainPCValue.setFixedWidth(30)
-        self.gainPCLabel = qt.QLabel("%", self)
-        self.gainUpdaterLayout.addWidget(self.gainPCLabel)
-        self.gainUpdaterLayout.addSpacing(10)
+        self.gainPCLabel = qt.QLabel("%", self.LayoutWidget)
+        self.glayout.addWidget(self.gainPCLabel, 2 ,3)
 
-        '''abs value'''
-        self.gainAbsLabel = qt.QLabel("[%s/%s]"%(self.__gain, self.__gainMax), self)
-        self.gainUpdaterLayout.addWidget(self.gainAbsLabel)
+        '''absolute value'''
+        self.gainAbsLabel = qt.QLabel("[%s/%s]"%(self.__gain, self.__gainMax), self.LayoutWidget)
+        self.glayout.addWidget(self.gainAbsLabel, 2, 4)
         self.gainAbsLabel.setFixedWidth(100)
 
-        vlayout.addLayout(self.gainUpdaterLayout)
-        vlayout.addSpacing(1)
 
         """
         GAMMA updater
         """
-        # print "--QubDialog.py--init--self.__gammaMax=", self.__gammaMax
-        self.gammaUpdaterLayout = qt.QHBoxLayout(vlayout, -1, "gammaUpdaterLayout")
-        self.gammaUpdaterLayout.addSpacing(5)
 
         '''label'''
-        self.gammaLabel = qt.QLabel("Gamma:", self)
-        self.gammaUpdaterLayout.addWidget(self.gammaLabel)
+        self.gammaLabel = qt.QLabel("Gamma:", self.LayoutWidget)
+        self.glayout.addWidget(self.gammaLabel, 3, 0)
 
         '''Slider'''
         self.gammaSlider = QubSlider(self.__gammaMin,
                                     self.__gammaMax,
                                     5, self.__gamma,
-                                    qt.Qt.Horizontal,self)
+                                    qt.Qt.Horizontal, self.LayoutWidget)
         self.connect(self.gammaSlider, qt.PYSIGNAL("sliderChanged"),
                      self.setGamma)
         self.gammaSlider.setMinimumWidth(100)
-        self.gammaUpdaterLayout.addWidget(self.gammaSlider)
+        self.glayout.addWidget(self.gammaSlider, 3, 1)
 
         '''Value in percentage'''
-        self.gammaPCValue = qt.QLineEdit("%d"%int(self.__gamma), self)
-        self.gammaUpdaterLayout.addWidget(self.gammaPCValue)
+        self.gammaPCValue = qt.QLineEdit("%d"%int(self.__gamma), self.LayoutWidget)
+        self.glayout.addWidget(self.gammaPCValue, 3, 2)
         self.gammaPCValue.setFixedWidth(30)
-        self.gammaPCLabel = qt.QLabel("%", self)
-        self.gammaUpdaterLayout.addWidget(self.gammaPCLabel)
-        self.gammaUpdaterLayout.addSpacing(10)
+        self.gammaPCLabel = qt.QLabel("%", self.LayoutWidget)
+        self.glayout.addWidget(self.gammaPCLabel, 3, 3)
 
         '''abs value'''
-        self.gammaAbsLabel = qt.QLabel("[%s/%s]"%(self.__gamma, self.__gammaMax), self)
-        self.gammaUpdaterLayout.addWidget(self.gammaAbsLabel)
+        self.gammaAbsLabel = qt.QLabel("[%s/%s]"%(self.__gamma, self.__gammaMax), self.LayoutWidget)
+        self.glayout.addWidget(self.gammaAbsLabel, 3, 4)
         self.gammaAbsLabel.setFixedWidth(100)
 
-        vlayout.addLayout(self.gammaUpdaterLayout)
-        vlayout.addSpacing(10)
 
+        # All sliders off by default.
         self.disableControls()
+
+        self.resize(350, 150)
+
 
     def disableControls(self):
         if not self.__brightnessExists:
@@ -1780,5 +1762,40 @@ class QubInfoTableDialog(qt.QDialog) :
 
     def setInfo(self,info) :
         self.__infoTable.setInfo(info)
+
+
+
+########## TEST
+
+
+class QubWidgetTest(qt.QMainWindow):
+    def __init__(self, parent=None, file=None):
+        qt.QMainWindow.__init__(self, parent)
+
+        container = qt.QVBox(self)
+        # self.b = qt.QPushButton("fdd", container)
+
+        ## test for  QubImageTuningDialog
+        self.QBCD = QubBrightnessContrastDialog(container)
+        self.QBCD.show()
+        ##############
+
+        self.setCentralWidget(container)
+
+
+if __name__=="__main__":
+    app = qt.QApplication(sys.argv)
+
+    qt.QObject.connect(app, qt.SIGNAL("lastWindowClosed()"),
+                       app, qt.SLOT("quit()"))
+
+    window = QubWidgetTest()
+
+    window.resize(500,300)
+    app.setMainWidget(window)
+
+    window.show()
+    app.exec_loop()
+
 
 
