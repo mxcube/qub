@@ -3,7 +3,11 @@ import traceback
 from Qub.Tools.QubThread import QubLock
 from Qub.Tools.QubThread import QubThreadProcess
 from Qub.CTools import pixmaptools
-from Qub.CTools import qttools
+
+try:
+    from Qub.CTools import qttools
+except ImportError:
+    qttools = None
 
 try:
     from opencv import cv
