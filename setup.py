@@ -74,7 +74,7 @@ mar345_module = Extension(name = "Qub.CTools/mar345",
                           include_dirs = ['Qub/CTools/mar345',numpy.get_include()])
 
 pixmaptools_module = Extension(name = "Qub.CTools/pixmaptools",
-                               sources = ["Qub/CTools/pixmaptools/%s.sip" % (QT3 and "pixmaptools_qt3" or "pixmaptools_qt4")]+glob.glob('pixmaptools/pixmaptools_*.cpp'),
+                               sources = ["Qub/CTools/pixmaptools/%s.sip" % (QT3 and "pixmaptools_qt3" or "pixmaptools_qt4")]+glob.glob('Qub/CTools/pixmaptools/pixmaptools_*.cpp'),
                                extra_compile_args = extra_compile_args,
                                extra_link_args = extra_link_args+['-l'+qt_lib],
                                include_dirs = ['Qub/CTools/pixmaptools', numpy.get_include(), qt_inc_dir],
