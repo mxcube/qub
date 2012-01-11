@@ -6,6 +6,7 @@ import numpy
 import os
 
 QT3=True
+
 if QT3:
     print "***** doing setup.py for Qt3 *****"
     import pyqtconfig
@@ -49,39 +50,42 @@ elif platform.system() == 'SunOS' :
 else:
     extra_compile_args = []
     
-polygone_module = Extension(name = "polygone",
-                            sources = glob.glob('polygone/polygone*cpp'),
+polygone_module = Extension(name = "Qub.CTools/polygone",
+                            sources = glob.glob('Qub/CTools/polygone/polygone*cpp'),
                             extra_compile_args = extra_compile_args,
 			    extra_link_args = extra_link_args,
-                            include_dirs = ['polygone'])
+                            include_dirs = ['Qub/CTools/polygone'])
 
-dataresize_module = Extension(name = "datafuncs",
-                              sources = glob.glob('datafuncs/datafuncs*cpp'),
+dataresize_module = Extension(name = "Qub.CTools/datafuncs",
+                              sources = glob.glob('Qub/CTools/datafuncs/datafuncs*cpp'),
                               extra_compile_args = extra_compile_args,
 			      extra_link_args = extra_link_args,
-                              include_dirs = ['datafuncs',numpy.get_include()])
-sps_module = Extension(name = "sps",
-                              sources = glob.glob('sps/sps*c'),
+                              include_dirs = ['Qub/CTools/datafuncs',numpy.get_include()])
+sps_module = Extension(name = "Qub.CTools/sps",
+                              sources = glob.glob('Qub/CTools/sps/sps*c'),
                               extra_compile_args = extra_compile_args,
 			      extra_link_args = extra_link_args,
-                              include_dirs = ['sps',numpy.get_include()])
+                              include_dirs = ['Qub/CTools/sps',numpy.get_include()])
 
-mar345_module = Extension(name = "mar345",
-                          sources = glob.glob('mar345/mar345*c'),
+mar345_module = Extension(name = "Qub.CTools/mar345",
+                          sources = glob.glob('Qub/CTools/mar345/mar345*c'),
                           extra_compile_args = extra_compile_args,
                           extra_link_args = extra_link_args,
-                          include_dirs = ['mar345',numpy.get_include()])
+                          include_dirs = ['Qub/CTools/mar345',numpy.get_include()])
 
-pixmaptools_module = Extension(name = "pixmaptools",
-                               sources = ["pixmaptools/%s.sip" % (QT3 and "pixmaptools_qt3" or "pixmaptools_qt4")]+glob.glob('pixmaptools/pixmaptools_*.cpp'),
+pixmaptools_module = Extension(name = "Qub.CTools/pixmaptools",
+                               sources = ["Qub/CTools/pixmaptools/%s.sip" % (QT3 and "pixmaptools_qt3" or "pixmaptools_qt4")]+glob.glob('pixmaptools/pixmaptools_*.cpp'),
                                extra_compile_args = extra_compile_args,
                                extra_link_args = extra_link_args+['-l'+qt_lib],
-                               include_dirs = ['pixmaptools', numpy.get_include(), qt_inc_dir],
+                               include_dirs = ['Qub/CTools/pixmaptools', numpy.get_include(), qt_inc_dir],
                                library_dirs = [qt_lib_dir]) 
                                
 
-setup(name = "QubCTools",version = "1.0",
-      description = "Some tools written in C for speed",
-      ext_modules = [polygone_module,dataresize_module,sps_module,mar345_module,pixmaptools_module],
+setup(name = "Qub",version = "1.0",
+      description = "Qub is a library providing data display tools for PyQt apps", 
+      author="Sebastien Petitdemange, BCU(Bliss), ESRF",
+      packages = ["Qub", "Qub.CTools", "Qub.Data", "Qub.Icons", "Qub.Objects","Qub.Plugins", "Qub.Print", "Qub.Tools", "Qub.Widget"],
+      package_data = {"Qub.Icons":["IconsLibrary/*"]},
+      ext_modules=[polygone_module,dataresize_module,sps_module,mar345_module,pixmaptools_module],
       cmdclass={'build_ext': my_own_build_ext})
 
