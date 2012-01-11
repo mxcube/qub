@@ -84,7 +84,7 @@ pixmaptools_module = Extension(name = "Qub.CTools/pixmaptools",
 setup(name = "Qub",version = "1.0",
       description = "Qub is a library providing data display tools for PyQt apps", 
       author="Sebastien Petitdemange, BCU(Bliss), ESRF",
-      packages = ["Qub", "Qub.CTools", "Qub.Data", "Qub.Icons", "Qub.Objects","Qub.Plugins", "Qub.Print", "Qub.Tools", "Qub.Widget"],
+      packages = ["Qub", "Qub.CTools", "Qub.Data", "Qub.Data.Plug", "Qub.Data.Source", "Qub.Data.StreamIO", "Qub.Data.Scale", "Qub.Data.Class", "Qub.Icons", "Qub.Objects", "Qub.Objects.Mosaic", "Qub.Plugins", "Qub.Print", "Qub.Tools", "Qub.Widget", "Qub.Widget.DataSource"],
       package_data = {"Qub.Icons":["IconsLibrary/*"]},
       ext_modules=[polygone_module,dataresize_module,sps_module,mar345_module,pixmaptools_module],
       cmdclass={'build_ext': my_own_build_ext})
