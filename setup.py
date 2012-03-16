@@ -28,12 +28,15 @@ else:
 class my_own_build_ext(sipdistutils.build_ext):
    def __init__(self, *args, **kwargs):
      sipdistutils.build_ext.__init__(self, *args, **kwargs) 
-   def finalize_options(self):
-     sipdistutils.build_ext.finalize_options(self)
-     self.sip_opts = sip_flags
    def _sip_sipfiles_dir(self):
      config=pyqtconfig.Configuration()
      return config.pyqt_sip_dir
+   def _sip_compile(self, sip_bin, source, sbf):
+     parameters = sip_flags[:]
+     parameters.extend(["-c", self.build_temp, "-b", sbf, "-I", pyqtconfig.Configuration().pyqt_sip_dir, source])
+     cmdline = [sip_bin]
+     cmdline.extend(parameters)
+     self.spawn(cmdline)
 
 if platform.system() == 'Linux' :
     try:
