@@ -82,7 +82,7 @@ class QubGraph(qwt.QwtPlot) :
             if isinstance(self.axisScaleEngine(axis),qwt.QwtLog10ScaleEngine) :
                 graph.setAxisScaleEngine(axis,qwt.QwtLog10ScaleEngine())
             scaleDiv = self.axisScaleDiv(axis)
-            graph.setAxisScale(axis,scaleDiv.lBound(),scaleDiv.hBound())
+            graph.setAxisScale(axis,scaleDiv.lowerBound(),scaleDiv.upperBound())
 
         for item in self.itemList() :
             if isinstance(item,qwt.QwtPlotCurve) :
