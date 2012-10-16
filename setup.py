@@ -64,11 +64,6 @@ dataresize_module = Extension(name = "Qub.CTools/datafuncs",
                               extra_compile_args = extra_compile_args,
 			      extra_link_args = extra_link_args,
                               include_dirs = ['Qub/CTools/datafuncs',numpy.get_include()])
-sps_module = Extension(name = "Qub.CTools/sps",
-                              sources = glob.glob('Qub/CTools/sps/sps*c'),
-                              extra_compile_args = extra_compile_args,
-			      extra_link_args = extra_link_args,
-                              include_dirs = ['Qub/CTools/sps',numpy.get_include()])
 
 mar345_module = Extension(name = "Qub.CTools/mar345",
                           sources = glob.glob('Qub/CTools/mar345/mar345*c'),
