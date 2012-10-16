@@ -65,7 +65,7 @@ class _LookUpScan(QubScanInfo) :
                 if polyE.tag == 'poly':
                     points = []
                     for p in poly.getchildren() :
-                        if p.tag = 'point':
+                        if p.tag == 'point':
                             points.append((float(p['x']),float(p['y'])))
                     if bool(polyE.attrib['includeMode']) :
                         includeMode.append(points)
