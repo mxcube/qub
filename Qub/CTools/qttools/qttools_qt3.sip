@@ -27,6 +27,7 @@ public:
 class QtXEmbedClient : QWidget
 {
 %TypeHeaderCode
+#include <qvariant.h>
 #include <qtxembed.h>
 %End
 
@@ -57,6 +58,7 @@ protected:
 class QtXEmbedContainer : QWidget
 {
 %TypeHeaderCode
+#include <qvariant.h>
 #include <qtxembed.h>
 %End
 public:

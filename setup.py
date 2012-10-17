@@ -71,6 +71,14 @@ mar345_module = Extension(name = "Qub.CTools/mar345",
                           extra_link_args = extra_link_args,
                           include_dirs = ['Qub/CTools/mar345',numpy.get_include()])
 
+qttools_module = Extension(name = "Qub.CTools/qttools",
+                           sources = ["Qub/CTools/qttools/%s.sip" % (QT3 and "qttools_qt3" or "qttools_qt4")]+glob.glob('Qub/CTools/qttools/qttools*cpp'),
+                           extra_compile_args = extra_compile_args,
+                           extra_link_args = extra_link_args+['-l'+qt_lib],
+                           include_dirs = ['Qub/CTools/qttools',numpy.get_include(), qt_inc_dir],
+                           library_dirs = [qt_lib_dir])
+
+
 pixmaptools_module = Extension(name = "Qub.CTools/pixmaptools",
                                sources = ["Qub/CTools/pixmaptools/%s.sip" % (QT3 and "pixmaptools_qt3" or "pixmaptools_qt4")]+glob.glob('Qub/CTools/pixmaptools/pixmaptools_*.cpp'),
                                extra_compile_args = extra_compile_args,
@@ -84,6 +92,6 @@ setup(name = "Qub",version = "1.0",
       author="Sebastien Petitdemange, BCU(Bliss), ESRF",
       packages = ["Qub", "Qub.CTools", "Qub.Data", "Qub.Data.Plug", "Qub.Data.Source", "Qub.Data.StreamIO", "Qub.Data.Scale", "Qub.Data.Class", "Qub.Icons", "Qub.Objects", "Qub.Objects.Mosaic", "Qub.Plugins", "Qub.Print", "Qub.Tools", "Qub.Widget", "Qub.Widget.DataSource", "Qub.Widget.Graph"],
       package_data = {"Qub.Icons":["IconsLibrary/*"]},
-      ext_modules=[polygone_module,dataresize_module,sps_module,mar345_module,pixmaptools_module],
+      ext_modules=[polygone_module,dataresize_module,mar345_module,pixmaptools_module, qttools_module],
       cmdclass={'build_ext': my_own_build_ext})
 
