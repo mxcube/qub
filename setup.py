@@ -72,9 +72,9 @@ mar345_module = Extension(name = "Qub.CTools/mar345",
                           include_dirs = ['Qub/CTools/mar345',numpy.get_include()])
 
 qttools_module = Extension(name = "Qub.CTools/qttools",
-                           sources = ["Qub/CTools/qttools/%s.sip" % (QT3 and "qttools_qt3" or "qttools_qt4")]+glob.glob('Qub/CTools/qttools/qttools*cpp'),
+                           sources = ["Qub/CTools/qttools/%s.sip" % (QT3 and "qttools_qt3" or "qttools_qt4")]+glob.glob('Qub/CTools/qttools/*cpp'),
                            extra_compile_args = extra_compile_args,
-                           extra_link_args = extra_link_args+['-l'+qt_lib],
+                           extra_link_args = extra_link_args+['-l'+qt_lib, '-lXext', '-lX11'],
                            include_dirs = ['Qub/CTools/qttools',numpy.get_include(), qt_inc_dir],
                            library_dirs = [qt_lib_dir])
 
