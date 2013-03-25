@@ -1,8 +1,8 @@
 import sys
 import numpy
 import qt
-from opencv import cv
-from Qub.CTools.opencv import qtTools
+#from opencv import cv
+#from Qub.CTools.opencv import qtTools
 try:
     from Qub.CTools.qttools import QubImage
 except ImportError:
@@ -1345,13 +1345,19 @@ class _pad_button(qt.QPushButton) :
             self.parent().show()
             self.stopButton.hide()
             if old_scale < 1. :
-                imageOpencv = qtTools.getImageOpencvFromQImage(tmp_image)
-                destImage = cv.cvCreateImage(cv.cvSize(int(old_scale * tmp_image.width()),
-                                                       int(old_scale * tmp_image.height())),
-                                             imageOpencv.depth,imageOpencv.nChannels)
-                                             
-                cv.cvResize(imageOpencv,destImage,cv.CV_INTER_CUBIC)
-                self.__padInUse = qtTools.getQImageFromImageOpencv(destImage)
+                #imageOpencv = qtTools.getImageOpencvFromQImage(tmp_image)
+                #destImage = cv.cvCreateImage(cv.cvSize(int(old_scale * tmp_image.width()),
+                #                                       int(old_scale * tmp_image.height())),
+                #                             imageOpencv.depth,imageOpencv.nChannels)
+                #                             
+                #cv.cvResize(imageOpencv,destImage,cv.CV_INTER_CUBIC)
+                #self.__padInUse = qtTools.getQImageFromImageOpencv(destImage)
+                if hasattr(tmp_image, "scaled"):
+                    self.__padInUse = tmp_image.scaled(int(old_scale * tmp_image.width()),
+                                                       int(old_scale * tmp_image.height()))
+                else:
+                    self.__padInUse = tmp_image.smoothScale(int(old_scale * tmp_image.width()),
+                                                       int(old_scale * tmp_image.height()))
                 self.__padInUse.setAlphaBuffer(True)
             else :
                 self.__padInUse = tmp_image

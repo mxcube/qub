@@ -86,6 +86,13 @@ pixmaptools_module = Extension(name = "Qub.CTools/pixmaptools",
                                include_dirs = ['Qub/CTools/pixmaptools', numpy.get_include(), qt_inc_dir],
                                library_dirs = [qt_lib_dir]) 
                                
+opencv_module = Extension(name = "Qub.CTools/opencv",
+                               sources = ["Qub/CTools/opencv/%s.sip" % (QT3 and "opencv_qt3" or "opencv_qt4")]+glob.glob('Qub/CTools/opencv/*.cpp'),
+                               extra_compile_args = extra_compile_args,
+                               extra_link_args = extra_link_args+['-l'+qt_lib, '-lcv'],
+                               include_dirs = ['Qub/CTools/opencv', numpy.get_include(), qt_inc_dir],
+                               library_dirs = [qt_lib_dir]) 
+                               
 
 setup(name = "Qub",version = "1.0",
       description = "Qub is a library providing data display tools for PyQt apps", 
@@ -93,5 +100,6 @@ setup(name = "Qub",version = "1.0",
       packages = ["Qub", "Qub.CTools", "Qub.Data", "Qub.Data.Plug", "Qub.Data.Source", "Qub.Data.StreamIO", "Qub.Data.Scale", "Qub.Data.Class", "Qub.Icons", "Qub.Objects", "Qub.Objects.Mosaic", "Qub.Plugins", "Qub.Print", "Qub.Tools", "Qub.Widget", "Qub.Widget.DataSource", "Qub.Widget.Graph"],
       package_data = {"Qub.Icons":["IconsLibrary/*"]},
       ext_modules=[polygone_module,dataresize_module,mar345_module,pixmaptools_module, qttools_module],
+      ext_modules=[polygone_module,dataresize_module,mar345_module,pixmaptools_module, qttools_module,opencv_module],
       cmdclass={'build_ext': my_own_build_ext})
 

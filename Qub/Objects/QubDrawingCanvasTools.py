@@ -10,11 +10,11 @@ from Qub.Objects.QubDrawingEvent import QubModifyAbsoluteAction
 
 from Qub.CTools import pixmaptools
 
-try:
-    from opencv import cv
-    from Qub.CTools.opencv import qtTools
-except ImportError:
-    cv = None
+#try:
+#    from opencv import cv
+#    from Qub.CTools.opencv import qtTools
+#except ImportError:
+cv = None
 
 ##@defgroup DrawingCanvasTools Low level objects drawing
 #@brief this is the group of all vector objects which can be put in a simple QCanvas.

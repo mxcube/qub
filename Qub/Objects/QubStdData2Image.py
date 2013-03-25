@@ -9,12 +9,12 @@ try:
 except ImportError:
     qttools = None
 
-try:
-    from opencv import cv
-    from Qub.CTools import opencv
-except ImportError :
-    cv = None
-    opencv = None
+#try:
+#    from opencv import cv
+#    from Qub.CTools import opencv
+#except ImportError :
+cv = None
+opencv = None
 
 import numpy
 ##@brief This class is use to decompress standard data -> image.
