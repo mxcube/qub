@@ -483,23 +483,27 @@ class QubCanvasSlitbox(qtcanvas.QCanvasRectangle) :
             self.__canvas = canvas
             self.__slitbox_width = None
             self.__slitbox_height = None
-            
-        
+
+        self.xMid = self.__canvas.width() / 2
+        self.yMid = self.__canvas.height() / 2
+                
     def update(self) :
-        (xMid,yMid) = (self.__canvas.width() / 2,self.__canvas.height() / 2)
-        self.__hline.setPoints(xMid - 20,yMid,xMid + 20,yMid)
-        self.__vline.setPoints(xMid,yMid - 20,xMid,yMid + 20)
+        self.__hline.setPoints(self.xMid - 20,self.yMid,self.xMid + 20,self.yMid)
+        self.__vline.setPoints(self.xMid,self.yMid - 20,self.xMid,self.yMid + 20)
        
         if self.__slitbox_width is None or self.__slitbox_height is None:
             self.setSize(0,0)
-            self.setX(xMid)
-            self.setY(yMid)
+            self.setX(self.xMid)
+            self.setY(self.yMid)
         else:
             self.setSize(self.__slitbox_width, self.__slitbox_height)
-            self.setX(xMid - self.__slitbox_width/2)
-            self.setY(yMid - self.__slitbox_height/2)
-        
-        
+            self.setX(self.xMid - self.__slitbox_width/2)
+            self.setY(self.yMid - self.__slitbox_height/2)
+
+    def set_xMid_yMid(self,x,y):
+        self.xMid,self.yMid = x,y
+        self.update()
+            
     def setCanvas(self,canvas) :
         self.__canvas = canvas
         self.__hline.setCanvas(canvas)
