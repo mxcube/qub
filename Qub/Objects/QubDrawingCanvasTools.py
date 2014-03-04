@@ -484,8 +484,8 @@ class QubCanvasSlitbox(qtcanvas.QCanvasRectangle) :
             self.__slitbox_width = None
             self.__slitbox_height = None
 
-        self.xMid = self.__canvas.width() / 2
-        self.yMid = self.__canvas.height() / 2
+        self.xMid = 0 
+        self.yMid = 0
                 
     def update(self) :
         self.__hline.setPoints(self.xMid - 20,self.yMid,self.xMid + 20,self.yMid)
