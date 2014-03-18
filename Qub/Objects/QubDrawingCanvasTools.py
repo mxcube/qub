@@ -291,6 +291,8 @@ class QubCanvasBeam(QubCanvasEllipse):
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasTarget(QubCanvasEllipse) :
     def __init__(self,canvas) :
+        self.__label = "" 
+        
         if isinstance(canvas,QubCanvasTarget) :
             self.__pointWidth = canvas._QubCanvasTarget__pointWidth
             QubCanvasEllipse.__init__(self,canvas)
@@ -326,6 +328,8 @@ class QubCanvasTarget(QubCanvasEllipse) :
         QubCanvasEllipse.drawShape(self,p)
         self.__hLine.drawShape(p)
         self.__vLine.drawShape(p)
+        text_x = self.x() + self.__pointWidth - 10
+        p.drawText(text_x, self.y() - 10 , self.__label)
 
     def setCanvas(self,canvas) :
         QubCanvasEllipse.setCanvas(self,canvas)
@@ -334,6 +338,11 @@ class QubCanvasTarget(QubCanvasEllipse) :
         QubCanvasEllipse.setPen(self,pen)
         self.__hLine.setPen(pen)
         self.__vLine.setPen(pen)
+
+    def setLabel(self, label):
+        self.__label = label
+    
+        
 ##@brief this is a simple point with a text
 #@ingroup DrawingCanvasToolsPoint
 class QubCanvasPointNText(qtcanvas.QCanvasRectangle) :
